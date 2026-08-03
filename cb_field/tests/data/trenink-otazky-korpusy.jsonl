@@ -1,0 +1,35 @@
+{"otazka": "Kdo pokřtil Ježíše?", "odpoved_lemma": "Jan", "zodpoveditelna": true, "vztah": "pasivum: byl od Jana pokřtěn"}
+{"otazka": "Kdo objevil gravitaci?", "odpoved_lemma": "Newton", "zodpoveditelna": true, "vztah": "parafráze: zformuloval zákon"}
+{"otazka": "Kdo popsal zakřivení prostoročasu?", "odpoved_lemma": "Einstein", "zodpoveditelna": true, "vztah": "parafráze přes obsah teorie"}
+{"otazka": "Kdo je autorem Principií?", "odpoved_lemma": "Newton", "zodpoveditelna": true, "vztah": "nominalizace: napsal knihu"}
+{"otazka": "Co obíhá kolem Slunce?", "odpoved_lemma": "země", "zodpoveditelna": true, "vztah": "obrácená role: Země obíhá kolem Slunce"}
+{"otazka": "Co obíhá kolem Země?", "odpoved_lemma": "měsíc", "zodpoveditelna": true, "vztah": "obrácená role"}
+{"otazka": "Čím je způsoben příliv?", "odpoved_lemma": "měsíc", "zodpoveditelna": true, "vztah": "pasivum + instrumentál"}
+{"otazka": "Kdo dostal Nobelovu cenu?", "odpoved_lemma": "Einstein", "zodpoveditelna": true, "vztah": "synonymie: obdržel"}
+{"otazka": "Kdy dostal Einstein Nobelovu cenu?", "odpoved_lemma": "1921", "zodpoveditelna": true, "vztah": "čas jako letopočet"}
+{"otazka": "Jak rychle se šíří světlo?", "odpoved_lemma": "rychlost", "zodpoveditelna": true, "vztah": "parafráze míry"}
+{"otazka": "Z čeho je světlo složeno?", "odpoved_lemma": "foton", "zodpoveditelna": true, "vztah": "částice světla"}
+{"otazka": "Na co mění elektromotor elektrickou energii?", "odpoved_lemma": "energie", "zodpoveditelna": true, "vztah": "cíl přeměny"}
+{"otazka": "Co pohání elektromotor?", "odpoved_lemma": "proud", "zodpoveditelna": true, "vztah": "parafráze: využívá proudu"}
+{"otazka": "K čemu potřebují rostliny světlo?", "odpoved_lemma": "tvorba", "zodpoveditelna": true, "vztah": "účel"}
+{"otazka": "Jaká energie vzniká při fotosyntéze?", "odpoved_lemma": "energie", "zodpoveditelna": true, "vztah": "výsledek procesu"}
+{"otazka": "Odkud pocházel Ježíš?", "odpoved_lemma": "Nazareto", "zodpoveditelna": true, "vztah": "synonymie: přišel z"}
+{"otazka": "V čem byl Ježíš pokřtěn?", "odpoved_lemma": "Jordán", "zodpoveditelna": true, "vztah": "místo děje v pasivu"}
+{"otazka": "Kde vyznávali lidé hříchy?", "odpoved_lemma": "Jordán", "zodpoveditelna": true, "vztah": "místo z předchozí věty"}
+{"otazka": "Kam vešel Ježíš v sobotu?", "odpoved_lemma": "synagóga", "zodpoveditelna": true, "vztah": "synonymie: šel do"}
+{"otazka": "Ve kterém městě se Ježíš zdržoval?", "odpoved_lemma": "Kafarnaum", "zodpoveditelna": true, "vztah": "parafráze: vrátil se do"}
+{"otazka": "Kde se narodil autor Bílé nemoci?", "odpoved_lemma": "Svatoňovice", "zodpoveditelna": true, "vztah": "identifikace přes dílo"}
+{"otazka": "Čím byl Čapkův otec?", "odpoved_lemma": "lékař", "zodpoveditelna": true, "vztah": "vztah rodiny"}
+{"otazka": "Kde vyrůstal Hrabal?", "odpoved_lemma": "pivovar", "zodpoveditelna": true, "vztah": "synonymie: prožil dětství"}
+{"otazka": "Do jakého města se Hrabalovi přestěhovali?", "odpoved_lemma": "Nymburk", "zodpoveditelna": true, "vztah": "cíl přestěhování"}
+{"otazka": "Co si koupili Hrabalovi v Kersku?", "odpoved_lemma": "chata", "zodpoveditelna": true, "vztah": "předmět koupě"}
+{"otazka": "Odkud pocházel Neruda?", "odpoved_lemma": "strana", "zodpoveditelna": true, "vztah": "Malá Strana"}
+{"otazka": "Kde se Neruda narodil?", "odpoved_lemma": "kasárna", "zodpoveditelna": true, "vztah": "Újezdské kasárny"}
+{"otazka": "Kdo napsal Válku s mloky?", "odpoved_lemma": "Čapek", "zodpoveditelna": true, "vztah": "autorství přes dílo"}
+{"otazka": "Kdo je autorem R.U.R.?", "odpoved_lemma": "Čapek", "zodpoveditelna": true, "vztah": "autorství, zkratka"}
+{"otazka": "Kdo létal do vesmíru?", "odpoved_lemma": null, "zodpoveditelna": false, "vztah": "svod: v korpusu není"}
+{"otazka": "Kdo pokřtil Newtona?", "odpoved_lemma": null, "zodpoveditelna": false, "vztah": "svod: křížení domén"}
+{"otazka": "Kolem čeho obíhá Slunce?", "odpoved_lemma": null, "zodpoveditelna": false, "vztah": "svod: obrácení vztahu"}
+{"otazka": "Kde se narodil Einstein?", "odpoved_lemma": "Ulm", "zodpoveditelna": true, "vztah": "údaj v závorce"}
+{"otazka": "Kdy zemřel Newton?", "odpoved_lemma": "1727", "zodpoveditelna": true, "vztah": "datum v závorce"}
+{"otazka": "Co vydal Newton roku 1687?", "odpoved_lemma": "Principia", "zodpoveditelna": true, "vztah": "kniha vyšla roku"}

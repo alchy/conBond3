@@ -145,9 +145,13 @@ def train_on_etalon(corpus, etalon_entries, parser,
     zákona. NEPOKRYTÉ chyby se neučí (patří růstu os / dalším krokům).
     """
     from cb_field.field import SentenceField
-    stats = {"epoch": 0, "kroku": 0, "hran": 0}
+    stats = {"epoch": 0, "kroku": 0, "hran": 0, "epochy": []}
     for epoch in range(max_epochs):
         corrections = 0
+        loss_sum = 0.0
+        correct_now = 0
+        seen = 0
+        edges_before = stats["hran"]
         for entry in etalon_entries:
             if not entry["zodpoveditelna"]:
                 continue
@@ -159,11 +163,17 @@ def train_on_etalon(corpus, etalon_entries, parser,
                 continue
             winner = result.best
             expected = entry["odpoved_lemma"]
-            if winner.token.lemma == expected \
-                    and result.outcome == "odpoved":
-                continue
+            seen += 1
             correct = next((c for c in result.candidates
                             if c.token.lemma == expected), None)
+            if correct is not None:
+                # hinge loss marže: kolik chybí, aby správná vedla
+                loss_sum += max(0.0, 1.0 + winner.score - correct.score
+                                if winner is not correct else 0.0)
+            if winner.token.lemma == expected \
+                    and result.outcome == "odpoved":
+                correct_now += 1
+                continue
             if correct is None:
                 continue                     # NEPOKRYTÁ — učení nepatří
             q_bag = _semantic_bag(question, range(len(question.tokens)))
@@ -178,6 +188,16 @@ def train_on_etalon(corpus, etalon_entries, parser,
             corrections += 1
         stats["epoch"] = epoch + 1
         stats["kroku"] += corrections
+        loss = loss_sum / max(seen, 1)
+        hit = correct_now / max(seen, 1)
+        stats["epochy"].append(
+            {"epocha": epoch + 1, "loss": round(loss, 3),
+             "trefy": f"{correct_now}/{seen}", "trefy_podil": round(hit, 2),
+             "korekci": corrections,
+             "hran": stats["hran"] - edges_before})
+        print(f"    epocha {epoch + 1}: loss {loss:7.3f} · trefy "
+              f"{correct_now}/{seen} ({hit:.2f}) · korekcí {corrections} "
+              f"· hran {stats['hran'] - edges_before}", flush=True)
         if corrections == 0:
             break
     return stats
@@ -189,14 +209,24 @@ def main() -> None:
                                    evaluate_corpus, load_etalon,
                                    load_etalon_korpusy)
 
+    import json
     korpusy = "korpusy" in sys.argv[1:]
     parser = UdpipeClient()
     if korpusy:
         corpus = build_complex_corpus(parser)
         etalon = load_etalon_korpusy()
+        # Trénink a měření na ODDĚLENÝCH sadách: trénuje se na
+        # parafrázích (otázka neopisuje větu — jinak se systém učí grep),
+        # měří se na etalonu. Zapsaná mez z minula tím padá.
+        trenink_path = (MODULE_DIR / "tests" / "data"
+                        / "trenink-otazky-korpusy.jsonl")
+        trenink = [json.loads(line) for line
+                   in trenink_path.read_text(encoding="utf-8").splitlines()
+                   if line.strip()]
     else:
         corpus = build_corpus(parser)
         etalon = load_etalon()
+        trenink = etalon
 
     phases = []
 
@@ -211,7 +241,7 @@ def main() -> None:
     hebb_stats = hebb(corpus)
     print(f"4b Hebb: {hebb_stats}")
     measure("po 4b (Hebb)")
-    train_stats = train_on_etalon(corpus, etalon, parser)
+    train_stats = train_on_etalon(corpus, trenink, parser)
     print(f"4c kontrastivně: {train_stats}")
     measure("po 4c (etalon)")
 
@@ -229,9 +259,20 @@ def main() -> None:
              + (" — komplexní korpusy" if korpusy else ""), ""]
     lines.append(f"- datum: {date.today().isoformat()} · η_hebb={ETA_HEBB} "
                  f"· η_kontrast={ETA_CONTRAST} · epochy≤{MAX_EPOCHS}")
-    lines.append(f"- Hebb: {hebb_stats} · kontrastivně: {train_stats}")
-    lines.append(f"- POZOR: 4c laděno i měřeno na témže etalonu — číslo "
-                 f"je horní odhad, ne generalizace (zapsaná mez).")
+    lines.append(f"- Hebb: {hebb_stats}")
+    lines.append(f"- kontrastivně: epoch={train_stats['epoch']} "
+                 f"kroků={train_stats['kroku']} hran={train_stats['hran']}")
+    lines.append("")
+    lines.append("| epocha | loss (hinge marže) | trefy na tréninku "
+                 "| korekcí | nových/změněných hran |")
+    lines.append("|---|---|---|---|---|")
+    for e in train_stats.get("epochy", []):
+        lines.append(f"| {e['epocha']} | {e['loss']} | {e['trefy']} "
+                     f"({e['trefy_podil']}) | {e['korekci']} | {e['hran']} |")
+    lines.append(f"- trénink: {len(trenink)} otázek · měření: "
+                 f"{len(etalon)} otázek"
+                 + (" (oddělené sady — parafráze vs. etalon)" if korpusy
+                    else " (TÁŽ sada — horní odhad, ne generalizace)"))
     lines.append("")
     lines.append("| fáze | přesnost@1 | NEVÍM-správnost |")
     lines.append("|---|---|---|")
