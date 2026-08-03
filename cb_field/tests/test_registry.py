@@ -229,8 +229,17 @@ class TestKotvyAVazby(unittest.TestCase):
             cesta = Path(d) / "verticals.json"
             reg.save(cesta)
             nacteny = VerticalRegistry.load(cesta)
-            self.assertEqual(nacteny.links(),
-                             (("ANCHOR=time:past", "ANCHOR=time", 1.0),))
+            self.assertEqual(
+                nacteny.links(),
+                (("ANCHOR=time:past", "ANCHOR=time", 1.0, "axiom"),))
+
+    def test_axiom_nejde_prepsat_ucenim(self):
+        reg = VerticalRegistry(anchors=False)
+        reg.link("A=x", "A=y", 1.0)                     # axiom
+        reg.link("A=x", "A=y", 0.2, source="hebb")      # tiše ignorováno
+        self.assertEqual(reg.get_link("A=x", "A=y"), (1.0, "axiom"))
+        reg.link("B=x", "B=y", 0.3, source="hebb")      # nová hrana projde
+        self.assertEqual(reg.get_link("B=x", "B=y"), (0.3, "hebb"))
 
     def test_parovani_otazky_s_odpovedi_pres_vazby(self):
         # „Kdy?" (QANCHOR=time:when) se má potkat s „přijde" (time:fut)

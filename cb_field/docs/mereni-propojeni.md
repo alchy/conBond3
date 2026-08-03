@@ -1,7 +1,7 @@
 # Měření propojení (4a, ruční W) — etalon otázek
 
 - datum: 2026-08-03 · verze modulu 0.7.0 · θ=0.0 · ε=0.25 · r=1
-- data: testbed sha256:468e643aba15 (179 vět) · etalon sha256:e9c1bda9ab9f (40 otázek)
+- data: testbed sha256:468e643aba15 · etalon sha256:e9c1bda9ab9f (40 otázek)
 
 | metrika | hodnota |
 |---|---|
@@ -58,4 +58,4 @@
 | Kolik koček čekalo před školou? | FALEŠNÁ | dětí | None | 10.29 |
 | Odkud přijela Marie? | MLČENÍ-správné | — | None | — |
 
-Diagnóza řídí další krok (README-PROPOJENI § 5): SLABÁ → učení vah (4b/4c); NEPŘESNÁ → fronta růstu os; NEPOKRYTÁ → známé díry reprezentace (kandidátní středy, typ — krok 5, slot kdy — krok 3).
+Diagnóza řídí další krok (README-PROPOJENI § 5): SLABÁ → učení vah (4b/4c); NEPŘESNÁ → fronta růstu os; NEPOKRYTÁ → známé díry reprezentace (typ — krok 5, slot kdy — krok 3).

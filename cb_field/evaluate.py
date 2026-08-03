@@ -1,14 +1,12 @@
-"""Vyhodnocení propojení na etalonu otázek — baseline 4a s diagnózou.
+"""Vyhodnocení propojení na etalonu otázek — s diagnózou růstového zákona.
 
 Spuštění:  ./run-python -m cb_field.evaluate
 
-Čte zmražený testbed a etalon otázek, pustí match() s ručním W (axiomy)
-a každý výsledek oznámkuje. Chyby klasifikuje podle růstového zákona
-(README-PROPOJENI § 5): SLABÁ (d > 0 → do učení) vs. NEPŘESNÁ (d == 0 →
-do růstu os) vs. NEPOKRYTÁ (kandidát vůbec neprošel branou). Píše
-docs/mereni-propojeni.md; čísla nesou otisky dat.
-
-Potřebuje běžící službu cb-udpipe (měření, ne test).
+Čte zmražený testbed a etalon, pustí match() a každý výsledek oznámkuje.
+Chyby klasifikuje podle README-PROPOJENI § 5: SLABÁ (d > 0 → učení) /
+NEPŘESNÁ (d == 0 → růst os) / NEPOKRYTÁ (správná odpověď nekandiduje).
+Funkce build_corpus/load_etalon/evaluate_corpus používá i učicí protokol
+(cb_field.learning). Potřebuje běžící službu cb-udpipe.
 """
 
 import hashlib
@@ -21,7 +19,8 @@ import numpy as np
 
 from cb_field import __version__
 from cb_field.corpus import Corpus
-from cb_field.matching import EPSILON, THETA, candidate_centers, match
+from cb_field.field import SentenceField
+from cb_field.matching import EPSILON, THETA, match
 from cb_field.service import Representation
 
 MODULE_DIR = Path(__file__).resolve().parent
@@ -30,97 +29,104 @@ ETALON = MODULE_DIR / "tests" / "data" / "etalon-otazky.jsonl"
 REPORT = MODULE_DIR / "docs" / "mereni-propojeni.md"
 
 
+def build_corpus(parser, r: int = 1) -> Corpus:
+    """Korpus ze zmraženého testbedu (jedna věta na řádek)."""
+    corpus = Corpus(r=r)
+    for line in TESTBED.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            corpus.add_text(line.strip(), parser)
+    return corpus
+
+
+def load_etalon() -> list:
+    return [json.loads(line) for line
+            in ETALON.read_text(encoding="utf-8").splitlines()
+            if line.strip()]
+
+
 def _bag(sentence, corpus, center):
     matrix = sentence.matrix(Representation.COMPLETE)
     left = max(0, center - corpus.r)
-    n = len(corpus.registry)
-    padded = np.zeros(n, dtype=np.float32)
+    padded = np.zeros(len(corpus.registry), dtype=np.float32)
     row = matrix[left:center + corpus.r + 1].sum(axis=0)
     padded[:len(row)] = row
     return padded
 
 
 def diagnose(result, expected_lemma, corpus):
-    """Klasifikace chyby podle P-E: SLABÁ (d>0) / NEPŘESNÁ (d==0) /
-    NEPOKRYTÁ (správná odpověď mezi kandidáty vůbec není)."""
+    """SLABÁ (d>0) / NEPŘESNÁ (d==0) / NEPOKRYTÁ — viz spec § 5."""
     winner = result.best
     correct = [c for c in result.candidates
                if c.token.lemma == expected_lemma]
     if not correct:
         return "NEPOKRYTÁ", None
-    best_correct = correct[0]
     d = float(np.linalg.norm(
         _bag(winner.sentence, corpus, winner.center)
-        - _bag(best_correct.sentence, corpus, best_correct.center)))
+        - _bag(correct[0].sentence, corpus, correct[0].center)))
     return ("SLABÁ" if d > 1e-6 else "NEPŘESNÁ"), round(d, 3)
+
+
+def evaluate_corpus(corpus, etalon, parser):
+    """Oznámkuje celý etalon; vrací (counts, přesnost, mlčení, detaily)."""
+    counts = {"SPRÁVNĚ": 0, "SLABÁ": 0, "NEPŘESNÁ": 0, "NEPOKRYTÁ": 0,
+              "DOTAZ": 0, "NEVÍM-chybné": 0,
+              "MLČENÍ-správné": 0, "FALEŠNÁ": 0, "DOTAZ-nezodp.": 0}
+    details = []
+    for entry in etalon:
+        question = SentenceField.from_text(entry["otazka"], parser,
+                                           r=corpus.r,
+                                           registry=corpus.registry)
+        result = match(question, corpus)
+        expected = entry["odpoved_lemma"]
+        if entry["zodpoveditelna"]:
+            if result.outcome == "odpoved":
+                if result.best.token.lemma == expected:
+                    grade = "SPRÁVNĚ"
+                else:
+                    grade, _d = diagnose(result, expected, corpus)
+            elif result.outcome == "dotaz":
+                grade = "DOTAZ"
+            else:
+                grade = "NEVÍM-chybné"
+        else:
+            grade = {"nevim": "MLČENÍ-správné",
+                     "dotaz": "DOTAZ-nezodp."}.get(result.outcome, "FALEŠNÁ")
+        counts[grade] += 1
+        best = result.best
+        details.append((entry["otazka"], expected, grade,
+                        best.token.form if best else "—",
+                        f"{best.score:.2f}" if best else "—",
+                        best.sentence.source if best else "—",
+                        best.top_nodes if best else ()))
+    answerable = sum(1 for e in etalon if e["zodpoveditelna"])
+    unanswerable = len(etalon) - answerable
+    presnost = counts["SPRÁVNĚ"] / answerable if answerable else 0.0
+    mlceni = (counts["MLČENÍ-správné"] / unanswerable
+              if unanswerable else 0.0)
+    return counts, presnost, mlceni, details
 
 
 def main() -> None:
     from cb_udpipe import UdpipeClient
 
     parser = UdpipeClient()
-    corpus = Corpus(r=1)
-    lines = [ln.strip() for ln in TESTBED.read_text(encoding="utf-8")
-             .splitlines() if ln.strip()]
-    for line in lines:
-        corpus.add_text(line, parser)
-    etalon = [json.loads(ln) for ln in ETALON.read_text(encoding="utf-8")
-              .splitlines() if ln.strip()]
+    corpus = build_corpus(parser)
+    etalon = load_etalon()
+    counts, presnost, mlceni, details = evaluate_corpus(
+        corpus, etalon, parser)
 
-    counts = {"SPRÁVNĚ": 0, "SLABÁ": 0, "NEPŘESNÁ": 0, "NEPOKRYTÁ": 0,
-              "DOTAZ": 0, "NEVÍM-chybné": 0,
-              "MLČENÍ-správné": 0, "FALEŠNÁ": 0, "DOTAZ-nezodp.": 0}
-    detaily = []
-
-    for entry in etalon:
-        from cb_field.field import SentenceField
-        question = SentenceField.from_text(entry["otazka"], parser,
-                                           r=corpus.r,
-                                           registry=corpus.registry)
-        result = match(question, corpus)
-        expected = entry["odpoved_lemma"]
-
-        if entry["zodpoveditelna"]:
-            if result.outcome == "odpoved":
-                if result.best.token.lemma == expected:
-                    grade = "SPRÁVNĚ"
-                else:
-                    grade, d = diagnose(result, expected, corpus)
-                    grade_note = f"d={d}"
-            elif result.outcome == "dotaz":
-                grade = "DOTAZ"
-            else:
-                grade = "NEVÍM-chybné"
-        else:
-            if result.outcome == "nevim":
-                grade = "MLČENÍ-správné"
-            elif result.outcome == "dotaz":
-                grade = "DOTAZ-nezodp."
-            else:
-                grade = "FALEŠNÁ"
-        counts[grade] += 1
-        best = result.best
-        detaily.append((entry["otazka"], expected, grade,
-                        best.token.form if best else "—",
-                        f"{best.score:.2f}" if best else "—",
-                        best.sentence.source if best else "—",
-                        best.top_nodes if best else ()))
-
-    zodp = [d for d, e in zip(detaily, etalon) if e["zodpoveditelna"]]
-    nezodp_n = sum(1 for e in etalon if not e["zodpoveditelna"])
-    presnost = counts["SPRÁVNĚ"] / len(zodp) if zodp else 0
-    mlceni = counts["MLČENÍ-správné"] / nezodp_n if nezodp_n else 0
-
+    answerable = sum(1 for e in etalon if e["zodpoveditelna"])
+    unanswerable = len(etalon) - answerable
     digest_t = hashlib.sha256(TESTBED.read_bytes()).hexdigest()[:12]
     digest_e = hashlib.sha256(ETALON.read_bytes()).hexdigest()[:12]
 
-    print(f"etalon: {len(etalon)} otázek ({len(zodp)} zodpověditelných) · "
+    print(f"etalon: {len(etalon)} otázek ({answerable} zodpověditelných) · "
           f"korpus {len(corpus)} vět · θ={THETA} ε={EPSILON}")
-    print(f"přesnost@1: {counts['SPRÁVNĚ']}/{len(zodp)} = {presnost:.2f}")
-    print(f"NEVÍM-správnost: {counts['MLČENÍ-správné']}/{nezodp_n} "
+    print(f"přesnost@1: {counts['SPRÁVNĚ']}/{answerable} = {presnost:.2f}")
+    print(f"NEVÍM-správnost: {counts['MLČENÍ-správné']}/{unanswerable} "
           f"= {mlceni:.2f}")
     print(f"rozklad: {counts}\n")
-    for otazka, expected, grade, answer, score, source, nodes in detaily:
+    for otazka, expected, grade, answer, score, _source, _nodes in details:
         mark = "✓" if grade in ("SPRÁVNĚ", "MLČENÍ-správné") else "✗" \
             if grade in ("FALEŠNÁ", "NEPŘESNÁ", "NEPOKRYTÁ",
                          "NEVÍM-chybné", "SLABÁ") else "?"
@@ -130,29 +136,30 @@ def main() -> None:
     report = ["# Měření propojení (4a, ruční W) — etalon otázek", ""]
     report.append(f"- datum: {date.today().isoformat()} · verze modulu "
                   f"{__version__} · θ={THETA} · ε={EPSILON} · r={corpus.r}")
-    report.append(f"- data: testbed sha256:{digest_t} ({len(lines)} vět) · "
+    report.append(f"- data: testbed sha256:{digest_t} · "
                   f"etalon sha256:{digest_e} ({len(etalon)} otázek)")
     report.append("")
-    report.append(f"| metrika | hodnota |")
-    report.append(f"|---|---|")
+    report.append("| metrika | hodnota |")
+    report.append("|---|---|")
     report.append(f"| přesnost@1 (zodpověditelné) | "
-                  f"{counts['SPRÁVNĚ']}/{len(zodp)} = {presnost:.2f} |")
+                  f"{counts['SPRÁVNĚ']}/{answerable} = {presnost:.2f} |")
     report.append(f"| NEVÍM-správnost (nezodpověditelné) | "
-                  f"{counts['MLČENÍ-správné']}/{nezodp_n} = {mlceni:.2f} |")
+                  f"{counts['MLČENÍ-správné']}/{unanswerable} "
+                  f"= {mlceni:.2f} |")
     for key in ("SLABÁ", "NEPŘESNÁ", "NEPOKRYTÁ", "DOTAZ", "NEVÍM-chybné",
                 "FALEŠNÁ", "DOTAZ-nezodp."):
         report.append(f"| {key} | {counts[key]} |")
     report.append("")
     report.append("| otázka | výsledek | odpověď | očekáváno | skóre |")
     report.append("|---|---|---|---|---|")
-    for otazka, expected, grade, answer, score, source, nodes in detaily:
+    for otazka, expected, grade, answer, score, _source, _nodes in details:
         report.append(f"| {otazka} | {grade} | {answer} | {expected} "
                       f"| {score} |")
     report.append("")
     report.append("Diagnóza řídí další krok (README-PROPOJENI § 5): "
                   "SLABÁ → učení vah (4b/4c); NEPŘESNÁ → fronta růstu os; "
-                  "NEPOKRYTÁ → známé díry reprezentace (kandidátní středy, "
-                  "typ — krok 5, slot kdy — krok 3).")
+                  "NEPOKRYTÁ → známé díry reprezentace (typ — krok 5, "
+                  "slot kdy — krok 3).")
     REPORT.write_text("\n".join(report) + "\n", encoding="utf-8")
     print(f"\nzapsáno: {REPORT.relative_to(MODULE_DIR.parent)}")
 

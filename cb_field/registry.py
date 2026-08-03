@@ -99,31 +99,43 @@ class VerticalRegistry:
 
     # --- vazby mezi vertikálami -----------------------------------------
 
-    def link(self, src: str, dst: str, weight: float = 1.0) -> None:
+    def link(self, src: str, dst: str, weight: float = 1.0,
+             source: str = "axiom") -> None:
         """Vážená vazba vertikála→vertikála; neznámé klíče připíše.
 
         Váha nese sílu i znaménko vztahu (maska by byla jen její binární
-        degenerát). Opakovaný zápis téže dvojice váhu přepíše — vazby se
-        budou ladit, klíče a indexy ne.
+        degenerát). Každá hrana nese zdroj (axiom | hebb | etalon |
+        dialog) — axiomy jsou definice jazyka systému a učení je nesmí
+        přepsat (P-C spec): pokus o přepis axiomu jiným zdrojem se tiše
+        ignoruje (učení jich zkouší tisíce; hlasitost patří do statistik
+        učení, ne sem).
 
         Při chybě:
             ValueError na váhu mimo −1…+1 (tytéž meze jako u aktivací).
         """
         if not -1.0 <= weight <= 1.0:
             raise ValueError(f"váha vazby {weight} je mimo rozsah -1.0 … 1.0")
+        existing = self._links.get((src, dst))
+        if existing and existing[1] == "axiom" and source != "axiom":
+            return
         self.add(src)
         self.add(dst)
-        self._links[(src, dst)] = weight
+        self._links[(src, dst)] = (weight, source)
 
     def links(self) -> tuple:
-        """Všechny vazby jako trojice (od, do, váha)."""
-        return tuple((s, d, w) for (s, d), w in self._links.items())
+        """Všechny vazby jako čtveřice (od, do, váha, zdroj)."""
+        return tuple((s, d, w, src) for (s, d), (w, src)
+                     in self._links.items())
+
+    def get_link(self, src: str, dst: str):
+        """(váha, zdroj) vazby, nebo None, když neexistuje."""
+        return self._links.get((src, dst))
 
     def link_matrix(self) -> np.ndarray:
         """Vazby jako matice L: L[i, j] = váha vazby key(i) → key(j)."""
         n = len(self._keys)
         matrix = np.zeros((n, n), dtype=DTYPE)
-        for (src, dst), weight in self._links.items():
+        for (src, dst), (weight, _source) in self._links.items():
             matrix[self._index[src], self._index[dst]] = weight
         return matrix
 
@@ -206,7 +218,7 @@ class VerticalRegistry:
         tmp.write_text(
             json.dumps({"format_version": FORMAT_VERSION,
                         "keys": self._keys,
-                        "links": [[s, d, w] for (s, d), w
+                        "links": [[s, d, w, src] for (s, d), (w, src)
                                   in self._links.items()]},
                        ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8")
@@ -223,6 +235,8 @@ class VerticalRegistry:
                 f"neznámá verze formátu registru {version!r}; "
                 f"tahle čtečka umí {FORMAT_VERSION}")
         registry = cls(data["keys"], anchors=False)
-        for src, dst, weight in data.get("links", []):
-            registry.link(src, dst, weight)
+        for entry in data.get("links", []):
+            src, dst, weight = entry[0], entry[1], entry[2]
+            source = entry[3] if len(entry) > 3 else "axiom"
+            registry.link(src, dst, weight, source=source)
         return registry
