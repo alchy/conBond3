@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+#
+# run-python — spustí projektový interpret se správným prostředím.
+#
+# Proč to existuje: v systému je několik Pythonů a spuštění testu tím
+# nesprávným je chyba, která se projeví až divným výsledkem, ne hláškou.
+# Tenhle skript zaručí tři věci najednou:
+#
+#   1. běží interpret z .venv projektu, ne systémový,
+#   2. jsou nainstalované závislosti podle requirements.txt,
+#   3. kořen projektu je na PYTHONPATH, takže `import cb_logger` funguje
+#      bez ohledu na to, odkud se skript spustí.
+#
+# Použití:
+#
+#   ./run-python -m unittest discover        # testy celého projektu
+#   ./run-python -m unittest discover -s cb_logger
+#   ./run-python cb_logger/tests/test_record.py
+#   ./run-python cli                         # interaktivní konzole
+#   ./run-python                             # bez argumentů: stav prostředí
+#   ./run-python --check                     # jen kontrola, nic nespouští
+#
+# Kontrola závislostí se cachuje otiskem requirements.txt, takže běžné
+# spuštění nestojí nic navíc. --check ji vynutí vždycky.
+
+set -euo pipefail
+
+KOREN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VENV="$KOREN/.venv"
+PY="$VENV/bin/python"
+POZADAVKY="$KOREN/requirements.txt"
+RAZITKO="$VENV/.requirements-ok"
+
+# Verze, na které projekt stojí. conBond2 na tomhle stojí taky a je to
+# ověřená kombinace s UDPipe 2 — proto přišpendleno, ne "3.11 nebo novější".
+VYZADOVANA_VERZE="3.11"
+
+chyba() { printf '%s\n' "$@" >&2; exit 2; }
+
+# --- 1 · interpret --------------------------------------------------------
+
+[ -x "$PY" ] || chyba \
+  "chybí virtuální prostředí: $VENV" \
+  "" \
+  "Vytvoř ho:" \
+  "  python${VYZADOVANA_VERZE} -m venv .venv" \
+  "  .venv/bin/pip install -r requirements.txt"
+
+VERZE="$("$PY" -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+[ "$VERZE" = "$VYZADOVANA_VERZE" ] || chyba \
+  "špatná verze Pythonu ve $VENV" \
+  "  očekáváno: $VYZADOVANA_VERZE" \
+  "  nalezeno:  $VERZE" \
+  "" \
+  "Smaž .venv a vytvoř ho znovu správným interpretem."
+
+# --- 2 · závislosti -------------------------------------------------------
+
+# Otisk requirements.txt. Když se od poslední úspěšné kontroly nezměnil,
+# kontrola se přeskočí — jinak by každé spuštění testu platilo import
+# metadat všech balíčků.
+otisk() { "$PY" -c '
+import hashlib, sys
+print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())
+' "$POZADAVKY"; }
+
+zkontroluj_zavislosti() {
+  "$PY" - "$POZADAVKY" <<'PYTHON'
+"""Ověří, že jsou nainstalované balíčky z requirements.txt.
+
+Proč vlastní parser místo `pip check` nebo knihovny `packaging`: kontrola
+prostředí nesmí sama záviset na tom, že je prostředí kompletní. Zvládá tvary,
+které v requirements.txt reálně používáme — `jmeno==verze`, `jmeno>=verze`
+a holé `jmeno`; složitější zápisy (extras, markery) záměrně neumí a nahlásí
+je, místo aby je tiše přeskočila.
+"""
+import importlib.metadata as metadata
+import re
+import sys
+
+cesta = sys.argv[1]
+POVOLENY_TVAR = re.compile(r"^([A-Za-z0-9._-]+)\s*(==|>=|~=)?\s*([0-9][\w.*+!-]*)?$")
+
+chybejici, spatna_verze, nesrozumitelne = [], [], []
+pocet = 0
+
+for radek in open(cesta, encoding="utf-8"):
+    radek = radek.split("#", 1)[0].strip()
+    if not radek:
+        continue
+    shoda = POVOLENY_TVAR.match(radek)
+    if not shoda:
+        nesrozumitelne.append(radek)
+        continue
+
+    jmeno, operator, zadana = shoda.groups()
+    pocet += 1
+    try:
+        nalezena = metadata.version(jmeno)
+    except metadata.PackageNotFoundError:
+        chybejici.append(radek)
+        continue
+
+    # Kontroluje se jen přesná shoda u `==`. U `>=` a `~=` by se muselo
+    # porovnávat podle PEP 440 a to bez knihovny `packaging` nejde udělat
+    # správně — raději nekontrolovat než kontrolovat špatně.
+    if operator == "==" and zadana and nalezena != zadana:
+        spatna_verze.append(f"{jmeno}: požadováno {zadana}, nainstalováno {nalezena}")
+
+if nesrozumitelne:
+    print("nesrozumitelné řádky v requirements.txt:", file=sys.stderr)
+    for r in nesrozumitelne:
+        print(f"  {r}", file=sys.stderr)
+    sys.exit(2)
+
+if chybejici or spatna_verze:
+    print("prostředí neodpovídá requirements.txt:", file=sys.stderr)
+    for r in chybejici:
+        print(f"  chybí:        {r}", file=sys.stderr)
+    for r in spatna_verze:
+        print(f"  jiná verze:   {r}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("Doinstaluj:", file=sys.stderr)
+    print("  .venv/bin/pip install -r requirements.txt", file=sys.stderr)
+    sys.exit(1)
+
+print(f"OK ({pocet} " + ("závislost" if pocet == 1 else "závislostí") + ")")
+PYTHON
+}
+
+VYNUTIT_KONTROLU=0
+INTERAKTIVNE=0
+case "${1:-}" in
+  --check) VYNUTIT_KONTROLU=1; shift ;;
+  cli)     INTERAKTIVNE=1; shift ;;
+esac
+
+AKTUALNI_OTISK="$(otisk)"
+ULOZENY_OTISK="$(cat "$RAZITKO" 2>/dev/null || true)"
+
+if [ "$VYNUTIT_KONTROLU" = 1 ] || [ "$AKTUALNI_OTISK" != "$ULOZENY_OTISK" ]; then
+  VYSLEDEK="$(zkontroluj_zavislosti)"
+  printf '%s\n' "$AKTUALNI_OTISK" > "$RAZITKO"
+  if [ "$VYNUTIT_KONTROLU" = 1 ]; then
+    echo "závislosti: $VYSLEDEK"
+    # --check je kontrola, ne spuštění. Bez dalších argumentů tady končí,
+    # jinak se pokračuje a argumenty se předají interpretu.
+    [ "$#" -eq 0 ] && exit 0
+  fi
+fi
+
+# --- 3 · spuštění ---------------------------------------------------------
+
+# Kořen projektu na PYTHONPATH, aby `import cb_logger` fungoval odkudkoli.
+# Existující PYTHONPATH se zachová a náš kořen jde před něj.
+export PYTHONPATH="$KOREN${PYTHONPATH:+:$PYTHONPATH}"
+
+# Bez zapisování .pyc do stromu projektu: v adresářích modulů by se míchaly
+# s kódem a `git status` by je hlásil, i když jsou v .gitignore.
+export PYTHONDONTWRITEBYTECODE=1
+
+if [ "$INTERAKTIVNE" = 1 ]; then
+  # Interaktivní konzole se správným prostředím. `-i` je tam i pro případ,
+  # že za `cli` přijde skript nebo `-c` — po doběhnutí zůstane výzva, což je
+  # při zkoumání modulu to, co člověk chce.
+  echo "conBond3 — interaktivní konzole (moduly jsou na PYTHONPATH)" >&2
+  echo "  from cb_logger import LogClient, State" >&2
+  echo "  log = LogClient(component=\"pokus\")   # endpoint si najde sám" >&2
+  echo "  log.info(\"metoda\", state=State.OK, trace=\"q-1\")" >&2
+  echo "  log.close()      # bez tohohle se poslední záznamy ztratí" >&2
+  exec "$PY" -i "$@"
+fi
+
+if [ "$#" -eq 0 ]; then
+  cat <<STAV
+conBond3 — prostředí
+
+  interpret    $PY
+  verze        $("$PY" -c 'import sys; print(sys.version.split()[0])')
+  závislosti   $(zkontroluj_zavislosti)
+  PYTHONPATH   $KOREN
+
+Použití:
+  ./run-python -m unittest discover        testy celého projektu
+  ./run-python -m unittest discover -s cb_logger -t .
+  ./run-python cli                         interaktivní konzole
+  ./run-python --check                     vynutí kontrolu závislostí
+STAV
+  exit 0
+fi
+
+exec "$PY" "$@"

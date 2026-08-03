@@ -1,0 +1,52 @@
+{
+  "config_version": 1,
+  "service": {
+    "host": "127.0.0.1",
+    "port": 42100,
+    "workers": 4,
+    "request_timeout_s": 30,
+    "max_request_bytes": 4194304
+  },
+  "runtime": {
+    "pid_file": "run/service.pid",
+    "port_file": "run/service.port",
+    "stop_timeout_s": 20,
+    "self_log": {
+      "path": "run/self.log",
+      "max_bytes": 1048576,
+      "keep": 3
+    }
+  },
+  "logging": {
+    "level": "info",
+    "methods": []
+  },
+  "module": {
+    "storage": {
+      "dir": "data-persistent",
+      "rotate_max_bytes": 67108864,
+      "retention_days": 30,
+      "objects_dir": "data-persistent/objects"
+    },
+    "routing": {
+      "default": "data-persistent/log.jsonl",
+      "rules": []
+    },
+    "summary": {
+      "path": "data-persistent/summary.json",
+      "flush_interval_s": 5
+    },
+    "watch": {
+      "enabled": true,
+      "port": 42101,
+      "buffer_records": 200,
+      "window_records": 1000,
+      "objects_port": 42102
+    },
+    "objects": {
+      "stream": "data-persistent/objects/objects.jsonl",
+      "max_object_bytes": 262144,
+      "max_depth": 24
+    }
+  }
+}

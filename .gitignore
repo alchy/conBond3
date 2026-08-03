@@ -1,0 +1,27 @@
+# Virtuální prostředí — staví se z requirements, do repozitáře nepatří
+.venv/
+
+# Běhový stav modulů: PID, porty, spool, self.log.
+# Smazání tohoto adresáře musí být neškodné (MODULES.md § 2).
+cb_*/run/
+
+# Perzistentní data modulů. Adresář v repozitáři zůstává (.gitkeep),
+# obsah ne — jsou to logy a naměřená data konkrétního stroje.
+cb_*/data-persistent/*
+!cb_*/data-persistent/.gitkeep
+
+# Velká binární data: váhy, modely, embeddingy.
+# Nejsou v gitu schválně; pořizuje je fetch skript modulu (MODULES.md § 19).
+cb_*/data-persistent/models/
+cb_*/vendor/**/*.model
+models/
+*.model
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# macOS
+.DS_Store

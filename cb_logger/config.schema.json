@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Konfigurace modulu cb-logger",
+  "description": "Schéma nese české vysvětlivky, protože JSON komentáře neumí. Kdo chce vědět, co který klíč dělá a proč má tu hodnotu, čte tenhle soubor; konfigurace vedle něj nese jen hodnoty.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "config_version",
+    "service",
+    "runtime",
+    "module"
+  ],
+  "properties": {
+    "config_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Verze schématu konfigurace. Nekompatibilní změna ji zvýší a start selže s hláškou, co přenastavit. Tiché načtení staré konfigurace podle nového předpokladu vyrobí čísla, která vypadají správně."
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "host",
+        "port",
+        "workers",
+        "request_timeout_s",
+        "max_request_bytes"
+      ],
+      "description": "REST API logovátka.",
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "Adresa, na které služba poslouchá. Výchozí 127.0.0.1 schválně: bez autentizace je otevřený port otevřený vstup, takže vystavení do sítě má být vědomá změna, ne výchozí stav."
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535,
+          "description": "Port REST API. Rozsah cb-logger je 42100-42199, základní port je 42100 (README-MODULES.md § 5). Hodnota 0 znamená, že port přidělí systém — používají to testy, aby neobsazovaly pevná čísla; skutečně přidělený port si služba zapíše do runtime.port_file."
+        },
+        "workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64,
+          "description": "Počet vláken obsluhy. Zápis do logu je krátký a časté volání, takže víc vláken pomáhá; nad počet jader to ale přestává platit."
+        },
+        "request_timeout_s": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Časový strop na jeden požadavek. Volání bez stropu není pomalé, je zamrzlé — a zamrzlá služba se hledá hůř než spadlá."
+        },
+        "max_request_bytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "description": "Největší přijímaná dávka. Limit platí i pro volání z vlastního systému: modul, který věří vlastnímu klientovi, spadne na první chybě v tom klientovi. Výchozí 4 MiB pohodlně pojme dávku 200 záznamů i s plným obsahem."
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pid_file",
+        "port_file",
+        "stop_timeout_s",
+        "self_log"
+      ],
+      "description": "Běhový stav. Všechny cesty jsou relativní vůči adresáři modulu a míří do run/, jehož smazání musí být neškodné.",
+      "properties": {
+        "pid_file": {
+          "type": "string",
+          "description": "Soubor s PID běžící služby. Slouží zároveň jako zámek — dva procesy nad týmiž daty je ztráta dat."
+        },
+        "port_file": {
+          "type": "string",
+          "description": "Soubor se skutečným portem. Podstatný, když je v service.port nula: jinak by nikdo nezjistil, kam se připojit. Čte ho status i testy."
+        },
+        "stop_timeout_s": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Kolik sekund se po SIGTERM čeká na dokončení rozpracovaných požadavků a na dopravení fronty, než přijde SIGKILL."
+        },
+        "self_log": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "max_bytes",
+            "keep"
+          ],
+          "description": "Vlastní log logovátka. Jediné místo v systému, kde se loguje jinak — logovátko nemůže logovat samo do sebe, zacyklilo by se.",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Cesta k vlastnímu logu."
+            },
+            "max_bytes": {
+              "type": "integer",
+              "minimum": 1024,
+              "description": "Velikost, při které se soubor otočí."
+            },
+            "keep": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Kolik otočených souborů se drží."
+            }
+          }
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Vlastní upovídanost logovátka. Nemá endpoint jako ostatní moduly, protože nemá kam posílat — píše do self_log.",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": [
+            "info",
+            "debug"
+          ],
+          "description": "Úroveň vlastních záznamů. Modul, který se dodává se zapnutým debug, je nedodělaný."
+        },
+        "methods": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Zúžení podrobné stopy na vyjmenované metody. Prázdné pole znamená celý modul. Tohle je jediný režim ladění, který jde nechat zapnutý na velkém provozu."
+        }
+      }
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "storage",
+        "routing",
+        "summary",
+        "watch",
+        "objects"
+      ],
+      "description": "Co je vlastní jen logovátku.",
+      "properties": {
+        "storage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "dir",
+            "rotate_max_bytes",
+            "retention_days",
+            "objects_dir"
+          ],
+          "description": "Kam a jak se zapisují záznamy. Formát je JSONL — jeden JSON objekt na řádek, aby šlo připisovat na konec a číst po částech.",
+          "properties": {
+            "dir": {
+              "type": "string",
+              "description": "Adresář se záznamy, relativně k adresáři modulu. Perzistentní data si drží každý modul sám."
+            },
+            "rotate_max_bytes": {
+              "type": "integer",
+              "minimum": 1024,
+              "description": "Velikost, při které se soubor otočí. Debug na plném korpusu udělá gigabajty, takže rotace není detail."
+            },
+            "retention_days": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Kolik dní se otočené soubory drží. Nula znamená bez mazání — ale pak se disk zaplní a nikdo nebude vědět proč."
+            },
+            "objects_dir": {
+              "type": "string",
+              "description": "Adresář s logovanými JSON objekty. Oddělený od textového proudu schválně: objekt je jiný druh záznamu, čte se jiným kukátkem a roste jinou rychlostí — mísit obojí v jednom souboru znamená, že se ani jedno nedá číst."
+            }
+          }
+        },
+        "routing": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "default",
+            "rules"
+          ],
+          "description": "Směrování záznamů. Zatím jeden proud: výchozí pravidlo a prázdný seznam. Směrovač je čistá funkce záznam → cesta, takže se dělení podle zdroje zapne konfigurací a ne přepsáním kódu.",
+          "properties": {
+            "default": {
+              "type": "string",
+              "description": "Kam jde záznam, na který nesedlo žádné pravidlo."
+            },
+            "rules": {
+              "type": "array",
+              "description": "Pravidla shora dolů, první shoda vyhrává. Pravidlo bez podmínky by chytilo všechno, proto musí mít aspoň jednu.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "to"
+                ],
+                "minProperties": 2,
+                "properties": {
+                  "component": {
+                    "type": "string",
+                    "description": "Shoda na komponentu."
+                  },
+                  "level": {
+                    "type": "string",
+                    "enum": [
+                      "info",
+                      "debug"
+                    ],
+                    "description": "Shoda na úroveň."
+                  },
+                  "result": {
+                    "type": "string",
+                    "enum": [
+                      "ok",
+                      "empty",
+                      "skipped",
+                      "error"
+                    ],
+                    "description": "Shoda na stav."
+                  },
+                  "malformed": {
+                    "type": "boolean",
+                    "description": "Shoda na příznak špatně tvarovaného záznamu. Hodí se odklonit je stranou, aby hlavní proud zůstal čistý."
+                  },
+                  "to": {
+                    "type": "string",
+                    "description": "Cílový soubor, relativně k adresáři modulu."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "flush_interval_s"
+          ],
+          "description": "Souhrn počtů podle komponenta × metoda × stav. Přežívá restart schválně: čísla, která mizí při každém restartu, se nedají použít k hodnocení systému.",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Kam se souhrn ukládá. Zápis je atomický — do dočasného souboru a přejmenovat."
+            },
+            "flush_interval_s": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Jak často se souhrn ukládá. Častěji znamená míň ztracených počtů při pádu, ale víc zápisů."
+            }
+          }
+        },
+        "watch": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "port",
+            "buffer_records",
+            "window_records",
+            "objects_port"
+          ],
+          "description": "Sledovací stránka: druhý listener, na kterém jde zápis do logu sledovat živě v prohlížeči. Jen čte, nic neovládá.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Vypnutá stránka je na stroji bez displeje o port míň. Že je vypnutá, musí být vidět v GET /v1/health — systém s vypnutou částí není tentýž systém."
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535,
+              "description": "Port stránky. Bere se z rozsahu modulu, tedy 42101 — sáhnout na první volné číslo mimo rozsah znamená sáhnout na cizí."
+            },
+            "buffer_records": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kolik posledních záznamů drží SERVER v paměti, aby nově připojený prohlížeč nezačínal u prázdného okna. Platí se za to pamětí serveru, tedy jednou za celý systém, ne za každou otevřenou záložku."
+            },
+            "window_records": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kolik záznamů drží OKNO v PROHLÍŽEČI. Při překročení se nejstarší odsouvají. Bez tohohle stropu by stránka nechaná otevřená přes noc narostla o statisíce řádků a prohlížeč by se zadrhl — a to zrovna ve chvíli, kdy se něco děje a člověk se na ni dívá. Hodnota má být aspoň tak velká jako buffer_records, jinak se část toho, co server pošle při připojení, hned zahodí."
+            },
+            "objects_port": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535,
+              "description": "Port kukátka na JSON objekty. Chová se stejně jako textové — objekty se posouvají jako řádky — ale každý se vykresluje jako rozbalitelný strom. Bere se z rozsahu modulu, tedy 42102."
+            }
+          }
+        },
+        "objects": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "stream",
+            "max_object_bytes",
+            "max_depth"
+          ],
+          "description": "Logování JSON objektů. Jiný druh logu než text: záznamem není řádek, ale celý objekt, který se v kukátku zobrazuje jako rozbalitelný strom.",
+          "properties": {
+            "stream": {
+              "type": "string",
+              "description": "Soubor JSONL, do kterého objekty tečou. Jeden objekt na řádek, aby šlo připisovat na konec a číst po částech."
+            },
+            "max_object_bytes": {
+              "type": "integer",
+              "minimum": 256,
+              "description": "Strop na jeden objekt. Zalogovat celé pole 26 tisíc vět by udělalo záznam, který nikdo neotevře a který zaplní disk. Objekt nad strop se uloží oříznutý a označený, ne zahozený — platí totéž co u špatně tvarovaného záznamu: chybějící záznam není nic."
+            },
+            "max_depth": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Nejhlubší úroveň zanoření, která se ukládá. Hlubší se nahradí značkou. Chrání kukátko před stromem, který se nedá rozbalit, a zápis před cyklickou strukturou."
+            }
+          }
+        }
+      }
+    }
+  }
+}
