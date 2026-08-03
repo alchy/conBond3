@@ -4,6 +4,16 @@ Pošle se věta, dostane se kvalitní rozbor. Modul kromě volání UDPipe oprav
 jeho tokenizaci (zkratky, řadové číslovky, číselné skupiny — zhruba každá
 jedenáctá věta korpusu ji má vadnou) a rozebrané věty si trvale pamatuje.
 
+```python
+from cb_udpipe import UdpipeClient
+
+parser = UdpipeClient(endpoint=cfg["module"]["udpipe_endpoint"], log=log)
+vety = parser.parse(text="R.U.R. je drama Karla Čapka.", trace=trace)
+
+vety.sentences[0].tokens[0].form        # "R.U.R."  ← opravená tokenizace
+vety.sentences[0].from_cache            # bylo to už rozebrané?
+```
+
 Co je tady, je veřejné API. Co tady není, je vnitřek a smí se kdykoli změnit
 (README-MODULES.md § 3).
 """
@@ -17,4 +27,29 @@ __version__ = "0.1.0"
 #: obě, aby klienti měli čas přejít.
 __api__ = ["v1"]
 
-__all__ = ["__version__", "__api__"]
+# Import až za verzemi: `client.py` si `__api__` bere, aby ověřil, že služba
+# mluví jazykem, kterému rozumí.
+from cb_udpipe.client import (  # noqa: E402
+    IncompatibleApi,
+    ServiceUnavailable,
+    UdpipeClient,
+    from_config,
+)
+from cb_udpipe.conllu import Multiword, Sentence, Token  # noqa: E402
+from cb_udpipe.service import ParsedSentence, ParseResult  # noqa: E402
+
+__all__ = [
+    # klient — tohle si berou ostatní moduly
+    "UdpipeClient",
+    "from_config",
+    "ServiceUnavailable",
+    "IncompatibleApi",
+    # datové typy, které klient vrací
+    "ParseResult",
+    "ParsedSentence",
+    "Sentence",
+    "Token",
+    "Multiword",
+    "__version__",
+    "__api__",
+]

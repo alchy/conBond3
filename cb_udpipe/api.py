@@ -277,9 +277,16 @@ def _parsed_na_json(v: ParsedSentence) -> dict[str, Any]:
 
 
 def _veta_na_json(v: Any) -> dict[str, Any]:
-    """Převede větu z `tokenize_only` na JSON objekt."""
+    """Převede větu z `tokenize_only` na JSON objekt.
+
+    `sent_id` se posílá taky, i když ho volající obvykle nepotřebuje: bez něj
+    se cesta přes síť rozešla s cestou v procesu a zkouška shody tváří
+    (`T-K3`) na to přišla. Co typ nese, musí projít drátem — jinak je „totéž"
+    jen do chvíle, než někdo sáhne na chybějící pole.
+    """
     return {
         "source": v.source,
+        "sent_id": v.sent_id,
         "tokens": [_token_na_json(t) for t in v.tokens],
         "multiword": [{"id": list(m.id), "form": m.form, "misc": m.misc}
                       for m in v.multiword],
