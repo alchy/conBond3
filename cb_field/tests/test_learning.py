@@ -11,10 +11,13 @@ from cb_field.tests.test_templates import (BEZELA, DO, KOCKA, LESA, PARKU,
 class TestHebb(unittest.TestCase):
 
     def test_souaktivace_vytvori_hranu_se_zdrojem_hebb(self):
+        # třetí věta bez páru je nutná: kde se vše souvyskytuje všude,
+        # je PMI po právu nula — „nad náhodu" potřebuje kontrast
         corpus = Corpus(r=1)
         for tokens, source in (
                 ((SEL, PES, DO, LESA, TECKA), "Šel pes do lesa."),
-                ((BEZELA, PES, DO, PARKU, TECKA), "Běžel pes do parku.")):
+                ((BEZELA, PES, DO, PARKU, TECKA), "Běžel pes do parku."),
+                ((BEZELA, KOCKA, TECKA), "Běžela kočka.")):
             corpus.fields.append(SentenceField(
                 tokens, r=1, registry=corpus.registry, source=source))
         stats = hebb(corpus, min_count=2)
