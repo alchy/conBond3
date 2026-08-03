@@ -58,6 +58,21 @@ dáš tam if, není rozvoj. nejde o stavový automat."*
    `if`.
 4. **Hebb** — dnes nad surovými souvýskyty škodí; má běžet až nad
    strukturou a s NPMI prahem odvozeným z dat.
-5. **Dvojité r** (r_words × r_sentences) — rozebrané, nepostavené;
+5. **Refaktor učení — rozhodnuto 2026-08-03 (J.), pořadí závazné:**
+   1. **tanh po každém kroku šíření** — saturace do −1…+1, tedy do
+      rozsahu, který váhy už mají; odstraní huby i potřebu IDF náplasti.
+      Dnes systém běží zcela lineárně, což je hlavní příčina loss ve
+      stovkách a trefů 0/32.
+   2. **normalizace skóre** (kosinus nad pytlem) — délka věty přestane
+      rozhodovat; loss spadne do jednotek a stane se čitelným.
+   3. **relativní marže** místo absolutní 1,0.
+   4. **Adam** místo dnešního SGD s konstantním η=0,15 (momenty m, v,
+      β₁=0.9, β₂=0.999, ε=1e-8; pár řádků numpy nad řídkými hranami —
+      žádný framework do modulu, § 19). Aktualizují se jen hrany se
+      zdrojem hebb/etalon; axiomy zůstávají chráněné.
+   Teprve po tomhle refaktoru dává smysl webová stránka s vysvětlením
+   návrhu Q→A (zadání J.), protože bude popisovat mechaniku, která se
+   sama nepřehlušuje.
+6. **Dvojité r** (r_words × r_sentences) — rozebrané, nepostavené;
    je to čistý rozvoj konceptu (kontextové pytle + bonus tématu na
    konec), proto má přednost před dalším laděním.
