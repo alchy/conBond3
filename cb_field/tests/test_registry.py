@@ -58,14 +58,14 @@ PES = Token(id=2, form="pes", lemma="pes", upos="NOUN",
 class TestAppendOnly(unittest.TestCase):
 
     def test_add_prideluje_indexy_a_je_idempotentni(self):
-        reg = VerticalRegistry()
+        reg = VerticalRegistry(anchors=False)
         self.assertEqual(reg.add("UPOS=NOUN"), 0)
         self.assertEqual(reg.add("Case=Nom"), 1)
         self.assertEqual(reg.add("UPOS=NOUN"), 0)  # existující index se nemění
         self.assertEqual(len(reg), 2)
 
     def test_klic_podle_pozicniho_argumentu(self):
-        reg = VerticalRegistry(["UPOS=NOUN", "Case=Nom"])
+        reg = VerticalRegistry(["UPOS=NOUN", "Case=Nom"], anchors=False)
         self.assertEqual(reg.key(0), "UPOS=NOUN")
         self.assertEqual(reg.key(1), "Case=Nom")
         self.assertEqual(reg.index("Case=Nom"), 1)
@@ -86,28 +86,28 @@ class TestRoundTrip(unittest.TestCase):
         self.assertIn("Number=Plur", acts)
         self.assertIn("Number=Sing", acts)
 
-        reg = VerticalRegistry()
+        reg = VerticalRegistry(anchors=False)
         vec = reg.vectorize(acts)
         self.assertEqual(vec.dtype, np.float32)
         self.assertEqual(len(vec), len(acts))
         self.assertEqual(reg.unvectorize(vec), acts)
 
     def test_zaporna_vaha_prezije(self):
-        reg = VerticalRegistry()
+        reg = VerticalRegistry(anchors=False)
         vec = reg.vectorize({"Polarity=Neg": -0.7})
         self.assertEqual(reg.unvectorize(vec), {"Polarity=Neg": -0.7})
 
     def test_nulovy_vektor_je_prazdny_objekt(self):
-        reg = VerticalRegistry(["UPOS=NOUN", "Case=Nom"])
+        reg = VerticalRegistry(["UPOS=NOUN", "Case=Nom"], anchors=False)
         self.assertEqual(reg.unvectorize(np.zeros(2)), {})
 
     def test_grow_false_odmitne_neznamou_vertikalu(self):
-        reg = VerticalRegistry(["UPOS=NOUN"])
+        reg = VerticalRegistry(["UPOS=NOUN"], anchors=False)
         with self.assertRaises(ValueError):
             reg.vectorize({"UPOS=VERB": 0.7}, grow=False)
 
     def test_delsi_vektor_nez_registr_je_chyba(self):
-        reg = VerticalRegistry(["UPOS=NOUN"])
+        reg = VerticalRegistry(["UPOS=NOUN"], anchors=False)
         with self.assertRaises(ValueError):
             reg.unvectorize(np.zeros(5))
 
@@ -221,7 +221,7 @@ class TestKotvyAVazby(unittest.TestCase):
         self.assertNotIn("Polarity=Pos", activations(expand_token(PES)))
 
     def test_vazby_prezijou_save_load(self):
-        reg = VerticalRegistry()
+        reg = VerticalRegistry(anchors=False)
         reg.link("ANCHOR=time:past", "ANCHOR=time", 1.0)
         with tempfile.TemporaryDirectory() as d:
             cesta = Path(d) / "verticals.json"
@@ -233,8 +233,7 @@ class TestKotvyAVazby(unittest.TestCase):
     def test_parovani_otazky_s_odpovedi_pres_vazby(self):
         # „Kdy?" (QANCHOR=time:when) se má potkat s „přijde" (time:fut)
         # v uzlu ANCHOR=time — a nemá se potkat s „tam" (space).
-        reg = VerticalRegistry()
-        seed_anchor_links(reg)
+        reg = VerticalRegistry()          # kotevní vazby má od narození
         otazka = reg.vectorize({"QANCHOR=time:when": 0.7})
         odpoved = reg.vectorize({"ANCHOR=time:fut": 0.7})
         jinam = reg.vectorize({"ANCHOR=space": 0.7})
@@ -273,7 +272,7 @@ class TestActivationsTrida(unittest.TestCase):
 
     def test_poskytnuti_jako_pole_v_obou_reprezentacich(self):
         acts = Activations.from_row(expand_token(PETR))
-        reg = VerticalRegistry()
+        reg = VerticalRegistry(anchors=False)
         meta_pole = acts.as_array(reg)
         comp_pole = acts.as_array(reg, Representation.COMPLETE)
         # complete má o slovní vertikálu víc a rekonstruuje se z něj slovo
@@ -285,7 +284,7 @@ class TestActivationsTrida(unittest.TestCase):
 
     def test_zmena_vahy_se_propise_do_pole(self):
         acts = Activations.from_row(expand_token(PETR))
-        reg = VerticalRegistry()
+        reg = VerticalRegistry(anchors=False)
         acts.set("Case=Nom", -0.7)
         zpet = reg.unvectorize(acts.as_array(reg))
         self.assertEqual(zpet["Case=Nom"], -0.7)
@@ -294,7 +293,7 @@ class TestActivationsTrida(unittest.TestCase):
 class TestTrvalost(unittest.TestCase):
 
     def test_save_load_zachova_indexy_a_rust_pokracuje(self):
-        reg = VerticalRegistry()
+        reg = VerticalRegistry(anchors=False)
         reg.vectorize(activations(expand_token(SLA)))
         klice_pred = reg.keys()
         with tempfile.TemporaryDirectory() as d:

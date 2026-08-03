@@ -36,7 +36,7 @@ class VerticalRegistry:
     pořadí prvního přidání, ne obsah klíče.
     """
 
-    def __init__(self, keys: Iterable[str] = ()) -> None:
+    def __init__(self, keys: Iterable[str] = (), anchors: bool = True) -> None:
         self._keys: list[str] = []
         self._index: dict[str, int] = {}
         #: Vážené vazby mezi vertikálami: (od, do) → váha. Jeden mechanismus
@@ -44,6 +44,13 @@ class VerticalRegistry:
         self._links: dict = {}
         for key in keys:
             self.add(key)
+        # Hierarchie kotev je součást jazyka systému, ne volitelný doplněk —
+        # registr se s ní rodí, aby ji nikdo nemusel pamatovat. anchors=False
+        # dá holý registr (testy mechanismu, load — ten indexy rekonstruuje
+        # ze souboru a nesmí mu do nich nic mluvit).
+        if anchors:
+            from cb_field.service import seed_anchor_links
+            seed_anchor_links(self)
 
     # --- osa x ----------------------------------------------------------
 
@@ -215,7 +222,7 @@ class VerticalRegistry:
             raise ValueError(
                 f"neznámá verze formátu registru {version!r}; "
                 f"tahle čtečka umí {FORMAT_VERSION}")
-        registry = cls(data["keys"])
+        registry = cls(data["keys"], anchors=False)
         for src, dst, weight in data.get("links", []):
             registry.link(src, dst, weight)
         return registry
