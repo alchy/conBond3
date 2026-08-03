@@ -1,0 +1,4 @@
+[submodule "cb_udpipe/vendor/udpipe2-src"]
+	path = cb_udpipe/vendor/udpipe2-src
+	url = https://github.com/ufal/udpipe.git
+	branch = udpipe-2

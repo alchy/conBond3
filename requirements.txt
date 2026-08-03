@@ -19,17 +19,14 @@
 # --------------------------------------------------------------------------
 
 # --- cb-udpipe: vendorovaný UDPipe 2 -------------------------------------
-# Zatím zakomentované: modul cb-udpipe ještě neexistuje a instalovat 1,5 GB
-# knihoven dřív, než je co obsluhovat, je závislost bez odběratele.
-# Odkomentuje se ve chvíli, kdy cb-udpipe vznikne.
-#
+# Odkomentováno při stavbě modulu cb-udpipe (2026-08-03).
 # Verze jsou přišpendlené schválně — je to ověřená kombinace, na které rozbor
 # běží. TensorFlow s transformers se umí rozejít a hledat to podruhé je
 # zbytečná práce. (Převzato z conBond2, kde je to odzkoušené.)
 #
-# tensorflow==2.21.0
-# tf_keras==2.21.0
-# transformers==4.49.0
-# ufal.udpipe==1.4.0.1
-# ufal.morphodita==1.11.3.3
-# ufal.chu_liu_edmonds==1.0.3
+tensorflow==2.21.0
+tf_keras==2.21.0
+transformers==4.49.0
+ufal.udpipe==1.4.0.1
+ufal.morphodita==1.11.3.3
+ufal.chu_liu_edmonds==1.0.3

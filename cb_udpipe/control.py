@@ -51,9 +51,18 @@ LAUNCHER = MODULE_DIR.parent / "cb-udpipe.py"
 #: musí pamatovat, jak se model získává (README-MODULES.md § 19).
 FETCH_SCRIPT = MODULE_DIR / "scripts" / "fetch-models.sh"
 
-#: Kolik sekund se čeká na naši službu. UDPipe má vlastní, delší strop
-#: v konfiguraci — načítá model o 357 MB.
-START_TIMEOUT_S = 15.0
+#: Kolik sekund se čeká na naši službu **navíc** k času, který si bere UDPipe.
+#: Rodičovský strop musí být větší než potomkův, jinak rodič ohlásí neúspěch,
+#: zatímco potomek ještě poctivě čeká — a v `run/` zůstane běžící proces,
+#: o kterém `start` tvrdí, že nenaběhl.
+START_TIMEOUT_S = 20.0
+
+#: Projektový interpret. UDPipe potřebuje TensorFlow a transformers, které
+#: leží jen v `.venv`; náš kód nepotřebuje nic a běží na jakémkoli Pythonu
+#: 3.11. Ta hranice je reálná a tady se projeví: `sys.executable` je při
+#: spuštění přes shebang (`./cb-udpipe.py`) systémový Python, ve kterém UDPipe
+#: nenajde ani numpy.
+VENV_PYTHON = MODULE_DIR.parent / ".venv" / "bin" / "python"
 
 #: Jak často se kontroluje, jestli už služba odpovídá.
 POLL_S = 0.1
@@ -61,6 +70,15 @@ POLL_S = 0.1
 #: Kolik jader se nechá systému, když se počet vláken odvozuje. Bez rezervy
 #: stroj při rozboru zamrzne (převzato z conBondu2, `udpipe.sh`).
 JADRA_SYSTEMU = 2
+
+#: Jméno, pod kterým server model nabízí, a zároveň jeho výchozí model.
+#: Náš klient ho **neposílá** — server pak použije výchozí — ale server ho
+#: vyžaduje v argumentech.
+DEFAULT_MODEL_NAME = "czech"
+
+#: Varianta modelu; určuje i jméno tokenizéru uvnitř adresáře modelu
+#: (`cs_pdtc.tokenizer`). Je vlastností modelu, ne naší volbou.
+MODEL_VARIANT = "cs_pdtc"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -152,9 +170,13 @@ def cmd_start(config: dict[str, Any], *, foreground: bool,
         print(f"nepodařilo se spustit {LAUNCHER}: {e}", file=sys.stderr)
         return EXIT_FAILED
 
-    if _cekej_na_version(config, START_TIMEOUT_S) is None:
+    # Rodič musí čekat DÝL než potomek na UDPipe, jinak ohlásí neúspěch,
+    # zatímco potomek ještě poctivě startuje — a v `run/` zůstane běžící
+    # proces, o kterém `start` tvrdí, že nenaběhl.
+    strop = config["module"]["upstream"]["start_timeout_s"] + START_TIMEOUT_S
+    if _cekej_na_version(config, strop) is None:
         print(
-            f"cb-udpipe nenaběhl do {START_TIMEOUT_S:.0f} s\n"
+            f"cb-udpipe nenaběhl do {strop:.0f} s\n"
             f"  konfigurace: {config['_meta']['path']}\n"
             f"  log UDPipe:  {_udpipe_log(config)}",
             file=sys.stderr,
@@ -274,13 +296,23 @@ def _spust_udpipe(config: dict[str, Any]) -> subprocess.Popen | None:
     log_cesta = _udpipe_log(config)
     log_cesta.parent.mkdir(parents=True, exist_ok=True)
 
+    # Poziční kontrakt serveru: port, výchozí model, pak čtveřice
+    # (jména, cesta, varianta, poděkování).
+    #
+    # `czech` musí být mezi jmény doslova. Server sice ze jména odvozuje
+    # prefixy po pomlčkách (`czech-pdtc-ud-2.17` → … → `czech`), ale to
+    # funguje jen u modelů pojmenovaných po jazyce; `cs_all-ud-2.17-251125`
+    # dá prefixy `cs_all-ud-2.17`, `cs_all-ud`, `cs_all` — a `czech` mezi
+    # nimi není. Server pak spadne na `assert self.default_model in
+    # self.models_by_names`. Uvedením `czech` napřímo to přestane záviset
+    # na tom, jak se model jmenuje.
     prikaz = [
-        sys.executable, "udpipe2_server.py", str(u["port"]),
+        _interpret_udpipe(), "udpipe2_server.py", str(u["port"]),
         f"--threads={_vlakna(u)}",
-        "czech",
-        f"{u['model']}:cs:ces:cze",
+        DEFAULT_MODEL_NAME,
+        f"{DEFAULT_MODEL_NAME}:{u['model']}:cs:ces:cze",
         str(Path(u["model_dir"]).resolve()),
-        "cs_pdtc",
+        MODEL_VARIANT,
         "https://ufal.mff.cuni.cz/udpipe/2/models",
     ]
     prostredi = {**os.environ, **_prostredi_udpipe(u)}
@@ -294,6 +326,31 @@ def _spust_udpipe(config: dict[str, Any]) -> subprocess.Popen | None:
     except OSError as e:
         print(f"nepodařilo se spustit UDPipe: {e}", file=sys.stderr)
         return None
+
+
+def _interpret_udpipe() -> str:
+    """Interpret, kterým se spouští UDPipe.
+
+    **Ne `sys.executable`.** Při spuštění přes shebang (`./cb-udpipe.py start`)
+    je to systémový Python, ve kterém UDPipe nenajde ani numpy — natož
+    TensorFlow. Naše moduly nic z toho nepotřebují a běží na jakémkoli
+    Pythonu 3.11, ale vendorovaný nástroj si nese těžké závislosti do
+    sdíleného `.venv` (README-MODULES.md § 19).
+
+    Výstup:
+        Cesta k `.venv/bin/python`, když existuje; jinak `sys.executable`
+        s hláškou — spustit se to pak nejspíš nepodaří, ale je lepší to
+        zkusit a ohlásit důvod než odmítnout start.
+
+    Při chybě:
+        Nevyhazuje.
+    """
+    if VENV_PYTHON.is_file():
+        return str(VENV_PYTHON)
+    print(f"chybí projektové prostředí {VENV_PYTHON}, "
+          f"UDPipe se zkusí spustit interpretem {sys.executable}",
+          file=sys.stderr)
+    return sys.executable
 
 
 def _logovatko(config: dict[str, Any]) -> Any:
