@@ -70,3 +70,110 @@ Auto stálo celý týden na ulici.
 Zloděj utekl oknem.
 Policie dorazila za pět minut.
 Nikde nebylo ani živáčka.
+Pavel je v práci.
+Eva je doma.
+Tomáš byl včera v Plzni.
+Lucie byla ráno u lékaře.
+Honza bude zítra ve škole.
+Rodiče budou večer v divadle.
+Petr bydlí v Liberci.
+Marie bydlí u nádraží.
+Soused bydlí přes ulici.
+Učitel bydlí blízko školy.
+Karel pracuje v továrně.
+Eva pracuje na poště.
+Pavel pracuje od rána.
+Prodavačka pracuje v obchodě.
+Řidič čeká před nádražím.
+Kuchař vaří v kuchyni.
+Doktor ordinuje v úterý.
+Jana šla do obchodu.
+Petr šel do práce pěšky.
+Děti šly do parku.
+Marie jela do Ostravy vlakem.
+Tomáš jel do Brna autem.
+Turisté jeli na hory autobusem.
+Soňa letěla do Paříže v pátek.
+Pavel přijel z Liberce večer.
+Eva přijela ze školy pozdě.
+Honza přišel z tréninku unavený.
+Babička přišla na návštěvu v neděli.
+Karel se vrátil z práce v šest.
+Jana se vrátila z nákupu.
+Studenti se vrátili z exkurze.
+Děda se vrátil z ryb.
+Petr odjel do Vídně v pondělí.
+Marie odjela na služební cestu.
+Sousedé odjeli na dovolenou.
+Lucie odešla ze schůzky dřív.
+Tomáš zůstal v kanceláři do večera.
+Eva zůstala doma s dětmi.
+Turisté zůstali na chatě přes noc.
+Pes zůstal venku.
+Kočka je na půdě.
+Pes spí v boudě.
+Králík utekl ze zahrady.
+Kůň se pase na louce.
+Ptáci odletěli na jih v říjnu.
+Petr snídá v kuchyni.
+Jana obědvá v jídelně.
+Rodina večeří na terase.
+Karel nakupuje v sobotu.
+Marie uklízí v pátek.
+Děti snídají v sedm.
+Pavel vstává v pět ráno.
+Eva chodí spát v deset.
+Honza dorazil na nádraží včas.
+Vlak přijel na druhou kolej.
+Autobus zastavil před školou.
+Tramvaj jede na Václavské náměstí.
+Letadlo odlétá z Ruzyně v poledne.
+Loď připlula do přístavu ráno.
+Petr čeká na zastávce.
+Marie čeká před kinem.
+Studenti čekají ve třídě.
+Jana sedí u okna.
+Karel stojí u dveří.
+Děda sedí na lavičce v parku.
+Babička odpočívá na zahradě.
+Soňa běhá v parku každé ráno.
+Tomáš plave v bazénu ve středu.
+Děti bruslí na rybníce v zimě.
+Rodina lyžuje v Alpách v únoru.
+Kamarádi hrají fotbal za školou.
+Pavel cvičí v posilovně večer.
+Petr nebyl dnes v práci.
+Jana nebyla na obědě.
+Karel nepřišel na schůzku.
+Marie nejela do Prahy.
+Děti nebyly ve škole v pátek.
+Eva se nevrátila včas.
+Vlak nepřijel na čas.
+Obchod je u kostela.
+Lékárna je vedle pošty.
+Škola je naproti parku.
+Hospoda je na rohu.
+Kancelář je ve třetím patře.
+Chalupa stojí u lesa.
+Garáž je za domem.
+Sklep je pod schody.
+Půda je nad ložnicí.
+Klíče jsou v šuplíku.
+Auto je v garáži.
+Kolo je ve sklepě.
+Taška zůstala v autě.
+Mobil ležel na stole.
+Brýle byly v kabelce.
+Deštník visí v předsíni.
+Schůze začíná v devět.
+Vyučování končí ve dvě.
+Oběd se podává v poledne.
+Ordinace otevírá v sedm.
+Obchod zavírá v osm večer.
+Vlak odjíždí za deset minut.
+Petr přijde za hodinu.
+Marie se vrátí příští týden.
+Karel odjede v březnu.
+Dovolená začíná v červenci.
+Zima přijde brzy.
+Jaro začalo v dubnu.
