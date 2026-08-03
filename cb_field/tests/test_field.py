@@ -28,7 +28,7 @@ class TestSentenceField(unittest.TestCase):
         self.assertEqual(len(field.baskets), 3)
         self.assertEqual(len(field.activations), 3)
         # otázkovost prošla dovnitř bez ručního protahování:
-        self.assertEqual(field.activations[0].get("QANCHOR=space:loc"), 0.7)
+        self.assertEqual(field.activations[0].get("QANCHOR=space"), 0.7)
 
     def test_matice_ma_jednotnou_sirku(self):
         field = SentenceField(VETA)

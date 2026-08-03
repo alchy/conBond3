@@ -204,12 +204,13 @@ CLOSED_UPOS = frozenset(
 #: PDT: kde=LOC, kam=DIR3, odkud=DIR1, kudy=DIR2; kdy=TWHEN, odkdy=TSIN,
 #: dokdy=TTILL; kolik=EXT; kdo/co=ACT/PAT; jak=MANN; proč=CAUS.
 INTERROGATIVE_ANCHORS = {
-    "kde": "space:loc", "kam": "space:to", "odkud": "space:from",
-    "kudy": "space:through",
-    "kdy": "time:when", "odkdy": "time:since", "dokdy": "time:till",
-    "kolik": "quantity",
-    "kdo": "entity", "co": "entity", "čí": "entity",
-    "jak": "manner", "proč": "cause",
+    "kde": ("space", "dir:at"), "kam": ("space", "dir:to"),
+    "odkud": ("space", "dir:from"), "kudy": ("space", "dir:through"),
+    "kdy": ("time", "dir:at"), "odkdy": ("time", "dir:from"),
+    "dokdy": ("time", "dir:to"),
+    "kolik": ("quantity",),
+    "kdo": ("entity",), "co": ("entity",), "čí": ("entity",),
+    "jak": ("manner",), "proč": ("cause",),
 }
 
 #: Kotvy ukazovacích příslovcí: strana odpovědi (ukazují do prostoru
@@ -217,12 +218,32 @@ INTERROGATIVE_ANCHORS = {
 #: tam, kde ho slovo samo nenese („tam" může být poloha i směr; rozhodne
 #: až slovesná skupina) — vazby v registru kotvu stejně svedou do dimenze.
 DEICTIC_ANCHORS = {
-    "tam": "space", "tady": "space", "zde": "space",
-    "tudy": "space:through", "odtud": "space:from",
-    "všude": "space", "nikde": "space", "někde": "space",
-    "tehdy": "time", "teď": "time", "nyní": "time", "vždy": "time",
-    "nikdy": "time", "někdy": "time", "pak": "time", "potom": "time",
-    "tak": "manner", "proto": "cause",
+    "tam": ("space",), "tady": ("space", "dir:at"), "zde": ("space", "dir:at"),
+    "tudy": ("space", "dir:through"), "odtud": ("space", "dir:from"),
+    "všude": ("space",), "nikde": ("space",), "někde": ("space",),
+    "tehdy": ("time",), "teď": ("time",), "nyní": ("time",),
+    "vždy": ("time",), "nikdy": ("time",), "někdy": ("time",),
+    "pak": ("time",), "potom": ("time",),
+    "tak": ("manner",), "proto": ("cause",),
+}
+
+#: Směr, který předložka dává svému jménu — klíč (lemma, pád, který
+#: předložka řídí). Kotva se při stavbě pole PŘENÁŠÍ na hlavu (jádro):
+#: „do Brna" → Brno nese dir:to, předložka už ne. V zatřeseném koši
+#: (bez pořadí) by jinak sousední předložka patřila komukoli. Dimenzi
+#: (space/time) předložka neurčuje — „v Praze" × „v lednu" rozliší typ
+#: jména (P4), směr je ale společný oběma (odkdy je time+from).
+PREPOSITION_DIRECTIONS = {
+    ("do", "Gen"): "dir:to", ("k", "Dat"): "dir:to",
+    ("na", "Acc"): "dir:to", ("v", "Acc"): "dir:to",
+    ("z", "Gen"): "dir:from", ("od", "Gen"): "dir:from",
+    ("přes", "Acc"): "dir:through", ("kolem", "Gen"): "dir:through",
+    ("v", "Loc"): "dir:at", ("na", "Loc"): "dir:at",
+    ("u", "Gen"): "dir:at", ("při", "Loc"): "dir:at",
+    ("před", "Ins"): "dir:at", ("za", "Ins"): "dir:at",
+    ("pod", "Ins"): "dir:at", ("nad", "Ins"): "dir:at",
+    ("mezi", "Ins"): "dir:at", ("vedle", "Gen"): "dir:at",
+    ("naproti", "Dat"): "dir:at", ("blízko", "Gen"): "dir:at",
 }
 
 #: Zájmenná příslovce se zápornou polaritou: jejich kotva svítí záporně
@@ -232,12 +253,13 @@ NEGATIVE_DEICTICS = frozenset({"nikde", "nikdy", "nijak", "nikam"})
 #: Dimenze kotev a jejich upřesnění — zdroj hierarchických vazeb
 #: v registru (ANCHOR=dim:ref → ANCHOR=dim @1.0; QANCHOR → ANCHOR=dim).
 ANCHOR_DIMENSIONS = {
-    "space": ("loc", "to", "from", "through"),
-    "time": ("when", "since", "till", "past", "pres", "fut"),
+    "space": (),
+    "time": ("past", "pres", "fut"),
     "quantity": ("sing", "plur", "count"),
     "entity": (),
     "manner": (),
     "cause": (),
+    "dir": ("at", "to", "from", "through"),
 }
 
 
@@ -254,6 +276,9 @@ def seed_anchor_links(registry) -> None:
         registry.link(f"QANCHOR={dim}", f"ANCHOR={dim}", 1.0)
         for ref in refs:
             registry.link(f"ANCHOR={dim}:{ref}", f"ANCHOR={dim}", 1.0)
+            # most na téže úrovni (přesná shoda upřesnění) i do dimenze —
+            # správný směr tak dostane víc bodů než jen správná dimenze
+            registry.link(f"QANCHOR={dim}:{ref}", f"ANCHOR={dim}:{ref}", 1.0)
             registry.link(f"QANCHOR={dim}:{ref}", f"ANCHOR={dim}", 1.0)
 
 #: Slovní druhy, jejichž Number je výrok o množství. Shoda na ADJ/DET je
@@ -382,15 +407,14 @@ def activations(row: dict, question: bool = False) -> dict:
     # zájmenná příslovce kotví záporně — „nikde" je výrok o prostoru,
     # ale proti němu.
     if lemma is not None and prontype:
-        dimension = INTERROGATIVE_ANCHORS.get(lemma.value)
-        if dimension:
-            side = "QANCHOR" if question and "Int" in prontype else "ANCHOR"
-            acts[f"{side}={dimension}"] = lemma.weight
-        dimension = DEICTIC_ANCHORS.get(lemma.value)
-        if dimension:
+        anchors = INTERROGATIVE_ANCHORS.get(lemma.value, ())
+        side = "QANCHOR" if question and "Int" in prontype else "ANCHOR"
+        for anchor in anchors:
+            acts[f"{side}={anchor}"] = lemma.weight
+        for anchor in DEICTIC_ANCHORS.get(lemma.value, ()):
             weight = (-abs(lemma.weight)
                       if lemma.value in NEGATIVE_DEICTICS else lemma.weight)
-            acts[f"ANCHOR={dimension}"] = weight
+            acts[f"ANCHOR={anchor}"] = weight
     return acts
 
 
@@ -461,6 +485,18 @@ class Activations:
                 layer[key] = weight
                 return
         raise KeyError(f"vertikála {key!r} v aktivacích není")
+
+    def graft(self, key: str, weight: float) -> None:
+        """Naroubuje kotvu při stavbě pole (přenos po hraně, P2).
+
+        Na rozdíl od set() smí klíč založit — je to stavba řádku, ne
+        ladění: takhle jádro dostává směr od své předložky. Rozsah vah
+        hlídá stejně.
+        """
+        if not WEIGHT_MIN <= weight <= WEIGHT_MAX:
+            raise ValueError(f"váha {weight} je mimo rozsah "
+                             f"{WEIGHT_MIN} … {WEIGHT_MAX}")
+        self._meta[key] = weight
 
     # --- pohledy --------------------------------------------------------
 

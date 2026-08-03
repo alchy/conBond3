@@ -200,10 +200,12 @@ class TestKotvyAVazby(unittest.TestCase):
         self.assertNotIn("ANCHOR=time:pres", acts)
 
     def test_kde_kotvi_podle_strany_vety(self):
-        self.assertIn("QANCHOR=space:loc",
-                      activations(expand_token(KDE), question=True))
-        self.assertIn("ANCHOR=space:loc",
-                      activations(expand_token(KDE), question=False))
+        v_otazce = activations(expand_token(KDE), question=True)
+        self.assertIn("QANCHOR=space", v_otazce)     # dimenze
+        self.assertIn("QANCHOR=dir:at", v_otazce)    # směr (poloha)
+        v_oznameni = activations(expand_token(KDE), question=False)
+        self.assertIn("ANCHOR=space", v_oznameni)
+        self.assertIn("ANCHOR=dir:at", v_oznameni)
 
     def test_zaporne_deiktikum_kotvi_zaporne(self):
         acts = activations(expand_token(NIKDY))
@@ -234,7 +236,7 @@ class TestKotvyAVazby(unittest.TestCase):
         # „Kdy?" (QANCHOR=time:when) se má potkat s „přijde" (time:fut)
         # v uzlu ANCHOR=time — a nemá se potkat s „tam" (space).
         reg = VerticalRegistry()          # kotevní vazby má od narození
-        otazka = reg.vectorize({"QANCHOR=time:when": 0.7})
+        otazka = reg.vectorize({"QANCHOR=time": 0.7})
         odpoved = reg.vectorize({"ANCHOR=time:fut": 0.7})
         jinam = reg.vectorize({"ANCHOR=space": 0.7})
         skore_ano = float(np.dot(reg.spread(otazka), reg.spread(odpoved)))
