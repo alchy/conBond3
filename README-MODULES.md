@@ -91,6 +91,22 @@ Z toho plyne, co musí `client.py` umět, aby se dal takhle používat:
 
 * **Podepsat se stejně jako `service.py`.** Táž jména funkcí, tytéž parametry.
   Rozdíl je jen v konstruktoru, kde se předá `endpoint`.
+* **`endpoint` je nepovinný a klient si ho umí najít.** Adresu si deklaruje
+  sama služba ve své konfiguraci a při běhu ji zapisuje do `run/service.port`;
+  klient čte totéž, co čte `status`. Předaná adresa má vždycky přednost —
+  slouží pro mluvení s jinou instancí. Odkud se adresa vzala, musí být vidět
+  (`endpoint_source`), jinak se ladí jedna instance a běží druhá.
+
+  ```python
+  parser = UdpipeClient()                    # adresu si najde
+  parser.endpoint_source                     # 'run/service.port (běžící služba)'
+  parser = UdpipeClient(endpoint="http://jiny-stroj:42200")
+  parser.endpoint_source                     # 'předáno'
+  ```
+
+  *Zapsáno po otázce „proč se píše adresa, když je port v konfiguraci?".
+  Povinný `endpoint` znamená, že ho opisuje každý volající — a to je přesně
+  ten druh duplikace, kvůli které se dvě místa rozejdou.*
 * **Přeložit chyby na výjimky.** `503` od služby je výjimka s typem, ne
   slovník s klíčem `error`, který si volající musí pamatovat zkontrolovat.
 * **Rozlišit prázdno od chyby.** Prázdný výsledek je normální návratová hodnota,
