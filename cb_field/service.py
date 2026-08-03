@@ -346,13 +346,22 @@ def activations(row: dict, question: bool = False) -> dict:
     lemma = row["lemma"]
     upos = row["upos"].value
     xpos = row["xpos"].value or ""
+    # Tázací čtení: Int od parseru, NEBO slovo z tabulky tázacích kotev,
+    # u kterého parser tázací/vztažný výklad vůbec nenabídl — vlastní
+    # kalibrovaná tabulka přebíjí parserovo MLČENÍ, ne jeho verdikt
+    # (naměřeno: „Kolik" v otázce dostává PronType=Dem,Ind, žádné Int,
+    # a bez tohohle by neslo LEM/ANCHOR jako oznamovací slovo).
+    interrogative = ("Int" in prontype
+                     or (lemma is not None
+                         and lemma.value in INTERROGATIVE_ANCHORS
+                         and "Rel" not in prontype))
     closed = (upos in CLOSED_UPOS
               or (upos == "ADV" and "PronType" in row["feats"]))
     if (lemma is not None and closed
             and not any(ch.isdigit() for ch in lemma.value)):
         # Klíč nese i UPOS: spojkové „jak" (SCONJ) je jiné „jak" než
         # příslovečné (ADV) — naměřená kolize, jedna vertikála by je slila.
-        prefix = "QLEM" if question and "Int" in prontype else "LEM"
+        prefix = "QLEM" if question and interrogative else "LEM"
         acts[f"{prefix}={upos}:{lemma.value}"] = lemma.weight
 
     # SubPOS (první dva znaky pozičního tagu): třídy, které feats nemají —
@@ -412,7 +421,7 @@ def activations(row: dict, question: bool = False) -> dict:
     # ale proti němu.
     if lemma is not None and prontype:
         anchors = INTERROGATIVE_ANCHORS.get(lemma.value, ())
-        side = "QANCHOR" if question and "Int" in prontype else "ANCHOR"
+        side = "QANCHOR" if question and interrogative else "ANCHOR"
         for anchor in anchors:
             acts[f"{side}={anchor}"] = lemma.weight
         for anchor in DEICTIC_ANCHORS.get(lemma.value, ()):

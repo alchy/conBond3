@@ -6,17 +6,30 @@ Kandidátem je KAŽDÝ token korpusu; žádná brána, žádný obsahový filtr,
 
     skóre(a ve větě f) = cos(q̃, okno)                setkání v uzlech
                        + (W_CENTER−1) · cos(q̃, střed)  zdůraznění středu
+                       + W_COVER · min_G s̃(f)        pokrytí otázky
                        + W_TOPIC · cos(slova q, slova f)   bonus tématu
                        + W_GIVEN · cos(slova q, slova středu)  postih za
                                                    odpověď slovem, které
                                                    otázka sama dala
 
-kde q̃ i pytle faktů jsou tanh(spread(·)). Každý člen je kosinus dvou
-pytlů (−1…+1): délka věty nerozhoduje a členy jsou souměřitelné (krok 2
+kde q̃ i pytle faktů jsou tanh(spread(·)). Kosinové členy jsou čistý
+SMĚR (−1…+1): délka věty nerozhoduje a členy jsou souměřitelné (krok 2
 refaktoru, J.). Zdůraznění středu je vlastní člen schválně — ×W_CENTER
 na surovém pytli by pod kosinem trestalo středy s bohatou morfologií
 (norma roste o vše, co střed nese). IDF náplast je pryč (dluh D1):
 roli protiváhy hubů převzala saturace, naměřeno 0,61 → 0,67 bez ní.
+
+Pokrytí otázky (rozhodnutí J. 2026-08-04) vrací MOHUTNOST důkazu,
+kterou kosinus zahodil a kterou potřebuje řez θ. Má povahu
+NEJSLABŠÍHO ČLÁNKU, ne součtu: G jsou dané obsahové osy otázky
+(WORD= řádků bez QLEM= — tázací osa je neznámá, ta se nekryje, ta se
+odpovídá) a s̃(f) = tanh(spread(věta)). Naměřeno na etalonu: u každé
+nezodpověditelné otázky je právě jedna kritická osa mrtvá (neznámé
+sloveso, neznámá entita) a zbytek sedí — součtové varianty pokrytí
+(q̃·okno/‖q̃‖², slova přes větu) proto NEoddělují (1 osa z N je malý
+zlomek součtu, změřený překryv rozdělení), minimum odděluje: mrtvá
+osa = člen ~0. Most z učení se počítá (spread před tanh), takže
+parafráze pokrytí neztrácí — jen ho má úměrné síle mostu.
 
 Po KAŽDÉM kroku šíření (v + v·L, registr) následuje tanh — aktivace se
 saturují do −1…+1, tedy do rozsahu, který váhy už mají (P-B; rozhodnutí
@@ -53,8 +66,10 @@ EPSILON = 0.057
 #:           přičtený celému pytli nakonec (zadání J.).
 #: W_GIVEN — záporná váha za střed, jehož slovo otázka sama uvádí
 #:           (odpověď zaplňuje neznámou; místo vyloučení jen táhne dolů).
+#: W_COVER — pokrytí otázky: mohutnost důkazu pro řez θ (viz hlavička).
 W_TOPIC = 1.0
 W_GIVEN = -3.0
+W_COVER = 1.0
 
 #: Váhový profil koše kandidáta: střed × W_CENTER, okolí × 1. Bez
 #: zdůraznění středu vyhrává soused odpovědi (veze totéž okno) —
@@ -75,7 +90,8 @@ class Candidate:
     sentence: SentenceField
     center: int
     score: float
-    meet_score: float          # setkání v uzlech
+    meet_score: float          # setkání v uzlech (kosinus, směr)
+    cover_score: float         # pokrytí otázky (mohutnost)
     topic_score: float         # bonus tématu (celé větě)
     given_score: float         # postih za dané slovo
     top_nodes: tuple           # rozklad: (vertikála, příspěvek)
@@ -122,10 +138,11 @@ def _fact_bags(corpus):
     registru o vertikály otázek cache neruší: nové sloupce mají ve
     starých větách nulovou aktivaci, gather přes staré indexy platí dál.
 
-    Vrací seznam po větách: (widx, wvals, wnorm, středy), kde středy je
-    seznam (idx, vals, cidx, cvals, cnorm) — jednotkový pytel okna
-    s přičteným jednotkovým středem (viz komentář u zdůraznění) a slova
-    středu s normou pro kosinové členy skóre.
+    Vrací seznam po větách: (widx, wvals, wnorm, sat_idx, sat_vals,
+    středy), kde sat_* je saturované šíření CELÉ věty (pro pokrytí
+    otázky) a středy je seznam (idx, vals, cidx, cvals, cnorm) —
+    jednotkový pytel okna s přičteným jednotkovým středem (viz komentář
+    u zdůraznění) a slova středu s normou pro kosinové členy skóre.
     """
     key = (len(corpus), corpus.registry.link_version)
     cached = getattr(corpus, "_fact_cache", None)
@@ -157,6 +174,13 @@ def _fact_bags(corpus):
             norm = float(np.linalg.norm(out))
             return out / norm if norm else out
 
+        sentence_bag = np.sum(rows, axis=0)
+        nz = np.nonzero(sentence_bag)[0]
+        sentence_spread = sentence_bag if not len(nz) \
+            else sentence_bag + sentence_bag[nz] @ links[nz]
+        sentence_sat = np.tanh(sentence_spread)   # pro pokrytí otázky
+        sat_idx = np.nonzero(sentence_sat)[0]
+
         widx = np.nonzero(sentence_words)[0]
         centers = []
         for center in range(len(rows)):
@@ -177,7 +201,7 @@ def _fact_bags(corpus):
                             cidx, cvals, float(np.linalg.norm(cvals))))
         wvals = sentence_words[widx]
         sentences.append((widx, wvals, float(np.linalg.norm(wvals)),
-                          centers))
+                          sat_idx, sentence_sat[sat_idx], centers))
 
     corpus._fact_cache = (key, sentences)
     return sentences
@@ -186,6 +210,7 @@ def _fact_bags(corpus):
 def match(question: SentenceField, corpus: Corpus,
           theta: float = THETA, epsilon: float = EPSILON,
           w_topic: float = W_TOPIC, w_given: float = W_GIVEN,
+          w_cover: float = W_COVER,
           top_nodes: int = 4, top_candidates: int | None = None
           ) -> MatchResult:
     """Propojí otázku s korpusem — čistě váhami, bez filtrů.
@@ -214,15 +239,35 @@ def match(question: SentenceField, corpus: Corpus,
     q_words = q_raw * words
     q_words_norm = float(np.linalg.norm(q_words))
 
+    # Dané obsahové osy otázky (pro pokrytí): WORD= řádků bez QLEM= —
+    # tázací osa je neznámá, ta se nekryje, ta se odpovídá.
+    given_axes = []
+    for row_weights in question.complete:
+        if any(key.startswith("QLEM=") for key in row_weights):
+            continue
+        for key in row_weights:
+            if key.startswith("WORD=") and not key.startswith("WORD=PUNCT"):
+                given_axes.append(registry.index(key))
+
     # Kosinová normalizace (rozhodnutí J. 2026-08-03): každý člen skóre
     # je kosinus dvou pytlů, tedy −1…+1 — délka věty ani mohutnost IDF
     # už nerozhodují a členy jsou navzájem souměřitelné.
     candidates = []
-    for sentence, (widx, wvals, wnorm, centers) in zip(corpus,
-                                                       fact_sentences):
+    for sentence, (widx, wvals, wnorm, sat_idx, sat_vals, centers) \
+            in zip(corpus, fact_sentences):
         w_denominator = q_words_norm * wnorm
         topic = float(w_topic * (q_words[widx] @ wvals) / w_denominator) \
             if w_denominator else 0.0
+        # Pokrytí otázky: nejslabší DANÁ osa nad saturovaným šířením
+        # věty. Osa mimo nosnou množinu věty = 0 (searchsorted).
+        cover = 0.0
+        if given_axes:
+            weakest = min(
+                float(sat_vals[j]) if j < len(sat_idx)
+                and sat_idx[j] == axis else 0.0
+                for axis, j in ((a, int(np.searchsorted(sat_idx, a)))
+                                for a in given_axes))
+            cover = w_cover * weakest
         for center, (idx, vals, cidx, cvals, cnorm) \
                 in enumerate(centers):
             contributions = q_sat[idx] * vals / q_norm if q_norm \
@@ -231,12 +276,12 @@ def match(question: SentenceField, corpus: Corpus,
             c_denominator = q_words_norm * cnorm
             given = float(w_given * (q_words[cidx] @ cvals)
                           / c_denominator) if c_denominator else 0.0
-            score = meet + topic + given
+            score = meet + cover + topic + given
             order = np.argsort(-np.abs(contributions))[:top_nodes]
             candidates.append(Candidate(
                 sentence=sentence, center=center, score=score,
-                meet_score=round(meet, 6), topic_score=round(topic, 6),
-                given_score=round(given, 6),
+                meet_score=round(meet, 6), cover_score=round(cover, 6),
+                topic_score=round(topic, 6), given_score=round(given, 6),
                 top_nodes=tuple(
                     (registry.key(int(idx[i])),
                      round(float(contributions[i]), 6))

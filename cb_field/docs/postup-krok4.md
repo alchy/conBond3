@@ -227,3 +227,47 @@ Výrok: PŘIJATO. Loss čitelný (0,32 → 0,20), trefy na tréninku 16 → 24
 z 33, DOTAZ 11 → 6. Hebb dál škodí (dluh D4: má běžet až nad
 strukturou). Pozn.: na testbedu je trénink = etalon (horní odhad, jiná
 sada zatím není) — generalizaci měří korpusy s oddělenou sadou.
+
+## 14 · Člen pokrytí otázky (2026-08-04, rozhodl J.)
+
+Zadání J. po nálezu „kosinus zahodil mohutnost důkazu" (§ 12): vrátit
+mohutnost jako vážený člen — pokrytí otázky.
+
+**Slepé uličky (změřeno, obě NEoddělují):** součtové pokrytí
+`(q̃·okno)/‖q̃‖²` i slovní `(slova q · slova věty)/‖slova q‖²` —
+u každé nezodpověditelné otázky etalonu je právě JEDNA kritická osa
+mrtvá (neznámé sloveso: parkovat/letět/odjet; neznámá entita:
+Alois/Ostrava) a zbytek sedí dobře; jedna osa z N je v součtu malý
+zlomek, rozdělení se překrývala celá.
+
+**Řešení: nejslabší článek.** cover = W_COVER · min přes DANÉ obsahové
+osy otázky (WORD= řádků bez QLEM= — tázací osa je neznámá, ta se
+nekryje, ta se odpovídá) nad tanh(spread(věta)). Mrtvá osa = člen ~0.
+Most z učení se počítá (spread před tanh) — parafráze pokrytí neztrácí,
+jen ho má úměrné síle mostu. Po větě, ne po okně (uvnitř věty ranking
+neruší, jako topic).
+
+**Oprava reprezentace po cestě:** parser dává „Kolik" v otázce
+PronType=Dem,Ind (žádné Int) → QLEM/QANCHOR mechanismus neměl za co
+chytit a „kolik" padalo do daných os (falešná mrtvá osa i pro správnou
+větu). Oprava: tázací čtení = Int od parseru NEBO členství v tabulce
+INTERROGATIVE_ANCHORS, pokud parser tázací/vztažný výklad vůbec
+nenabídl — vlastní tabulka přebíjí parserovo mlčení, ne jeho verdikt.
+
+| testbed | přesnost@1 | rozdělení top-skóre (zodp. × NEzodp.) |
+|---|---|---|
+| bez pokrytí | 0,67 | 1,06–1,58 × 1,17–1,51 (překryv celý) |
+| s pokrytím (baseline) | **0,85** | 1,73–2,45 × 1,46–1,75 (pruh 0,02) |
+| s pokrytím po 4c | **0,97** | 1,94–3,06 × 1,82–2,61 (překryv zpět) |
+
+Pokrytí pomohlo i rankingu (0,67 → 0,85 bez učení — věta nesoucí
+všechny dané osy poráží generický vzor) a stabilizovalo učení: loss
+klesá monotónně 0,25 → 0,08 přes všech 10 epoch, žádné odvolání epochy,
+trefy 32/33.
+
+**Otevřené (pro J.):** (a) učení na testbedu zvedá i nezodpověditelné —
+generické mosty (kde→bydlet) slouží všem; na téže sadě se učí grep,
+korpusová sada parafrází je stavěná líp. (b) θ zůstal 0,45 (od oka
+z přepočtu) — kam posadit řez a na čem ho kalibrovat (trénovací sadě
+chybí nezodpověditelné otázky) je designové rozhodnutí; před učením
+by řez ~1,8 dělil skoro čistě, po učení ne.
