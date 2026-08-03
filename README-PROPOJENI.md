@@ -15,6 +15,13 @@ rozpoznat, **kdy má ladit váhy a kdy rozšířit reprezentaci**. Vše
 deterministické při vyhodnocení, interpretovatelné po hranách,
 měřené na zmraženém etalonu.
 
+**Zařazení: tohle je aktivátor uzlů, ne odpovídač.** Text se stane
+nejen vektory a koši, ale grafem — a ten graf ještě nemáme. Tato část
+grafu **aktivuje uzly**; konečný výběr odpovědi převezme aktivace
+tekoucí grafem faktů. Nad samotnými metadaty se plná odpovídací
+schopnost čekat nesmí — čísla na etalonu měří kvalitu aktivace
+(a lokalizují díry reprezentace), ne strop systému.
+
 Úspěch nejsou dojmy z ukázek, ale tři čísla na etalonu otázek (§ 6):
 přesnost@1 na zodpověditelných, správnost NEVÍM na nezodpověditelných,
 a rozklad chyb na slabé/nepřesné (§ 5) — protože ten řídí, co se

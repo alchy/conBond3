@@ -401,6 +401,10 @@ def activations(row: dict, question: bool = False) -> dict:
             acts["ANCHOR=space"] = slot.weight
         elif slot.value in ("Giv", "Sur"):
             acts["ANCHOR=entity"] = slot.weight
+    # Pozn.: entita z Animacy=Anim by byla vychýlená — UD značí Animacy
+    # jen u maskulin (kočka, teta, prodavačka by kotvu nikdy nedostaly).
+    # Obecná jména čekají na typ=osoba z gazetteeru (krok 5); do té doby
+    # toleranci drží brána párování, ne reprezentace.
 
     # Tázací/vztažná a ukazovací slova: strana otázky (QANCHOR) jen
     # v tázací větě u slov s Int; jinak strana odpovědi. Záporná
