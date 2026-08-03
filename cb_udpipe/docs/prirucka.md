@@ -26,6 +26,22 @@ Je to ta hranice z § 19 politiky v praxi: náš kód nepotřebuje nic a běží
 kdekoli, vendorovaný nástroj si nese těžké závislosti. **Hranice vede po
 procesu, ne po prostředí.**
 
+### Zkratka před otazníkem neroztrhne větu
+
+Segmentace běží **před** naší opravou tokenizace, takže vadu, která ovlivnila
+segmentaci, opravit nemůžeme:
+
+```
+Napsal tzv. R.U.R.? Ne, to byl Čapek.   -> 1 věta   (mají být dvě)
+Napsal drama? Ne, to byl Čapek.         -> 2 věty
+```
+
+UDPipe vidí `R . U . R . ?` a otazník po tečce za konec věty nevezme. Řadové
+číslovky problém nedělají (`20.` je jen jedna tečka).
+
+Je to známá mez, ne rozbité chování — podrobně v `koncepce.md` § 3.4b i s tím,
+proč se neopravuje.
+
 ### Ovládací program běžel systémovým Pythonem
 
 Shebang `#!/usr/bin/env python3` vezme **první** `python3` z PATH. Na

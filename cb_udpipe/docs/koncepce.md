@@ -204,6 +204,34 @@ neztratí, protože původní text nese `SpaceAfter=No` a dá se z tokenů slož
 sloučit nesmí — `1890` je rok a následující slovo s ním nesouvisí. Bez toho řezu
 by se `12 345 678 lidí` sloučilo správně, ale `roku 1890 Praha` taky.
 
+### 3.4b Známá mez: segmentace běží před opravou
+
+Oprava tokenizace přichází **až po** segmentaci, takže vadu, která segmentaci
+ovlivnila, opravit nemůže. Projeví se to u tečkované zkratky stojící
+bezprostředně před koncovou interpunkcí:
+
+```
+Napsal tzv. R.U.R.? Ne, to byl Čapek.      → 1 věta   ✗ mají být dvě
+Napsal drama? Ne, to byl Čapek.            → 2 věty   ✓
+Bylo to ve 20. století? Ano, přesně tak.   → 2 věty   ✓
+```
+
+UDPipe vidí `R . U . R . ?` a otazník po tečce za konec věty nevezme. Řadové
+číslovky problém nedělají — `20.` je jen jedna tečka a segmentátor si s ní
+poradí.
+
+**Neopravuje se** ze dvou důvodů. Za prvé by to znamenalo třetí fázi:
+segmentovat znovu po opravě tokenizace, tedy volání navíc u každého rozboru
+kvůli jevu, který je vzácný (v korpusu conBondu2 je tečkovaných zkratek 0,7 %
+vět a jen zlomek z nich stojí před koncovou interpunkcí). Za druhé je oprava
+segmentace jiná práce než oprava tokenizace: mění se počet vět, tedy počet
+klíčů cache, a to je zásah do identity záznamů, ne do jejich obsahu.
+
+Kdyby se to ukázalo jako překážka, cesta vede přes **předzpracování textu před
+segmentací** — conBond2 to dělal tak, že zkratkám tečky mazal
+(`R.U.R.` → `RUR`). To ale mění text, tedy klíč cache, a proto by to muselo
+být rozhodnutí se změřenou cenou, ne drobná úprava.
+
 ### 3.5 Co se vědomě nedělá
 
 * **Nescelují se víceslovná jména.** `Karel Čapek` zůstávají dva tokeny — je to

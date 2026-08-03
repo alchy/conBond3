@@ -371,3 +371,4 @@ parser.summary()["parse"]            # {'ok': 3, ...}
 | scelovat jména v cb-udpipe | není to jeho práce | `Karel Čapek` jsou dva tokeny; entity řeší vrstva nad ním |
 | měřit zrychlení nad plnou cache | vyjde 1,0× | před měřením smaž cache, viz `scripts/mereni.py` |
 | `stop` a hned `start` | port se nestihne uvolnit | použij `./cb-udpipe.py restart` |
+| čekat, že se rozdělí věta po `R.U.R.?` | zůstane jedna věta | známá mez: segmentace běží před opravou, viz `docs/koncepce.md` § 3.4b |
