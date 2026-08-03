@@ -102,21 +102,36 @@ def contrastive_step(registry, question_bag: dict, correct_bag: dict,
     """Jeden kontrastivní krok: posílit hrany otázka→správná, oslabit
     otázka→vítěz. Jen na souaktivovaných dvojicích (qᵢ·aⱼ ≠ 0); meze ±1;
     axiomy chrání registr. Vrací počet upravených hran."""
+    # Gradient marže: ΔW = η · q ⊗ (a⁺ − a⁻). Rozdíl schválně: co mají
+    # správný a špatný kandidát společné, o vítězi nerozhoduje — a bez
+    # filtrů je „špatný" obvykle soused ve stejné větě, takže sdílených
+    # klíčů je většina. Učit se na nich znamená vyrábět šum (naměřeno:
+    # bez rozdílu spadla přesnost 0,21 → 0,00).
+    difference = {}
+    for key, weight in correct_bag.items():
+        difference[key] = difference.get(key, 0.0) + weight
+    for key, weight in wrong_bag.items():
+        difference[key] = difference.get(key, 0.0) - weight
+    difference = {k: v for k, v in difference.items() if abs(v) > 1e-9}
+    if not difference:
+        return 0                       # kandidáti jsou v osách totožní
+
+    # normalizace: dlouhý pytel nesmí učit silněji než krátký
+    scale = 1.0 / max(len(question_bag) * len(difference), 1) ** 0.5
     changed = 0
-    for sign, bag in ((+1.0, correct_bag), (-1.0, wrong_bag)):
-        for q_key, q_weight in question_bag.items():
-            for a_key, a_weight in bag.items():
-                if q_key == a_key:
-                    continue
-                existing = registry.get_link(q_key, a_key)
-                if existing and existing[1] == "axiom":
-                    continue
-                old = existing[0] if existing else 0.0
-                new = max(-1.0, min(1.0,
-                                    old + sign * eta * q_weight * a_weight))
-                if new != old:
-                    registry.link(q_key, a_key, new, source="etalon")
-                    changed += 1
+    for q_key, q_weight in question_bag.items():
+        for a_key, delta in difference.items():
+            if q_key == a_key:
+                continue
+            existing = registry.get_link(q_key, a_key)
+            if existing and existing[1] == "axiom":
+                continue
+            old = existing[0] if existing else 0.0
+            new = max(-1.0, min(1.0,
+                                old + eta * scale * q_weight * delta))
+            if new != old:
+                registry.link(q_key, a_key, new, source="etalon")
+                changed += 1
     return changed
 
 
