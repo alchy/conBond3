@@ -24,3 +24,10 @@
 {"otazka": "Kdo létal do vesmíru?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: v korpusu není"}
 {"otazka": "Kolem čeho obíhá Slunce?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: obrácení vztahu"}
 {"otazka": "Kdo pokřtil Newtona?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: křížení domén"}
+{"otazka": "Kdo vynalezl elektromotor?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: vynálezce v textu není"}
+{"otazka": "Kde bydlel Karel Čapek?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: svod rodištěm, bydliště v textu není"}
+{"otazka": "Kdo přeložil Švejka?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: pasivum bez agenta (přeloženy do 58 jazyků)"}
+{"otazka": "Kdy zemřel Jan Křtitel?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: známá entita, časový slot v textu není"}
+{"otazka": "Kdy se narodil Jan Křtitel?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: narodit se svádí do domény spisovatelů"}
+{"otazka": "Kolik dětí měl Karel Čapek?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: svod živou osou dítě, počet v textu není"}
+{"otazka": "Kdo napsal Bibli?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: svod napsal→Principia, křížení domén"}

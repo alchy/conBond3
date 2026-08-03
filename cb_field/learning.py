@@ -206,11 +206,20 @@ def train_on_etalon(corpus, etalon_entries, parser,
     prohry (SLABÁ), tenké výhry (DOTAZ) i výhry těsně nad ε; přesně
     kategorie „signál existuje, jen má malý koeficient" z růstového
     zákona. NEPOKRYTÉ chyby se neučí (patří růstu os / dalším krokům).
+
+    Nezodpověditelné otázky učí MLČENÍ (zadání J. 2026-08-04: odpověď
+    = nemá odpověď): jejich vítěz se vede POD skóre správných odpovědí
+    — hinge proti mediánu správných skóre epochy s touž relativní
+    marží. Cíl je párový (rozdělení od sebe), žádná absolutní kotva:
+    θ zůstává jen řez a kalibruje se na trénovací sadě, ne v učení.
+    Bez zodpověditelných otázek v sadě se mlčení učit nemá proti čemu.
     """
     from cb_field.field import SentenceField
     stats = {"epoch": 0, "kroku": 0, "hran": 0, "epochy": []}
     adam_state = {}                    # momenty (m, v, t) na hranu
     previous_loss = None
+    answerable = [e for e in etalon_entries if e["zodpoveditelna"]]
+    silent = [e for e in etalon_entries if not e["zodpoveditelna"]]
     for epoch in range(max_epochs):
         snapshot = {(s, d): (w, src)
                     for s, d, w, src in corpus.registry.links()}
@@ -218,10 +227,9 @@ def train_on_etalon(corpus, etalon_entries, parser,
         loss_sum = 0.0
         correct_now = 0
         seen = 0
+        correct_scores = []            # reference pro učení mlčení
         edges_before = stats["hran"]
-        for entry in etalon_entries:
-            if not entry["zodpoveditelna"]:
-                continue
+        for entry in answerable:
             question = SentenceField.from_text(
                 entry["otazka"], parser, r=corpus.r,
                 registry=corpus.registry)
@@ -233,6 +241,8 @@ def train_on_etalon(corpus, etalon_entries, parser,
             seen += 1
             correct = next((c for c in result.candidates
                             if c.token.lemma == expected), None)
+            if correct is not None:
+                correct_scores.append(correct.score)
             # Soupeř pro kontrast je nejlepší ŠPATNÝ kandidát — když
             # vítězí správná s malým odstupem (DOTAZ), je to druhý
             # v pořadí; kontrast proti vítězi by byl správná proti sobě
@@ -266,17 +276,56 @@ def train_on_etalon(corpus, etalon_entries, parser,
                 corpus.registry, q_bag, correct_bag, wrong_bag, eta,
                 state=adam_state)
             corrections += 1
+
+        # Učení mlčení: vítěz nezodpověditelné otázky se vede pod
+        # medián správných skóre epochy (párový cíl, táž relativní
+        # marže). Medián schválně — minimum by za referenci bralo
+        # nejtěžší dosud nenaučený případ.
+        quiet_now = 0
+        quiet_seen = 0
+        reference = (sorted(correct_scores)[len(correct_scores) // 2]
+                     if correct_scores else None)
+        if reference is not None:
+            for entry in silent:
+                question = SentenceField.from_text(
+                    entry["otazka"], parser, r=corpus.r,
+                    registry=corpus.registry)
+                result = match(question, corpus)
+                winner = result.best
+                if winner is None:
+                    continue
+                quiet_seen += 1
+                margin = MARGIN_RATIO * abs(reference)
+                loss = max(0.0, margin + winner.score - reference)
+                loss_sum += loss
+                if loss == 0.0:
+                    quiet_now += 1
+                    continue                 # vítěz už je dost nízko
+                q_bag = _semantic_bag(question,
+                                      range(len(question.tokens)))
+                winner_bag = _semantic_bag(
+                    winner.sentence,
+                    _window_rows(winner.sentence, winner.center,
+                                 corpus.r),
+                    center=winner.center)
+                stats["hran"] += contrastive_step(
+                    corpus.registry, q_bag, {}, winner_bag, eta,
+                    state=adam_state)
+                corrections += 1
+
         stats["epoch"] = epoch + 1
         stats["kroku"] += corrections
-        loss = loss_sum / max(seen, 1)
+        loss = loss_sum / max(seen + quiet_seen, 1)
         hit = correct_now / max(seen, 1)
         stats["epochy"].append(
             {"epocha": epoch + 1, "loss": round(loss, 3),
              "trefy": f"{correct_now}/{seen}", "trefy_podil": round(hit, 2),
+             "ticho": f"{quiet_now}/{quiet_seen}",
              "korekci": corrections,
              "hran": stats["hran"] - edges_before})
         print(f"    epocha {epoch + 1}: loss {loss:7.3f} · trefy "
-              f"{correct_now}/{seen} ({hit:.2f}) · korekcí {corrections} "
+              f"{correct_now}/{seen} ({hit:.2f}) · ticho "
+              f"{quiet_now}/{quiet_seen} · korekcí {corrections} "
               f"· hran {stats['hran'] - edges_before}", flush=True)
         if corrections == 0:
             break
@@ -357,11 +406,12 @@ def main() -> None:
                  f"kroků={train_stats['kroku']} hran={train_stats['hran']}")
     lines.append("")
     lines.append("| epocha | loss (hinge marže) | trefy na tréninku "
-                 "| korekcí | nových/změněných hran |")
-    lines.append("|---|---|---|---|---|")
+                 "| ticho (nezodp.) | korekcí | nových/změněných hran |")
+    lines.append("|---|---|---|---|---|---|")
     for e in train_stats.get("epochy", []):
         lines.append(f"| {e['epocha']} | {e['loss']} | {e['trefy']} "
-                     f"({e['trefy_podil']}) | {e['korekci']} | {e['hran']} |")
+                     f"({e['trefy_podil']}) | {e.get('ticho', '—')} "
+                     f"| {e['korekci']} | {e['hran']} |")
     lines.append(f"- trénink: {len(trenink)} otázek · měření: "
                  f"{len(etalon)} otázek"
                  + (" (oddělené sady — parafráze vs. etalon)" if korpusy
