@@ -345,6 +345,48 @@ def train_on_etalon(corpus, etalon_entries, parser,
     return stats
 
 
+def calibrate_theta(corpus, entries, parser) -> dict:
+    """Kalibrace řezu θ na TRÉNOVACÍ sadě (splátka dluhu D2).
+
+    Kandidáti řezu jsou středy mezi sousedními top-skóre; vybírá se θ
+    maximalizující přesnost@1 + NEVÍM-správnost na trénovacích otázkách
+    (obě složky rovným dílem — protiváha je součást kritéria, ne
+    dodatek). Etalon do kalibrace nevstupuje.
+    """
+    from cb_field.field import SentenceField
+    tops = []
+    for entry in entries:
+        question = SentenceField.from_text(entry["otazka"], parser,
+                                           r=corpus.r,
+                                           registry=corpus.registry)
+        result = match(question, corpus, theta=float("-inf"), epsilon=0.0)
+        if result.best is None:
+            continue
+        answerable = entry["zodpoveditelna"]
+        tops.append((result.best.score, answerable,
+                     answerable and result.best.token.lemma
+                     == entry["odpoved_lemma"]))
+    scores = sorted({score for score, _a, _c in tops})
+    cuts = [scores[0] - 0.1] + [(a + b) / 2 for a, b
+                                in zip(scores, scores[1:])] \
+        + [scores[-1] + 0.1]
+    n_answerable = sum(1 for _s, a, _c in tops if a)
+    n_silent = len(tops) - n_answerable
+    best = None
+    for cut in cuts:
+        accuracy = sum(1 for s, a, c in tops if a and c and s >= cut) \
+            / max(n_answerable, 1)
+        silence = sum(1 for s, a, _c in tops if not a and s < cut) \
+            / max(n_silent, 1)
+        merit = accuracy + silence
+        if best is None or merit > best["merit"]:
+            best = {"theta": round(cut, 3), "merit": round(merit, 3),
+                    "presnost": round(accuracy, 2),
+                    "mlceni": round(silence, 2)}
+    best["otazek"] = len(tops)
+    return best
+
+
 def main() -> None:
     from cb_udpipe import UdpipeClient
     from cb_field.evaluate import (build_complex_corpus, build_corpus,
@@ -372,9 +414,9 @@ def main() -> None:
 
     phases = []
 
-    def measure(label):
+    def measure(label, theta=None):
         counts, presnost, mlceni, _details = evaluate_corpus(
-            corpus, etalon, parser)
+            corpus, etalon, parser, theta=theta)
         phases.append((label, presnost, mlceni, dict(counts)))
         print(f"{label:<28} přesnost@1 {presnost:.2f} · "
               f"NEVÍM-správnost {mlceni:.2f} · {counts}")
@@ -386,6 +428,11 @@ def main() -> None:
     train_stats = train_on_etalon(corpus, trenink, parser)
     print(f"4c kontrastivně: {train_stats}")
     measure("po 4c (etalon)")
+    kalibrace = calibrate_theta(corpus, trenink, parser)
+    print(f"kalibrace θ na trénovací sadě: θ={kalibrace['theta']} "
+          f"(trénink: přesnost {kalibrace['presnost']} · mlčení "
+          f"{kalibrace['mlceni']})")
+    measure(f"po 4c, θ={kalibrace['theta']}", theta=kalibrace["theta"])
 
     corpus.registry.save(LEARNED_KORPUSY if korpusy else LEARNED)
 
@@ -404,6 +451,9 @@ def main() -> None:
     lines.append(f"- Hebb: {hebb_stats}")
     lines.append(f"- kontrastivně: epoch={train_stats['epoch']} "
                  f"kroků={train_stats['kroku']} hran={train_stats['hran']}")
+    lines.append(f"- kalibrace θ na trénovací sadě (D2): "
+                 f"θ={kalibrace['theta']} · trénink přesnost "
+                 f"{kalibrace['presnost']} · mlčení {kalibrace['mlceni']}")
     lines.append("")
     lines.append("| epocha | loss (hinge marže) | trefy na tréninku "
                  "| ticho (nezodp.) | korekcí | nových/změněných hran |")

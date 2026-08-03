@@ -87,8 +87,12 @@ def diagnose(result, expected_lemma, corpus):
     return ("SLABÁ" if d > 1e-6 else "NEPŘESNÁ"), round(d, 3)
 
 
-def evaluate_corpus(corpus, etalon, parser):
-    """Oznámkuje celý etalon; vrací (counts, přesnost, mlčení, detaily)."""
+def evaluate_corpus(corpus, etalon, parser, theta=None):
+    """Oznámkuje celý etalon; vrací (counts, přesnost, mlčení, detaily).
+
+    theta: řez pro NEVÍM; None = výchozí THETA z matching (kalibrovaný
+    řez předává učicí protokol po kalibraci na trénovací sadě).
+    """
     counts = {"SPRÁVNĚ": 0, "SLABÁ": 0, "NEPŘESNÁ": 0, "NEPOKRYTÁ": 0,
               "DOTAZ": 0, "NEVÍM-chybné": 0,
               "MLČENÍ-správné": 0, "FALEŠNÁ": 0, "DOTAZ-nezodp.": 0}
@@ -97,7 +101,8 @@ def evaluate_corpus(corpus, etalon, parser):
         question = SentenceField.from_text(entry["otazka"], parser,
                                            r=corpus.r,
                                            registry=corpus.registry)
-        result = match(question, corpus)
+        result = match(question, corpus,
+                       theta=THETA if theta is None else theta)
         expected = entry["odpoved_lemma"]
         if entry["zodpoveditelna"]:
             if result.outcome == "odpoved":

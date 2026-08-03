@@ -3,6 +3,7 @@
 - datum: 2026-08-04 · η_hebb=0.5 · η_kontrast=0.01 · epochy≤10
 - Hebb: {'vet': 179, 'paru': 3817, 'hran': 1626}
 - kontrastivně: epoch=10 kroků=227 hran=17203
+- kalibrace θ na trénovací sadě (D2): θ=2.05 · trénink přesnost 0.88 · mlčení 0.86
 
 | epocha | loss (hinge marže) | trefy na tréninku | ticho (nezodp.) | korekcí | nových/změněných hran |
 |---|---|---|---|---|---|
@@ -23,5 +24,6 @@
 | baseline (axiomy) | 0.85 | 0.00 |
 | po 4b (Hebb) | 0.79 | 0.00 |
 | po 4c (etalon) | 0.97 | 0.00 |
+| po 4c, θ=2.05 | 0.85 | 0.86 |
 
 Výrok protokolu: **PŘIJATO** (učení, které shodí NEVÍM-správnost, se nepřijímá — § 6 spec). Naučený registr: `data-persistent/verticals-learned.json`.
