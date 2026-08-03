@@ -72,3 +72,16 @@ Zatím žádné. Až přijdou, platí pro ně totéž co pro model:
 * **Wikipedie** — CC BY-SA 4.0, přenáší se s údajem o zdroji.
 * **Ekumenický překlad Bible** — autorský, **do veřejného repozitáře nesmí**
   (jen Kralická).
+
+## cb-field — měřicí korpusy
+
+| co | odkud | licence | v gitu? |
+|---|---|---|---|
+| testbed kdo-kde-kdy + etalon otázek | psáno ručně pro tento projekt | vlastní | ano (`cb_field/tests/data/`) |
+| wiki životopisy a hesla (spisovatelé, fyzika) | česká Wikipedie, převzato z conBond2 `data/raw/` | **CC BY-SA 4.0** | **ne** — `cb_field/data-persistent/corpora/` |
+| Nový zákon (Markovo evangelium) | moderní český překlad, převzato z conBond2 | **licencovaný text** | **ne** — `cb_field/data-persistent/corpora/` |
+| `fyzika_gravitace.txt` | psáno ručně v conBond2 | vlastní | **ne** (drží se u ostatních korpusů) |
+
+Pořízení: `./cb_field/scripts/fetch-korpusy.sh` (kopíruje z `~/Projects/conBond2/data/raw/`).
+Měření (`docs/mereni-korpusy.md`) nese otisky souborů, aby čísla byla
+srovnatelná i bez dat v gitu.

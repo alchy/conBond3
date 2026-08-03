@@ -42,6 +42,13 @@ class Corpus:
         self.fields.append(field)
         return field
 
+    def add_document(self, text: str, parser) -> list:
+        """Rozparsuje souvislý text (odstavec, kapitolu) a přidá všechny
+        jeho věty. Na rozdíl od add_text tu víc vět není chyba — dokument
+        se po větách rozpadá vědomě tady, ne tichým vzetím první."""
+        return [self.add_sentence(s)
+                for s in parser.parse(text=text).sentences]
+
     def __len__(self) -> int:
         return len(self.fields)
 
