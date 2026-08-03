@@ -203,3 +203,69 @@ class TestKlientLoguje(ZakladParity):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestVychoziEndpoint(ZakladParity):
+    """`endpoint` je nepovinný — adresu si deklaruje sama služba.
+
+    Bez toho by ji musel opisovat každý volající, a to je přesně ten druh
+    duplikace, kvůli které se dvě místa rozejdou (README-MODULES.md § 4).
+    Stejný vzor má cb-logger.
+    """
+
+    def test_bez_endpointu_najde_bezici_sluzbu(self):
+        s, cfg = self.postav("cache-vychozi")
+        server = api.make_api_server(s, config=cfg)
+        self.addCleanup(server.server_close)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.shutdown)
+
+        # Skutečný port do run/service.port — tam ho hledá `default_endpoint`,
+        # a je to podstatné, když je v konfiguraci nula.
+        port_file = Path(config.DEFAULT_CONFIG_PATH.parent
+                         / "run" / "service.port")
+        puvodni = port_file.read_text() if port_file.exists() else None
+        port_file.parent.mkdir(parents=True, exist_ok=True)
+        port_file.write_text(str(server.server_address[1]))
+        try:
+            k = client.UdpipeClient()          # bez endpointu
+            self.assertEqual(k.endpoint_source, "run/service.port (běžící služba)")
+            self.assertEqual(len(k.parse(text="Petr je v Praze.").sentences), 1)
+        finally:
+            if puvodni is None:
+                port_file.unlink(missing_ok=True)
+            else:
+                port_file.write_text(puvodni)
+
+    def test_predany_endpoint_prebiji(self):
+        s, cfg = self.postav("cache-prebiti")
+        server = api.make_api_server(s, config=cfg)
+        self.addCleanup(server.server_close)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.shutdown)
+        adresa = "http://127.0.0.1:%d" % server.server_address[1]
+        k = client.UdpipeClient(endpoint=adresa)
+        self.assertEqual(k.endpoint_source, "předáno")
+        self.assertEqual(k.endpoint, adresa)
+
+    def test_default_endpoint_cte_konfiguraci(self):
+        """Když služba neběží, vezme se zamýšlený port z konfigurace."""
+        adresa, odkud = client.default_endpoint()
+        self.assertTrue(adresa.startswith("http://127.0.0.1:"))
+        self.assertIn(odkud, ("run/service.port (běžící služba)",
+                              "cb-udpipe-config.json",
+                              "zabudovaná výchozí hodnota"))
+
+    def test_from_config_bez_adresy_pouzije_vychozi(self):
+        """Modul, který mluví s instancí u sebe doma, adresu v konfiguraci
+        mít nemusí."""
+        s, cfg = self.postav("cache-fromcfg")
+        server = api.make_api_server(s, config=cfg)
+        self.addCleanup(server.server_close)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.shutdown)
+        k = client.from_config(
+            {"module": {"udpipe_endpoint":
+                        "http://127.0.0.1:%d" % server.server_address[1]}}
+        )
+        self.assertEqual(k.endpoint_source, "předáno")

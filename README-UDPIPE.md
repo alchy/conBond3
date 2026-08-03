@@ -43,11 +43,26 @@ předehřívá síť. Zastavení je `./cb-udpipe.py stop` a ukončí obojí.
 ```python
 from cb_udpipe import UdpipeClient
 
-parser = UdpipeClient(endpoint="http://127.0.0.1:42200")
+parser = UdpipeClient()
 ```
 
-To je všechno. Klient si při vytvoření ověří, že služba běží a mluví jeho
-verzí rozhraní:
+To je všechno. **Adresu psát nemusíš** — klient si ji najde sám, protože ji
+deklaruje sama služba ve své konfiguraci a při běhu ji zapisuje do
+`run/service.port`. Kde ji vzal, si můžeš ověřit:
+
+```python
+parser.endpoint            # 'http://127.0.0.1:42200'
+parser.endpoint_source     # 'run/service.port (běžící služba)'
+```
+
+Předat ji můžeš, když mluvíš s **jinou** instancí — pak přebije výchozí:
+
+```python
+parser = UdpipeClient(endpoint="http://jiny-stroj:42200")
+parser.endpoint_source     # 'předáno'
+```
+
+Klient si při vytvoření ověří, že služba běží a mluví jeho verzí rozhraní:
 
 ```python
 parser.server_version["version"]      # '0.1.0'
@@ -73,21 +88,26 @@ počítání a s polovinou zapsaných výsledků.
 def zpracuj_vetu(text, parser, trace=None):
     return parser.parse(text=text, trace=trace).sentences[0]
 
-parser = UdpipeClient(endpoint="http://127.0.0.1:42200")   # jednou
+parser = UdpipeClient()                # jednou při startu
 for veta in korpus:
     zpracuj_vetu(veta, parser, trace=trace)
 
 # NE — klient v cyklu znamená kontrolu služby v cyklu
 for veta in korpus:
-    UdpipeClient(endpoint="…").parse(text=veta)
+    UdpipeClient().parse(text=veta)
 ```
 
-V modulu se adresa bere z konfigurace, aby nebyla v kódu:
+V modulu, který má logovátko a vlastní konfiguraci:
 
 ```python
 from cb_udpipe import from_config
-parser = from_config(cfg, log=log)     # čte cfg["module"]["udpipe_endpoint"]
+parser = from_config(cfg, log=log)
 ```
+
+`from_config` vezme adresu z `cfg["module"]["udpipe_endpoint"]`, když tam je;
+když ne, použije výchozí. Adresa cizí služby patří do konfigurace **volajícího**
+(politika § 4) — ale modul, který mluví s instancí u sebe doma, ji tam mít
+nemusí.
 
 **Všechny parametry se pojmenovávají**, `text` nevyjímaje — poziční argument
 neexistuje a `parser.parse("věta")` skončí `TypeError`.

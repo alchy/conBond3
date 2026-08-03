@@ -38,6 +38,61 @@ CHECK_TIMEOUT_S = 2.0
 #: Příkaz, kterým se služba spouští. Je součástí chybové hlášky.
 LAUNCHER = "./cb-udpipe.py start"
 
+#: Poslední záchrana, když se nedá přečíst ani konfigurace modulu. Odpovídá
+#: základnímu portu rozsahu cb-udpipe (README-MODULES.md § 5).
+FALLBACK_ENDPOINT = "http://127.0.0.1:42200"
+
+
+def default_endpoint() -> tuple[str, str]:
+    """Zjistí, kde služba běží, a řekne, odkud to ví.
+
+    Proč to není hledání služby po síti, ale čtení: **adresu si deklaruje sama
+    služba** ve své konfiguraci, a když běží, zapisuje si skutečně přidělený
+    port do `run/service.port`. Tahle funkce čte totéž, co čte `status`.
+
+    Explicitně předaný `endpoint` má vždycky přednost. Tohle je jen výchozí
+    hodnota pro případ, kdy volající žádnou nemá — typicky konzole, skript
+    nebo test. Modul, který má adresu ve své konfiguraci, si ji předá a sem se
+    nedostane (README-MODULES.md § 4: adresa cizí služby patří do konfigurace
+    volajícího).
+
+    Pořadí je od nejjistějšího k nejobecnějšímu:
+
+    1. `run/service.port` — skutečný port běžící služby. Podstatné, když je
+       v konfiguraci nula a port přidělil systém.
+    2. `service.port` z konfigurace — zamýšlený port.
+    3. `FALLBACK_ENDPOINT` — když se nedá přečíst ani konfigurace.
+
+    Výstup:
+        Dvojice (adresa, odkud se vzala). Druhá položka jde do `stats()`, aby
+        šlo poznat, se kterou instancí klient vlastně mluví — bez toho by se
+        ladila jedna a běžela druhá.
+
+    Při chybě:
+        Nevyhazuje. Nečitelná konfigurace není důvod, aby se nedalo zeptat.
+    """
+    from cb_udpipe.config import DEFAULT_CONFIG_PATH
+
+    host, port, port_file = "127.0.0.1", None, None
+    try:
+        syrova = json.loads(DEFAULT_CONFIG_PATH.read_text(encoding="utf-8"))
+        host = syrova["service"]["host"]
+        port = syrova["service"]["port"]
+        port_file = DEFAULT_CONFIG_PATH.parent / syrova["runtime"]["port_file"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        return FALLBACK_ENDPOINT, "zabudovaná výchozí hodnota"
+
+    try:
+        skutecny = int(port_file.read_text().strip())
+        if skutecny > 0:
+            return f"http://{host}:{skutecny}", "run/service.port (běžící služba)"
+    except (OSError, ValueError):
+        pass
+
+    if isinstance(port, int) and port > 0:
+        return f"http://{host}:{port}", "cb-udpipe-config.json"
+    return FALLBACK_ENDPOINT, "zabudovaná výchozí hodnota"
+
 
 class ServiceUnavailable(Exception):
     """Služba cb-udpipe neodpovídá.
@@ -60,12 +115,15 @@ class UdpipeClient:
     volá (README-MODULES.md § 3).
     """
 
-    def __init__(self, *, endpoint: str, log: Any = None,
+    def __init__(self, *, endpoint: str | None = None, log: Any = None,
                  timeout_s: float = 600.0, api: str = "v1"):
         """Vstup:
             endpoint: adresa služby, například `http://127.0.0.1:42200`.
-                Předává se z konfigurace volajícího; modul se nikoho neptá,
-                kde služba běží (README-MODULES.md § 4).
+                **Nepovinná.** Když chybí, zjistí se z konfigurace modulu
+                a z `run/service.port` (viz `default_endpoint`) — adresu své
+                služby deklaruje sama služba a nemá smysl ji opisovat.
+                Modul, který mluví s jinou instancí, si ji předá a přebije tím
+                výchozí hodnotu; kde se vzala, je vidět v `endpoint_source`.
             log: `LogClient`, nebo `None`. Klient loguje sám za sebe — je to
                 jediné místo, kde je vidět obě strany hranice.
             timeout_s: strop na jedno volání rozboru.
@@ -76,7 +134,10 @@ class UdpipeClient:
             adresu a příkaz ke spuštění. `IncompatibleApi`, když služba
             neobsluhuje požadovanou verzi rozhraní.
         """
-        self.endpoint = endpoint.rstrip("/")
+        if endpoint is None:
+            self.endpoint, self.endpoint_source = default_endpoint()
+        else:
+            self.endpoint, self.endpoint_source = endpoint.rstrip("/"), "předáno"
         self.log = log
         self.timeout_s = timeout_s
         self.api = api
@@ -280,19 +341,21 @@ def from_config(config: dict[str, Any], *, log: Any = None) -> UdpipeClient:
     """Postaví klienta z konfigurace volajícího modulu.
 
     Vstup:
-        config: konfigurace, ve které je pod `module.udpipe_endpoint` adresa
-            služby. Adresa cizí služby patří do konfigurace **volajícího**,
-            ne volaného (README-MODULES.md § 4).
+        config: konfigurace volajícího. Adresa se hledá pod
+            `module.udpipe_endpoint`; **když tam není, použije se výchozí**
+            (viz `default_endpoint`). Adresa cizí služby patří do konfigurace
+            volajícího, ne volaného (README-MODULES.md § 4) — ale modul, který
+            mluví s instancí u sebe doma, ji tam mít nemusí.
         log: `LogClient`, nebo `None`.
 
     Výstup:
         Připravený `UdpipeClient`.
 
     Při chybě:
-        `KeyError`, když adresa v konfiguraci chybí; `ServiceUnavailable`,
-        když služba neběží.
+        `ServiceUnavailable`, když služba neběží.
     """
-    return UdpipeClient(endpoint=config["module"]["udpipe_endpoint"], log=log)
+    endpoint = config.get("module", {}).get("udpipe_endpoint")
+    return UdpipeClient(endpoint=endpoint, log=log)
 
 
 # --------------------------------------------------------- z JSON na typy
