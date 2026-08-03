@@ -190,22 +190,51 @@ U každé věty:
 | `from_cache` | přišla z cache, nebo se rozebírala? |
 | `retokenized` | kolik oprav tokenizace v ní modul udělal |
 
-U tokenu je `id`, `form`, `lemma`, `upos`, `xpos`, `feats`, `head`, `deprel`,
-`deps` a `misc`. `feats` a `misc` jsou **slovníky**, ne seznamy řetězců:
+### Co je na tokenu
+
+Token je obyčejný objekt s atributy — **všechny se berou stejně**, tečkou:
 
 ```python
-veta = vysledek.sentences[0]
-veta.tokens[0].feats           # {'Animacy': 'Anim', 'Case': 'Nom',
-                               #  'Gender': 'Masc', 'NameType': 'Giv',
-                               #  'Number': 'Sing'}
-veta.tokens[0].misc            # None      ← za tokenem je mezera
-veta.tokens[0].space_after     # True
-veta.tokens[-2].misc           # {'SpaceAfter': 'No'}
-veta.tokens[-2].space_after    # False
+t = vysledek.sentences[0].tokens[0]      # ze věty „Šel pes do lesa…"
+
+t.id        # 1
+t.form      # 'Šel'          ← tvar, jak stojí v textu
+t.lemma     # 'jít'          ← základní tvar
+t.upos      # 'VERB'         ← slovní druh
+t.xpos      # 'VpYS----R-AAI--'
+t.feats     # {'Aspect': 'Imp', 'Gender': 'Masc', 'Number': 'Sing',
+            #  'Polarity': 'Pos', 'Tense': 'Past', 'VerbForm': 'Part',
+            #  'Voice': 'Act'}
+t.head      # 0              ← id nadřazeného tokenu; 0 je kořen věty
+t.deprel    # 'root'         ← jaký je to vztah k nadřazenému
+t.deps      # None
+t.misc      # None
 ```
 
-`misc` je `None`, když token žádnou poznámku nenese — „nemá hodnotu" je stav,
-ne prázdný slovník. Z `space_after` se skládá původní text zpátky.
+| atribut | co v něm je |
+|---|---|
+| `id` | pořadí ve větě, od jedné |
+| `form` | tvar, jak stojí v textu |
+| `lemma` | základní tvar (`lesa` → `les`) |
+| `upos` | slovní druh: `NOUN`, `VERB`, `ADJ`, `PROPN`, `PUNCT`… |
+| `xpos` | podrobná značka pražského tagsetu |
+| `feats` | **slovník** mluvnických rysů: pád, číslo, rod, čas… |
+| `head` | `id` nadřazeného tokenu; `0` znamená kořen věty |
+| `deprel` | vztah k nadřazenému: `nsubj`, `obj`, `amod`, `case`… |
+| `deps` | rozšířené závislosti; obvykle `None` |
+| `misc` | **slovník** poznámek, hlavně `SpaceAfter` |
+
+`feats` a `misc` jsou slovníky, ne seznamy řetězců — `t.feats["Case"]`, ne
+rozebírání `"Case=Nom"`. Když je token nemá, jsou `None`; „nemá hodnotu" je
+stav, ne prázdný slovník.
+
+Navíc je tam `space_after`, ze kterého se skládá původní text zpátky:
+
+```python
+veta.tokens[0].space_after     # True    ← za „Šel" je mezera
+veta.tokens[-2].space_after    # False   ← před tečkou mezera není
+veta.tokens[-2].misc           # {'SpaceAfter': 'No'}
+```
 
 ### Víceslovné tvary
 
