@@ -63,7 +63,11 @@
   .kos .cap { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
               color:var(--muted); margin:0 0 4px; }
   .kos .cap b { color:var(--ink2); font-weight:600; }
-  .line { display:flex; align-items:center; height:var(--rh); }
+  /* width:max-content + flex:none — jinak se .rw jako flex položka smrští,
+     mřížka přeteče přes okraj rámečku a poslední skupiny (ANCHOR, QANCHOR)
+     skončí opticky venku. */
+  .line { display:flex; align-items:center; height:var(--rh);
+          width:max-content; }
   .line.stred { background:var(--stred); border-radius:3px; }
   .gut { flex:0 0 var(--gutw, 120px); text-align:right; padding-right:9px;
          font-size:11px; color:var(--ink2); white-space:nowrap; overflow:hidden;
@@ -71,10 +75,19 @@
   .line.stred .gut { color:var(--ink); font-weight:650; }
   .gut .ix { color:var(--muted); font-variant-numeric:tabular-nums;
              margin-right:5px; font-size:10px; }
-  .rw { display:grid; grid-auto-flow:column; gap:var(--cgap);
-        grid-auto-columns:var(--cw); }
-  .c { height:11px; border-radius:2px; background:var(--grid); }
+  /* Flex místo gridu schválně: Firefox počítá vnitřní šířku gridu
+     s implicitními sloupci špatně a rámeček pak končí ve 3/4 buněk. */
+  .rw { display:flex; gap:var(--cgap); flex:0 0 auto; }
+  .c { width:var(--cw); flex:0 0 var(--cw);
+       height:11px; border-radius:2px; background:var(--grid); }
   .c.neg { outline:1px solid var(--neg); outline-offset:-1px; }
+  /* pohled matrix: buňka je číslo, žádná barva — jen matice vah */
+  .c.num { background:transparent; height:var(--rh); border-radius:0;
+           font:9.5px/1 ui-monospace,Menlo,monospace; color:var(--ink);
+           display:flex; align-items:center; justify-content:center;
+           font-variant-numeric:tabular-nums; }
+  .c.num.nula { color:var(--grid); }
+  .c.num.neg { outline:none; color:var(--neg); }
 
   .groups { display:flex; gap:2px; margin:0 0 6px; padding-left:var(--gutw, 120px);
             align-items:flex-end; height:18px; }
@@ -105,7 +118,8 @@ buňky = |váha (weight)|, červený rám = negativní vazba.</p>
 <div class="bar">
   <div><label>Pohled (view)</label><div class="seg" id="view">
     <button data-v="complete" aria-pressed="true">kompletní (complete)</button>
-    <button data-v="meta" aria-pressed="false">jen atributy (metadata)</button></div></div>
+    <button data-v="meta" aria-pressed="false">jen atributy (metadata)</button>
+    <button data-v="matrix" aria-pressed="false">matrix — jen váhy</button></div></div>
   <div class="src" id="src"></div>
 </div>
 
@@ -196,22 +210,33 @@ function render() {
   const cols = colsFor();
   const gutw = view === "complete" ? "120px" : "34px";
   document.documentElement.style.setProperty("--gutw", gutw);
+  document.documentElement.style.setProperty(
+    "--cw", view === "matrix" ? "27px" : "12px");
 
   $("#src").innerHTML = view === "complete" && record.source
     ? "věta: <b></b>" : "";
   if (view === "complete" && record.source)
     $("#src").querySelector("b").textContent = record.source;
 
-  // hlavička skupin — šířky podle počtu sloupců (rozteč = šířka + mezera)
-  const pitch = 13;
+  // hlavička skupin — šířky podle počtu sloupců (rozteč = šířka + mezera);
+  // v pohledu matrix jsou buňky širší, rozteč se musí držet s nimi
+  const pitch = (view === "matrix" ? 27 : 12) + 1;
+  // Explicitní šířky v px: Firefox počítá max-content u vnořeného
+  // flexu/gridu nespolehlivě a rámeček končil ve 3/4 buněk. Sloupce
+  // známe přesně, tak layoutu nic nenecháváme.
+  const rwW = cols.length * pitch - 1;
+  const boxW = (view === "complete" ? 120 : 34) + rwW + 22;
   grp.innerHTML = "";
   for (const g of GROUPS) {
     const n = cols.filter(c => c.g === g).length;
     if (!n) continue;
     const d = document.createElement("div");
-    d.textContent = g + " · " + n;
+    const w = n * pitch - 1;
+    // do úzké skupiny se text nevejde — zůstane barevný proužek a tooltip
+    if (w >= 52) d.textContent = g + " · " + n;
+    d.title = g + " · " + n;
     d.style.color = GCOL[g];
-    d.style.width = (n * pitch - 1) + "px";
+    d.style.width = w + "px";
     grp.appendChild(d);
   }
   grp.style.paddingLeft = gutw;
@@ -231,14 +256,23 @@ function render() {
 
     const rw = document.createElement("div");
     rw.className = "rw";
+    rw.style.width = rwW + "px";
     const have = new Map(actsOf(row).map(([g, a, w]) => [g + "|" + a, w]));
     for (const c of cols) {
       const cell = document.createElement("span");
       cell.className = "c";
       const w = have.get(c.g + "|" + c.a);
       if (count) stat.cells++;
-      if (w !== undefined) {
-        if (count) stat.lit++;
+      if (w !== undefined && count) stat.lit++;
+      if (view === "matrix") {
+        cell.classList.add("num");
+        if (w === undefined) { cell.textContent = "·"; cell.classList.add("nula"); }
+        else {
+          cell.textContent = w.toFixed(1).replace("0.", ".");
+          if (w < 0) cell.classList.add("neg");
+          cell.dataset.tip = c.a + " · váha " + w;
+        }
+      } else if (w !== undefined) {
         cell.style.background = GCOL[c.g];
         cell.style.opacity = 0.25 + 0.75 * Math.abs(w);
         if (w < 0) cell.classList.add("neg");
@@ -256,6 +290,7 @@ function render() {
   // 1 · věta jako spojené pole — referenční mřížka, počítá se z ní hustota
   const fbox = document.createElement("div");
   fbox.className = "kos";
+  fbox.style.width = boxW + "px";
   const fcap = document.createElement("div");
   fcap.className = "cap";
   fcap.textContent = "věta (sentence) · " + rows.length + " řádků (rows)";
@@ -268,6 +303,7 @@ function render() {
     const left = Math.max(0, b.center - record.r);
     const box = document.createElement("div");
     box.className = "kos";
+    box.style.width = boxW + "px";
     const cap = document.createElement("div");
     cap.className = "cap";
     cap.innerHTML = "koš (basket) " + b.center + " · střed (center) <b></b> · " +
