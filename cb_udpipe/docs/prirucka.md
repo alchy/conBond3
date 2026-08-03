@@ -26,6 +26,61 @@ Je to ta hranice z § 19 politiky v praxi: náš kód nepotřebuje nic a běží
 kdekoli, vendorovaný nástroj si nese těžké závislosti. **Hranice vede po
 procesu, ne po prostředí.**
 
+### Ovládací program běžel systémovým Pythonem
+
+Shebang `#!/usr/bin/env python3` vezme **první** `python3` z PATH. Na
+vývojovém stroji to byl homebrew Python **3.14.6**, zatímco projekt stojí na
+**3.11.15** a `./run-python` na tom trvá.
+
+Důsledek byl tichý a nepříjemný: `./cb-udpipe.py start` zvedl službu na 3.14,
+ale testy i měřicí skript běžely na 3.11. **Měřilo se tedy proti něčemu
+jinému, než se tvrdilo** — táž třída vady, na kterou doplatil conBond2 u testů
+měřících proti pracovní kopii.
+
+Poznalo se to jedinou otázkou: *proč vlastně běží systémovým Pythonem?*
+`GET /version` to hlásil celou dobu, jen se na to nikdo nepodíval.
+
+`cb-udpipe.py` se teď na začátku sám přepne přes `os.execv` na
+`.venv/bin/python`. Pravidlo je v politice (§ 19), protože se týká každého
+modulu.
+
+*Po opravě přeměřeno: čísla vyšla totožně až na dobu prvního průchodu
+(41,6 → 39,1 s, v rámci šumu). Rozbor dělá UDPipe, který běžel správně po
+celou dobu — ale vědět to a doufat v to jsou dvě různé věci.*
+
+### `stop` a hned `start` může selhat
+
+Port UDPipe se po ukončení nestihne uvolnit, takže `start` bezprostředně po
+`stop` narazí na obsazený port a služba nenaběhne. `restart` to řeší tím, že
+mezi krokem čeká na skutečný konec procesu; ruční `stop && start` v jednom
+řádku ne.
+
+Když se to stane, stačí start zopakovat — nebo použít `./cb-udpipe.py restart`.
+
+### Bez PID souboru `stop` službu nenajde
+
+`run/` smí zmizet a pro **data** je to neškodné (§ 2 politiky). Pro **řízení**
+ne: `stop` hledá PID právě tam, a když soubor chybí, ohlásí „cb-udpipe neběží"
+— i když proces normálně běží dál a drží port.
+
+Stalo se to při stavbě, když jsem `run/*.pid` smazal ručně mezi pokusy o start.
+Služba pak osiřela a musela se zabít podle PID z `ps`.
+
+Je v tom asymetrie, kterou stojí za to znát: **`status` pozná osiřelý PID
+soubor** (proces neexistuje) a nahlásí ho, ale **opačný případ nepozná** —
+běžící proces bez PID souboru vypadá jako zastavená služba.
+
+Když se to stane:
+
+```bash
+lsof -ti:42200 -ti:42201        # kdo drží naše porty
+ps -eo pid,command | grep -E "udpipe2_server|cb-udpipe"
+kill <pid>
+```
+
+Nedělej `pkill -f udpipe` naslepo — na stroji může běžet UDPipe jiného
+projektu (conBond2 má vlastní na portu 9010) a zabil bys cizí proces.
+
 ### Rodičovský strop musí být větší než potomkův
 
 `start` se odpojí na pozadí a čeká, až služba odpoví na `/version`. Potomek

@@ -1358,6 +1358,32 @@ ze seznamu v jazykovém profilu, ne „česky vypadající" jména.
   cachuje otiskem, takže běžné spuštění nestojí nic navíc) a dá kořen projektu
   na `PYTHONPATH`, aby `import cb_<name>` fungoval odkudkoli. `./run-python`
   bez argumentů vypíše stav prostředí, `--check` vynutí kontrolu závislostí.
+* **Ovládací program se sám přepne na projektový interpret.** Shebang
+  `#!/usr/bin/env python3` vezme **první** `python3` z PATH, což je systémový
+  interpret — a služba by pak běžela na jiné verzi než testy a než měření,
+  které se proti ní pouští.
+
+  ```python
+  #!/usr/bin/env python3
+  import os, sys
+  from pathlib import Path
+
+  KOREN = Path(__file__).resolve().parent
+  VENV_PYTHON = KOREN / ".venv" / "bin" / "python"
+
+  if VENV_PYTHON.is_file() and \
+          Path(sys.executable).resolve() != VENV_PYTHON.resolve():
+      os.execv(str(VENV_PYTHON),
+               [str(VENV_PYTHON), str(Path(__file__).resolve())] + sys.argv[1:])
+  ```
+
+  *Zapsáno po chybě: `./cb-udpipe.py start` zvedl službu na Pythonu 3.14.6,
+  zatímco `./run-python` a všechny testy běžely na 3.11.15. Měření se pak
+  pouštělo proti něčemu jinému, než se tvrdilo — táž třída vady, na kterou
+  doplatil conBond2 u testů měřících proti pracovní kopii.*
+
+  Chybějící `.venv` se nechá být: kód modulů vystačí se standardní knihovnou
+  a spustit se má i tam, kde prostředí ještě není postavené.
 * **Kód našich modulů vystačí se standardní knihovnou.** `service.py`, `api.py`,
   `client.py` i `control.py` nesmějí potřebovat nic z venv.
 * **Vendorované nástroje smějí mít závislosti** a nesou si je do sdíleného

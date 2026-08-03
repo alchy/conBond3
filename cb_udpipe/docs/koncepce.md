@@ -555,7 +555,7 @@ konfigurace `b5d85137bd39`. Úplná data v `mereni-2026-08-03.json`.
 | oprav celkem | 273 | některé věty mají oprav víc |
 | **podíl tokenizace na čase** | **2,7 %** | ⇐ **na tomhle stojí dvoufázový postup** |
 | podíl zásahů (2. průchod) | 100 % | klíč funguje |
-| zrychlení druhým průchodem | **27×** (41,6 s → 1,5 s) | důvod, proč modul existuje |
+| zrychlení druhým průchodem | **26×** (39,1 s → 1,5 s) | důvod, proč modul existuje |
 | cache na větu | 2 747 B | 26 tisíc vět ≈ 70 MB |
 | **neshod cache proti čerstvému rozboru** | **0** | ⇐ protiváha k podílu zásahů |
 | poškozených řádků | 0 | |
@@ -573,6 +573,16 @@ klíčem, takže sám o sobě nic neznamená. Nula neshod proti čerstvému rozb
 Zrychlení se měří **jen od studené cache**. Druhý běh nad plnou cache vrátí
 1,0×, protože z ní bere i „první" průchod; není to vlastnost modulu, ale
 artefakt měření a `scripts/mereni.py` na to upozorňuje v docstringu.
+
+**Jednotný interpret.** První kolo měření proběhlo za stavu, kdy služba běžela
+na Pythonu 3.14.6 (systémový, přes shebang) a měřicí skript na 3.11.15
+(projektový, přes `./run-python`). Měřilo se tedy proti něčemu jinému, než se
+tvrdilo — táž třída vady, na kterou doplatil conBond2 u testů měřících proti
+pracovní kopii. Ovládací program se teď přepíná na projektový interpret sám
+(politika, § 19) a čísla výše jsou z opakovaného měření na 3.11.15. Změnila se
+jen doba prvního průchodu (41,6 → 39,1 s, tedy v rámci šumu); podíl oprav,
+poměr fází i nula neshod vyšly totožně, protože rozbor dělá UDPipe, který
+běžel správně po celou dobu.
 
 ### 13.6 Sjednocení znaků: nepomohlo by a něco by stálo
 
