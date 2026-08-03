@@ -43,23 +43,55 @@ def _scena():
 
 
 class TestPropojeni(unittest.TestCase):
+    """Propojení je čistě váhové: žádné filtry, jen členy skóre a θ/ε."""
 
-    def test_tp1_odpoved_s_dolozenim(self):
+    def test_tp1_rozklad_skore_je_povinny(self):
         corpus = _scena()
         otazka = SentenceField((KAM, SEL2, PES2, OTAZNIK), r=1,
                                registry=corpus.registry, source="Kam šel pes?")
         vysledek = match(otazka, corpus)
-        self.assertEqual(vysledek.outcome, "odpoved")
-        self.assertEqual(vysledek.best.token.lemma, "les")
-        self.assertTrue(vysledek.best.top_nodes)      # rozklad je povinný
-        self.assertIn("WORD=VERB:jít", vysledek.best.shared_words)
+        self.assertTrue(vysledek.candidates)
+        nejlepsi = vysledek.best
+        self.assertTrue(nejlepsi.top_nodes)           # doložení (P-D)
+        # skóre je součtem svých členů, nic se neztrácí ani nepřidává
+        self.assertAlmostEqual(
+            nejlepsi.score,
+            nejlepsi.meet_score + nejlepsi.topic_score + nejlepsi.given_score,
+            places=3)
 
-    def test_tp2_nevim_bez_spolecneho_obsahu(self):
+    def test_tp2_kandiduje_kazdy_token_bez_filtru(self):
+        # dřív obsahový filtr větu bez sdílených slov zahodil — a tím
+        # vyhladověl učení, které má právě takové mosty stavět
         corpus = _scena()
         otazka = SentenceField((KAM, BEZELA2, KOCKA2, OTAZNIK), r=1,
                                registry=corpus.registry,
                                source="Kam běžela kočka?")
-        self.assertEqual(match(otazka, corpus).outcome, "nevim")
+        vysledek = match(otazka, corpus)
+        self.assertEqual(len(vysledek.candidates),
+                         len(corpus[0].tokens))       # každý token kandidát
+
+    def test_tp3_uceni_premosti_ruzne_tvary(self):
+        """Kontrastivní krok spojí VERB z otázky s ADJ z faktu."""
+        from cb_field.learning import train_on_etalon
+        corpus = _scena()
+        otazka = SentenceField((KAM, SEL2, PES2, OTAZNIK), r=1,
+                               registry=corpus.registry, source="Kam šel pes?")
+
+        class _Parser:                     # atrapa: vrací zmraženou otázku
+            def parse(self, text):
+                class _R:
+                    sentences = [type("_S", (), {
+                        "tokens": (KAM, SEL2, PES2, OTAZNIK),
+                        "source": "Kam šel pes?"})()]
+                return _R()
+
+        train_on_etalon(corpus, [{"otazka": "Kam šel pes?",
+                                  "odpoved_lemma": "les",
+                                  "zodpoveditelna": True}], _Parser())
+        hrana = corpus.registry.get_link("WORD=VERB:jít", "WORD=NOUN:les")
+        self.assertIsNotNone(hrana)
+        self.assertGreater(hrana[0], 0)
+        self.assertEqual(hrana[1], "etalon")
 
 
 if __name__ == "__main__":

@@ -21,7 +21,7 @@ from collections import Counter
 from datetime import date
 from pathlib import Path
 
-from cb_field.matching import MATCH_PREFIXES, candidate_centers, match
+from cb_field.matching import MATCH_PREFIXES, match
 
 MODULE_DIR = Path(__file__).resolve().parent
 REPORT = MODULE_DIR / "docs" / "mereni-uceni.md"
