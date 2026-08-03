@@ -107,8 +107,20 @@ def match(question: SentenceField, corpus: Corpus,
     rozkladem na top uzly — odpověď bez rozkladu se nevydává (P-D).
     """
     registry = corpus.registry
+    q_words = _content_words(question)
+
+    # kandidátní věty nejdřív — levně, bez matic; matice se počítají
+    # jen pro ně (na korpusu tisíců vět by plný průchod neúnosně rostl)
+    candidate_sentences = [
+        (sentence, q_words & _content_words(sentence))
+        for sentence in corpus]
+    candidate_sentences = [
+        (s, shared) for s, shared in candidate_sentences
+        if len(shared) >= MIN_SHARED_WORDS]
+
     question.matrix(Representation.COMPLETE)
-    matrices = [f.matrix(Representation.COMPLETE) for f in corpus]
+    for sentence, _shared in candidate_sentences:
+        sentence.matrix(Representation.COMPLETE)
 
     n = len(registry)
     links = registry.link_matrix()
@@ -123,7 +135,6 @@ def match(question: SentenceField, corpus: Corpus,
 
     q_matrix = question.matrix(Representation.COMPLETE)
     q_bag = spread(q_matrix.sum(axis=0))
-    q_words = _content_words(question)
 
     # poptávané souřadnice otázky (dimenze bez upřesnění)
     question_dims = set()
@@ -150,15 +161,16 @@ def match(question: SentenceField, corpus: Corpus,
         # u maskulin) a typ=osoba přijde až s gazetteerem (krok 5)
         if "entity" in question_dims:
             token = sentence.tokens[center]
-            if token.deprel.split(":")[0] in ("nsubj", "obj", "iobj"):
+            if token.deprel.split(":")[0] in ("nsubj", "obj", "iobj") \
+                    or token.head == 0:
+                # podmět, předmět i jmenný přísudek („Co je světlo?" →
+                # „…je vlnění", root) jsou entity i bez kotvy
                 return True
         return False
 
     candidates = []
-    for sentence, matrix in zip(corpus, matrices):
-        shared = q_words & _content_words(sentence)
-        if len(shared) < MIN_SHARED_WORDS:
-            continue
+    for sentence, shared in candidate_sentences:
+        matrix = sentence.matrix(Representation.COMPLETE)
         # obsahový člen na úrovni věty: sdílená slova pinují fakt
         # k otázce, i když leží mimo okno kandidáta (vazby slovníku
         # ze starého pole). Váhy 0.7·0.7 za sdílené slovo.

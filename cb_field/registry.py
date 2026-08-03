@@ -42,6 +42,7 @@ class VerticalRegistry:
         #: Vážené vazby mezi vertikálami: (od, do) → váha. Jeden mechanismus
         #: pro hierarchii kotev, mosty otázka↔odpověď i budoucí synonymii.
         self._links: dict = {}
+        self._matrix_cache = None
         for key in keys:
             self.add(key)
         # Hierarchie kotev je součást jazyka systému, ne volitelný doplněk —
@@ -65,6 +66,7 @@ class VerticalRegistry:
             i = len(self._keys)
             self._keys.append(key)
             self._index[key] = i
+            self._matrix_cache = None
         return i
 
     def index(self, key: str) -> int:
@@ -121,6 +123,7 @@ class VerticalRegistry:
         self.add(src)
         self.add(dst)
         self._links[(src, dst)] = (weight, source)
+        self._matrix_cache = None
 
     def links(self) -> tuple:
         """Všechny vazby jako čtveřice (od, do, váha, zdroj)."""
@@ -132,12 +135,19 @@ class VerticalRegistry:
         return self._links.get((src, dst))
 
     def link_matrix(self) -> np.ndarray:
-        """Vazby jako matice L: L[i, j] = váha vazby key(i) → key(j)."""
-        n = len(self._keys)
-        matrix = np.zeros((n, n), dtype=DTYPE)
-        for (src, dst), (weight, _source) in self._links.items():
-            matrix[self._index[src], self._index[dst]] = weight
-        return matrix
+        """Vazby jako matice L: L[i, j] = váha vazby key(i) → key(j).
+
+        Cache: na velkém registru je L drahá (n²) a párování ji chce
+        pro každou otázku — přestaví se jen po růstu nebo změně vazeb.
+        Vrácená matice se nesmí mutovat (čtou ji všichni).
+        """
+        if self._matrix_cache is None:
+            n = len(self._keys)
+            matrix = np.zeros((n, n), dtype=DTYPE)
+            for (src, dst), (weight, _source) in self._links.items():
+                matrix[self._index[src], self._index[dst]] = weight
+            self._matrix_cache = matrix
+        return self._matrix_cache
 
     def spread(self, vector) -> np.ndarray:
         """Jeden krok šíření aktivace po vazbách: v + v·L.

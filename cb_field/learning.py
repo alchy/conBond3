@@ -25,7 +25,10 @@ from cb_field.matching import MATCH_PREFIXES, candidate_centers, match
 
 MODULE_DIR = Path(__file__).resolve().parent
 REPORT = MODULE_DIR / "docs" / "mereni-uceni.md"
+REPORT_KORPUSY = MODULE_DIR / "docs" / "mereni-uceni-korpusy.md"
 LEARNED = MODULE_DIR / "data-persistent" / "verticals-learned.json"
+LEARNED_KORPUSY = (MODULE_DIR / "data-persistent"
+                   / "verticals-learned-korpusy.json")
 
 #: Rychlost učení a spodní práh souvýskytů pro Hebba. Startovní hodnoty
 #: (registr prahů modulu); kalibruje protokol níže.
@@ -167,12 +170,18 @@ def train_on_etalon(corpus, etalon_entries, parser,
 
 def main() -> None:
     from cb_udpipe import UdpipeClient
-    from cb_field.evaluate import ETALON, TESTBED, build_corpus, \
-        evaluate_corpus, load_etalon
+    from cb_field.evaluate import (build_complex_corpus, build_corpus,
+                                   evaluate_corpus, load_etalon,
+                                   load_etalon_korpusy)
 
+    korpusy = "korpusy" in sys.argv[1:]
     parser = UdpipeClient()
-    corpus = build_corpus(parser)
-    etalon = load_etalon()
+    if korpusy:
+        corpus = build_complex_corpus(parser)
+        etalon = load_etalon_korpusy()
+    else:
+        corpus = build_corpus(parser)
+        etalon = load_etalon()
 
     phases = []
 
@@ -191,7 +200,7 @@ def main() -> None:
     print(f"4c kontrastivně: {train_stats}")
     measure("po 4c (etalon)")
 
-    corpus.registry.save(LEARNED)
+    corpus.registry.save(LEARNED_KORPUSY if korpusy else LEARNED)
 
     baseline, final = phases[0], phases[-1]
     protivaha_ok = final[2] >= baseline[2]
@@ -201,7 +210,8 @@ def main() -> None:
     print(f"\nprotiváha (NEVÍM-správnost neklesla): "
           f"{'ano' if protivaha_ok else 'NE'} → {verdict}")
 
-    lines = ["# Měření učení vah (4b Hebb + 4c kontrastivně)", ""]
+    lines = ["# Měření učení vah (4b Hebb + 4c kontrastivně)"
+             + (" — komplexní korpusy" if korpusy else ""), ""]
     lines.append(f"- datum: {date.today().isoformat()} · η_hebb={ETA_HEBB} "
                  f"· η_kontrast={ETA_CONTRAST} · epochy≤{MAX_EPOCHS}")
     lines.append(f"- Hebb: {hebb_stats} · kontrastivně: {train_stats}")
@@ -216,8 +226,9 @@ def main() -> None:
     lines.append(f"Výrok protokolu: **{verdict}** (učení, které shodí "
                  f"NEVÍM-správnost, se nepřijímá — § 6 spec). Naučený "
                  f"registr: `data-persistent/verticals-learned.json`.")
-    REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"zapsáno: {REPORT.relative_to(MODULE_DIR.parent)}")
+    report_path = REPORT_KORPUSY if korpusy else REPORT
+    report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"zapsáno: {report_path.relative_to(MODULE_DIR.parent)}")
 
 
 if __name__ == "__main__":

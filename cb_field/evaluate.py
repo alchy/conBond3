@@ -26,7 +26,28 @@ from cb_field.service import Representation
 MODULE_DIR = Path(__file__).resolve().parent
 TESTBED = MODULE_DIR / "tests" / "data" / "testbed-kdo-kde-kdy.txt"
 ETALON = MODULE_DIR / "tests" / "data" / "etalon-otazky.jsonl"
+ETALON_KORPUSY = (MODULE_DIR / "tests" / "data"
+                  / "etalon-otazky-korpusy.jsonl")
 REPORT = MODULE_DIR / "docs" / "mereni-propojeni.md"
+REPORT_KORPUSY = MODULE_DIR / "docs" / "mereni-propojeni-korpusy.md"
+
+
+def build_complex_corpus(parser, r: int = 1):
+    """Korpus komplexních textů (zákon/fyzika/spisovatelé) — viz
+    measure_corpora; potřebuje pořízené soubory (fetch-korpusy.sh)."""
+    from cb_field.measure_corpora import DOMAINS, build, ingest
+    sentences = []
+    for names in DOMAINS.values():
+        parsed, _errors, _digests = ingest(parser, names)
+        sentences.extend(parsed)
+    corpus, _skipped = build(sentences, r=r)
+    return corpus
+
+
+def load_etalon_korpusy() -> list:
+    return [json.loads(line) for line
+            in ETALON_KORPUSY.read_text(encoding="utf-8").splitlines()
+            if line.strip()]
 
 
 def build_corpus(parser, r: int = 1) -> Corpus:
@@ -109,16 +130,23 @@ def evaluate_corpus(corpus, etalon, parser):
 def main() -> None:
     from cb_udpipe import UdpipeClient
 
+    korpusy = "korpusy" in sys.argv[1:]
     parser = UdpipeClient()
-    corpus = build_corpus(parser)
-    etalon = load_etalon()
+    if korpusy:
+        corpus = build_complex_corpus(parser)
+        etalon = load_etalon_korpusy()
+        etalon_path, report_path = ETALON_KORPUSY, REPORT_KORPUSY
+    else:
+        corpus = build_corpus(parser)
+        etalon = load_etalon()
+        etalon_path, report_path = ETALON, REPORT
     counts, presnost, mlceni, details = evaluate_corpus(
         corpus, etalon, parser)
 
     answerable = sum(1 for e in etalon if e["zodpoveditelna"])
     unanswerable = len(etalon) - answerable
     digest_t = hashlib.sha256(TESTBED.read_bytes()).hexdigest()[:12]
-    digest_e = hashlib.sha256(ETALON.read_bytes()).hexdigest()[:12]
+    digest_e = hashlib.sha256(etalon_path.read_bytes()).hexdigest()[:12]
 
     print(f"etalon: {len(etalon)} otázek ({answerable} zodpověditelných) · "
           f"korpus {len(corpus)} vět · θ={THETA} ε={EPSILON}")
@@ -133,7 +161,10 @@ def main() -> None:
         print(f"  {mark} [{grade:<15}] {otazka:<38} → {answer:<10} "
               f"(oček. {expected})  {score}")
 
-    report = ["# Měření propojení (4a, ruční W) — etalon otázek", ""]
+    title = ("# Měření propojení — etalon nad komplexními korpusy"
+             if korpusy else
+             "# Měření propojení (4a, ruční W) — etalon otázek")
+    report = [title, ""]
     report.append(f"- datum: {date.today().isoformat()} · verze modulu "
                   f"{__version__} · θ={THETA} · ε={EPSILON} · r={corpus.r}")
     report.append(f"- data: testbed sha256:{digest_t} · "
@@ -160,8 +191,8 @@ def main() -> None:
                   "SLABÁ → učení vah (4b/4c); NEPŘESNÁ → fronta růstu os; "
                   "NEPOKRYTÁ → známé díry reprezentace (typ — krok 5, "
                   "slot kdy — krok 3).")
-    REPORT.write_text("\n".join(report) + "\n", encoding="utf-8")
-    print(f"\nzapsáno: {REPORT.relative_to(MODULE_DIR.parent)}")
+    report_path.write_text("\n".join(report) + "\n", encoding="utf-8")
+    print(f"\nzapsáno: {report_path.relative_to(MODULE_DIR.parent)}")
 
 
 if __name__ == "__main__":

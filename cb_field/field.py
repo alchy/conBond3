@@ -140,8 +140,15 @@ class SentenceField:
             for case in ((token.feats or {}).get("Case") or "").split(","):
                 direction = PREPOSITION_DIRECTIONS.get((token.lemma, case))
                 if direction and token.head in id_to_index:
-                    self.activations[id_to_index[token.head]].graft(
-                        f"ANCHOR={direction}", DEFAULT_WEIGHT)
+                    head = id_to_index[token.head]
+                    # Předložka u tázacího slova kvalifikuje neznámou:
+                    # „kolem čeho" se ptá i na směr — kotva jde na
+                    # stranu otázky (QANCHOR), ne odpovědi.
+                    side = "QANCHOR" if any(
+                        k.startswith("QANCHOR=")
+                        for k in self.activations[head].weights())                         else "ANCHOR"
+                    self.activations[head].graft(
+                        f"{side}={direction}", DEFAULT_WEIGHT)
                     break
 
     @classmethod
