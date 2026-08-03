@@ -394,6 +394,16 @@ Matice je **řídká a vážená**, drží se jen nad prahem z registru (kap. 29
 a každá vazba nese počet dokladů. Bez počtu se nedá poznat vazba z tisíce vět od
 vazby z jedné.
 
+### 12.3 Co tím systém získá
+
+```
+dnes:   otázka → slova → věty, kde ta slova leží  (pytel)
+nově:   otázka → vzor → šablony → věty toho DRUHU (třída)
+```
+
+Rozdíl je vidět přesně na tom selhání: v pytli vět o Nerudovi Praha leží. Ve
+třídě vět o **věznění** Neruda není, a odpověď je mlčení.
+
 ### 12.4 Proč slučování nesmí zůstat u přesné shody
 
 Slučování stejných vektorů (`SEAM-4`) je dnes **totožnost**, a to má měřený
@@ -425,16 +435,6 @@ Tři důsledky pro tento návrh, každý s vlastním místem:
   (syntaktický, morfologický, sémantický, lexikální), spočítat shodu v každém
   zvlášť a skládat až výsledky — táž zásada jako `INV-14`: pohled nepřidává, jen
   jinak čte. Je to otevřená otázka `Q-9`, ne rozhodnutí.
-
-### 12.3 Co tím systém získá
-
-```
-dnes:   otázka → slova → věty, kde ta slova leží  (pytel)
-nově:   otázka → vzor → šablony → věty toho DRUHU (třída)
-```
-
-Rozdíl je vidět přesně na tom selhání: v pytli vět o Nerudovi Praha leží. Ve
-třídě vět o **věznění** Neruda není, a odpověď je mlčení.
 
 ## 13 · Rozbor: UDPipe jako lexikální nástroj
 
@@ -1230,7 +1230,7 @@ průběžně měří:
 další evoluce. Stejně jako pravidlo vzniká z opakovaného pozorování, může vzniknout
 i návrh nové architektury.
 
-### 22.1 Atribut je objekt, ne příznak
+### 23.1 Atribut je objekt, ne příznak
 
 Aby šlo měřit referenční jazyk, musí být jeho stavební kameny **popsatelné**.
 Dnes je `Case=Nom` bit; má to být záznam s vlastnostmi:
@@ -1249,7 +1249,7 @@ výskyt            23 % ve faktech · 4 % v otázkách
 
 Tím se **atributy samy stanou znalostní bází**: dají se nad nimi měřit překryvy,
 odvozovat váhy, sledovat přínos a rozhodovat, které vyřadit. To je přesně to, co
-kapitola 22 žádá — architektura jako objekt měření.
+tahle kapitola žádá — architektura jako objekt měření.
 
 Zásada, která to drží při zemi: **nepřidávat atributy, dokud slučování nemá
 metriku** (12.4). Bez ní každý nový sloupec zvyšuje jedinečnost a zobecnění
@@ -1915,7 +1915,7 @@ Sloupec **kde** ukazuje, kde je to v této verzi doplněné.
 
 | id | co chybělo | proč to bolí | kde |
 |---|---|---|---|
-| `G-1` | formát a životní cyklus úložiště | kap. 22 (experimentální vrstva) bez snímků nejde postavit | 14.5 |
+| `G-1` | formát a životní cyklus úložiště | kap. 26 (experimentální vrstva) bez snímků nejde postavit | 14.5 |
 | `G-2` | verzování schématu a migrace | naměřené číslo bez verze dat není měření | 14.5, 36.1 |
 | `G-3` | záloha a obnova | naučené znalosti jsou po incidentu nenahraditelné | 14.5 |
 | `G-4` | studený start s prázdnou bází | první běh je nedefinovaný stav | 35.3 |
@@ -2001,6 +2001,7 @@ nepojmenoval, že jsou to **pohledy**, ne moduly (kap. 20).
 | `Q-6` | Je matice šablon součástí produkční báze, nebo se přepočítává z korpusu? | `Q-1`, doba startu |
 | `Q-7` | Jak se verzuje referenční jazyk, když se ho systém učí (kap. 22)? Je to artefakt v gitu, nebo stav v bázi? | reprodukovatelnost, kap. 26 |
 | `Q-8` | Přesný seznam jádra dat (40.1) — co konkrétně tam patří a co ne | krok 0 |
+| `Q-9` | Porovnává se vektor celý, nebo po nezávislých pohledech (syntaktický, morfologický, sémantický, lexikální) se skládáním až výsledků? | `SEAM-4`, metrika slučování (12.4), krok 4 |
 
 ## B.2 Rizika
 
@@ -2020,7 +2021,8 @@ nepojmenoval, že jsou to **pohledy**, ne moduly (kap. 20).
 **Invarianty** `INV-1` monotónnost · `INV-2` řetěz · `INV-3` odvozené ≠ doložené ·
 `INV-4` mlčení · `INV-5` spor · `INV-6` nejslabší důkaz · `INV-7` práh ·
 `INV-8` dvoustupňové měření · `INV-9` nula ≠ chyba · `INV-10` produkční báze ·
-`INV-11` model jen navrhuje · `INV-12` odvolatelnost
+`INV-11` model jen navrhuje · `INV-12` odvolatelnost · `INV-13` protiváha měřítka ·
+`INV-14` pohled nic nepřidává
 
 **Švy** `SEAM-1` ZdrojAktivaci · `SEAM-2` Uloziste · `SEAM-3` SkladacVektoru ·
 `SEAM-4` Slucovac · `SEAM-5` Sitko · `SEAM-6` Hranovac · `SEAM-7` Rozmer ·
@@ -2033,11 +2035,14 @@ nepojmenoval, že jsou to **pohledy**, ne moduly (kap. 20).
 a kvantifikátory · `C-14` sebereferenční ohodnocení
 
 **Metriky** `M-1` dosah · `M-2` zúžení · `M-3` správné mlčení · `M-4` konfabulace ·
-`M-5` doptání · `M-6` ohlášený spor · `M-7` doba odpovědi
+`M-5` doptání · `M-6` ohlášený spor · `M-7` doba odpovědi ·
+`M-8` pokrytí vysvětlením · `M-9` oddělení různých entit · `M-10` spotřeba signálu
 
 **Zkoušky** `T-1` umí · `T-2` mlčí · `T-3` doptá se · `T-4` ohlásí spor ·
 `T-5` konformita švu · `T-6` regrese · `T-7` jazyková čistota · `T-8` licence ·
-`T-9` výkon · `T-10` instalace · `T-11` křížová shoda metod
+`T-9` výkon · `T-10` instalace · `T-11` křížová shoda pohledů ·
+`T-12` směr závislostí z importů · `T-13` pojistka proti vakuu ·
+`T-14` pokrytí × přesnost
 
 ---
 

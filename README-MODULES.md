@@ -202,7 +202,11 @@ cb_<name>/
 
     data-persistent/          perzistentní data modulu — co přežije restart
     run/                      běhový stav — PID, port, rozdělaná fronta
-    docs/                     dokumentace modulu — návrh, měření, rozhodnutí
+    scripts/                  pořizovací skripty pro velká data (§ 19)
+    docs/
+        koncepce.md           proč je modul postavený takhle a ne jinak
+        metody.md             každá metoda: co dělá, proč existuje, na čem visí
+        prirucka.md           otázky, které padly při stavbě, a pasti
     tests/
         data/                 zmražená testovací data
         test_service.py       logika bez služby
@@ -224,6 +228,13 @@ zkopírovat i nastavení.
 | `README-<NAME>.md` v kořeni | **vývojář, který modul volá** | ukázky použití, výčty hodnot, nejčastější omyly |
 | `cb_<name>/README.md` | kdo modul udržuje | rozhraní, porty, prahy, závislosti, co modul neřeší |
 | `cb_<name>/docs/` | kdo se ptá proč | návrhová rozhodnutí, naměřená čísla, příručka |
+
+Adresář `docs/` má **pevnou trojici souborů**, aby se hledalo v každém modulu
+stejně: `koncepce.md` (proč je modul postavený takhle a ne jinak — u každého
+rozhodnutí, z čeho plyne), `metody.md` (každá veřejná metoda: co dělá, proč
+existuje, na čem visí) a `prirucka.md` (otázky, které padly při stavbě, a pasti,
+do kterých se dá spadnout). Modul smí přidat další soubor; tyhle tři vynechat
+nesmí.
 
 Vývojářské README stojí **v kořeni** schválně: kdo modul jen používá, nemá
 důvod chodit do jeho adresáře, a `ls` v kořeni mu ukáže, co všechno jde volat.
@@ -290,8 +301,17 @@ je vnitřek a smí se kdykoli změnit.
 from cb_logger.client import LogClient
 from cb_logger.record import Result, Level
 
-__all__ = ["LogClient", "Result", "Level"]
+#: Verze modulu; roste s každou změnou chování. Čte ji `GET /version`.
+__version__ = "0.1.0"
+#: Verze rozhraní, které služba obsluhuje. Při přechodu na v2 tu chvíli stojí obě.
+__api__ = ["v1"]
+
+__all__ = ["LogClient", "Result", "Level", "__version__", "__api__"]
 ```
+
+**`__version__` a `__api__` žijí v `__init__.py`, ne v konfiguraci.** Verze
+popisuje kód, a kdyby stála v konfiguraci, rozešla by se s ním při první
+úpravě — přesně ta tichá vada, kterou § 14 loví.
 
 ### Explicitní průchod
 
@@ -1122,7 +1142,17 @@ pro vývoj a pro testy — bez něj se test řízení píše špatně.
 
 * **Testy se píšou v `unittest` ze standardní knihovny.** Žádný `pytest`,
   žádná testovací závislost — testovací závislost má tendenci se stát provozní.
-  Spouští se `python -m unittest discover`.
+* **Spouští se přes `./run-python`, nikdy přímo `python`** (§ 19):
+
+  ```
+  ./run-python -m unittest discover                      celý projekt
+  ./run-python -m unittest discover -s cb_<name> -t .    jeden modul
+  ```
+
+  `./run-python` ověří verzi interpretu, doinstalované závislosti a postaví
+  `PYTHONPATH` na kořen projektu. Spuštění systémovým `python` je chyba, která
+  se neprojeví hláškou, ale divným výsledkem — proto je to jediná povolená
+  cesta.
 * **Test nepotřebuje běžící službu**, kromě `test_api.py`, `test_control.py`
   a `test_parity.py`. Ty si službu spustí samy na portu `0` a po sobě ji uklidí.
 * **Test si ukazuje na vlastní dočasný adresář.** Nikdy nesahá na provozní
@@ -1323,6 +1353,11 @@ ze seznamu v jazykovém profilu, ne „česky vypadající" jména.
 ## 19 · Prostředí a ukládání
 
 * **Jedno `.venv` pro celý projekt**, Python 3.11. Moduly si nezakládají vlastní.
+* **Do prostředí se vstupuje jedině přes `./run-python` v kořeni.** Zaručí
+  správný interpret, ověří závislosti proti `requirements.txt` (výsledek si
+  cachuje otiskem, takže běžné spuštění nestojí nic navíc) a dá kořen projektu
+  na `PYTHONPATH`, aby `import cb_<name>` fungoval odkudkoli. `./run-python`
+  bez argumentů vypíše stav prostředí, `--check` vynutí kontrolu závislostí.
 * **Kód našich modulů vystačí se standardní knihovnou.** `service.py`, `api.py`,
   `client.py` i `control.py` nesmějí potřebovat nic z venv.
 * **Vendorované nástroje smějí mít závislosti** a nesou si je do sdíleného
@@ -1472,13 +1507,16 @@ Když zakládám modul `cb-<name>`:
                                         status uvádí port i u neběžící služby
 [ ] cb_<name>/data-persistent/          .gitkeep
 [ ] cb_<name>/run/                      v .gitignore
-[ ] cb_<name>/docs/
+[ ] cb_<name>/scripts/                  fetch skripty pro velká data (§ 19)
+[ ] cb_<name>/docs/koncepce.md          proč takhle a ne jinak
+[ ] cb_<name>/docs/metody.md            každá metoda: co, proč, na čem visí
+[ ] cb_<name>/docs/prirucka.md          otázky ze stavby a pasti
 [ ] cb_<name>/tests/data/               zmražená testovací data
 [ ] cb_<name>/tests/test_service.py     T-K1, T-K2
 [ ] cb_<name>/tests/test_api.py         REST kontrakt, návratové kódy
 [ ] cb_<name>/tests/test_control.py     pět příkazů, návratové kódy 0/1/2/3
 [ ] cb_<name>/tests/test_parity.py      T-K3
-[ ] testy běží přes python -m unittest discover
+[ ] testy běží přes ./run-python -m unittest discover -s cb_<name> -t .
 [ ] cb_<name>/README.md                 co, proč, co neřeší, prahy, závislosti
 [ ] zápis do tabulky rozsahů portů v § 5 — celá stovka, základní port na stovce
 [ ] zápis do § 4, pokud je modul sdílený

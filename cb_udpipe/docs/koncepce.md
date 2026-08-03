@@ -542,6 +542,38 @@ Dvě poznámky k poctivosti měření, obě posunuly čísla dolů:
 Zbylé skutečné změny v próze se soustředí do dvou vět (věta o antarktických
 údolích a o značení betonů) — je to pár konkrétních vět, ne plošný jev.
 
+### 13.7 Měření hotového modulu
+
+Provedeno 2026-08-03 na zmraženém vzorku 500 vět (`tests/data/mereni.jsonl`,
+náhodný výběr z korpusu conBondu2 se semínkem 20260803, poměr vět s vadou
+odpovídá korpusu). Model `cs_all-ud-2.17-251125`, tokenizér `6247b8b7a5c8`,
+konfigurace `b5d85137bd39`. Úplná data v `mereni-2026-08-03.json`.
+
+| co | naměřeno | co to znamená |
+|---|---|---|
+| vět s opravou tokenizace | **17,6 %** (176 z 998) | vyšší než odhad ze § 13.1 — ten počítal jen tři vzory, tady se sečetly všechny |
+| oprav celkem | 273 | některé věty mají oprav víc |
+| **podíl tokenizace na čase** | **2,7 %** | ⇐ **na tomhle stojí dvoufázový postup** |
+| podíl zásahů (2. průchod) | 100 % | klíč funguje |
+| zrychlení druhým průchodem | **27×** (41,6 s → 1,5 s) | důvod, proč modul existuje |
+| cache na větu | 2 747 B | 26 tisíc vět ≈ 70 MB |
+| **neshod cache proti čerstvému rozboru** | **0** | ⇐ protiváha k podílu zásahů |
+| poškozených řádků | 0 | |
+| přeskočených vět | 0 | žádná nepřesáhla mez serveru |
+
+**Nejdůležitější řádek je poměr fází.** Tokenizace stojí **2,7 %** času, který
+zabere dorozbor — tedy zhruba **třicetkrát méně**. Předpoklad, na kterém stojí
+§ 2, tím platí s velkou rezervou: i kdyby se cache netrefila vůbec, stojí
+segmentační fáze navíc necelá tři procenta.
+
+**Druhý nejdůležitější je nula neshod.** Podíl zásahů jde nafouknout volnějším
+klíčem, takže sám o sobě nic neznamená. Nula neshod proti čerstvému rozboru
+říká, že klíč (text + model + verze tokenizéru) je správně úzký.
+
+Zrychlení se měří **jen od studené cache**. Druhý běh nad plnou cache vrátí
+1,0×, protože z ní bere i „první" průchod; není to vlastnost modulu, ale
+artefakt měření a `scripts/mereni.py` na to upozorňuje v docstringu.
+
 ### 13.6 Sjednocení znaků: nepomohlo by a něco by stálo
 
 Zásada 3.0 vede k otázce, jestli nesjednotit pomlčky, uvozovky a nezlomitelné
@@ -607,6 +639,14 @@ dat (§ 5 politiky).
 | `max_sentence_words` | 1000 | kdy se věta přeskočí | mez serveru, ne naše volba |
 | `request_timeout_s` | 600 | strop na volání UDPipe | conBond2 `core/ingest.Rozbor` |
 | `upstream_start_timeout_s` | 120 | čekání na start UDPipe | *(neměřeno)* — načtení modelu 357 MB |
+
+Naměřené hodnoty, které prahy potvrzují nebo upravují (§ 13.7):
+
+| co | naměřeno | důsledek pro práh |
+|---|---|---|
+| doba rozboru 500 vět | 41,6 s | `request_timeout_s` 600 s má velkou rezervu; ponechán |
+| nejdelší věta ve vzorku | pod mezí | `max_sentence_words` se v 500 větách neuplatnil |
+| cache na větu | 2 747 B | plný korpus ≈ 70 MB, strop zatím není potřeba |
 
 ---
 
