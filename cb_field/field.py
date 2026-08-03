@@ -124,6 +124,7 @@ class SentenceField:
         self._transfer_preposition_directions()
         self.baskets = tuple(
             FieldBasket(self, center) for center in range(len(self.tokens)))
+        self._matrix_cache: dict = {}
 
     def _transfer_preposition_directions(self) -> None:
         """Předložka daruje směr svému jádru (hrana case → hlava).
@@ -185,13 +186,26 @@ class SentenceField:
         Dvoufázově schválně: nejdřív registr vyroste přes všechny řádky,
         teprve pak se vektorizuje — všechny řádky mají touž šířku
         a jednou přidělené sloupce se nikdy nepřečíslují.
+
+        Cache: obsah věty se po konstrukci nemění a sloupce se
+        nepřečíslovávají, takže jednou postavená matice platí navždy —
+        jen může být UŽŠÍ než aktuální registr (vyrostl jinými větami).
+        Konzument doplňuje šířku nulami (nula = žádná aktivace, § registr
+        spread). Bez cache stála přestavba matic celé měření: každá
+        otázka ji stavěla znovu pro všechny věty korpusu.
         """
+        cached = self._matrix_cache.get(representation)
+        if cached is not None:
+            return cached
         for act in self.activations:
             for key in act.weights(representation):
                 self.registry.add(key)
-        return np.stack([
+        built = np.stack([
             act.as_array(self.registry, representation, grow=False)
             for act in self.activations])
+        built.setflags(write=False)      # sdílená cache se nemutuje
+        self._matrix_cache[representation] = built
+        return built
 
     @property
     def metadata(self) -> tuple:

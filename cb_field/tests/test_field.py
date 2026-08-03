@@ -82,9 +82,15 @@ class TestSentenceField(unittest.TestCase):
         reg = VerticalRegistry()
         f1 = SentenceField((PES,), registry=reg)
         f2 = SentenceField(VETA, registry=reg)
-        f2.matrix()
-        # po růstu registru mají matice obou vět touž šířku (společné osy)
-        self.assertEqual(f1.matrix().shape[1], f2.matrix().shape[1])
+        m2 = f2.matrix()
+        m1 = f1.matrix()               # registr dorostl až po stavbě m2
+        # Osa je společná: sloupce se nepřečíslovávají. Šířka smí za
+        # registrem zaostávat (cache — § matrix): nula = žádná aktivace,
+        # takže užší matice je prefix nové stavby a zbytek jsou nuly.
+        self.assertGreaterEqual(m1.shape[1], m2.shape[1])
+        rebuilt = SentenceField(VETA, registry=reg).matrix()
+        np.testing.assert_array_equal(rebuilt[:, :m2.shape[1]], m2)
+        self.assertTrue(np.all(rebuilt[:, m2.shape[1]:] == 0.0))
 
     def test_complete_reprezentace_pridava_slova(self):
         field = SentenceField(VETA)
