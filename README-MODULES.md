@@ -1387,10 +1387,18 @@ ze seznamu v jazykovém profilu, ne „česky vypadající" jména.
   KOREN = Path(__file__).resolve().parent
   VENV_PYTHON = KOREN / ".venv" / "bin" / "python"
 
-  if VENV_PYTHON.is_file() and \
+  if VENV_PYTHON.exists() and \
           Path(sys.executable).resolve() != VENV_PYTHON.resolve():
       os.execv(str(VENV_PYTHON),
                [str(VENV_PYTHON), str(Path(__file__).resolve())] + sys.argv[1:])
+
+  if not VENV_PYTHON.exists():
+      sys.exit(
+          f"chybí virtuální prostředí: {KOREN / '.venv'}\n"
+          f"Vytvoř ho:\n"
+          f"  python3.11 -m venv .venv\n"
+          f"  .venv/bin/pip install -r requirements.txt"
+      )
   ```
 
   *Zapsáno po chybě: `./cb-udpipe.py start` zvedl službu na Pythonu 3.14.6,
@@ -1398,8 +1406,9 @@ ze seznamu v jazykovém profilu, ne „česky vypadající" jména.
   pouštělo proti něčemu jinému, než se tvrdilo — táž třída vady, na kterou
   doplatil conBond2 u testů měřících proti pracovní kopii.*
 
-  Chybějící `.venv` se nechá být: kód modulů vystačí se standardní knihovnou
-  a spustit se má i tam, kde prostředí ještě není postavené.
+  **Bez `.venv` se nespouští.** Kód modulů sice nemá závislosti, ale stojí na
+  syntaxi Pythonu 3.10+ (`str | None`) a projekt je přišpendlený na 3.11 —
+  služba běžící na neověřené verzi je horší než služba, která nenaběhla (§ 9).
 * **Kód našich modulů vystačí se standardní knihovnou.** `service.py`, `api.py`,
   `client.py` i `control.py` nesmějí potřebovat nic z venv.
 * **Vendorované nástroje smějí mít závislosti** a nesou si je do sdíleného

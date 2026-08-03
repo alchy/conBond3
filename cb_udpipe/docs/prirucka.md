@@ -60,6 +60,15 @@ Poznalo se to jedinou otázkou: *proč vlastně běží systémovým Pythonem?*
 `.venv/bin/python`. Pravidlo je v politice (§ 19), protože se týká každého
 modulu.
 
+**Dodatek, který stojí za zapsání:** tvrdil jsem, že cb-logger má tutéž vadu.
+Neměl — má ji opravenou od začátku, a dokonce lépe: **bez `.venv` skončí
+s hláškou**, kdežto cb-udpipe běžel dál na čemkoli. Odůvodnil jsem to tím, že
+kód modulů vystačí se standardní knihovnou, jenže to je o závislostech, ne
+o verzi interpretu — kód stojí na syntaxi 3.10+ (`str | None`) a projekt je
+přišpendlený na 3.11. Sjednoceno podle loggeru.
+
+Poučení: **než tvrdím, že cizí modul má vadu, mám se do něj podívat.**
+
 *Po opravě přeměřeno: čísla vyšla totožně až na dobu prvního průchodu
 (41,6 → 39,1 s, v rámci šumu). Rozbor dělá UDPipe, který běžel správně po
 celou dobu — ale vědět to a doufat v to jsou dvě různé věci.*
