@@ -14,6 +14,8 @@ import numpy as np
 
 from cb_field.registry import VerticalRegistry
 from cb_field.service import (
+    DEFAULT_WEIGHT,
+    PREPOSITION_DIRECTIONS,
     Activations,
     Representation,
     expand_token,
@@ -119,8 +121,28 @@ class SentenceField:
         self.activations = tuple(
             Activations.from_row(row, question=self.question)
             for row in self.rows)
+        self._transfer_preposition_directions()
         self.baskets = tuple(
             FieldBasket(self, center) for center in range(len(self.tokens)))
+
+    def _transfer_preposition_directions(self) -> None:
+        """Předložka daruje směr svému jádru (hrana case → hlava).
+
+        Přenos, ne kopie: activations() směr na ADP řádku neemituje,
+        takže po přenosu ho nese jen jádro. V zatřeseném koši (P-A spec
+        kroku 4) tak směr patří jménu — „do Brna" kotví Brno jako cíl,
+        i když předložka v pytli sousedí s čímkoli.
+        """
+        id_to_index = {t.id: i for i, t in enumerate(self.tokens)}
+        for token in self.tokens:
+            if token.upos != "ADP" or token.deprel != "case":
+                continue
+            for case in ((token.feats or {}).get("Case") or "").split(","):
+                direction = PREPOSITION_DIRECTIONS.get((token.lemma, case))
+                if direction and token.head in id_to_index:
+                    self.activations[id_to_index[token.head]].graft(
+                        f"ANCHOR={direction}", DEFAULT_WEIGHT)
+                    break
 
     @classmethod
     def from_sentence(cls, sentence, r: int = 2,

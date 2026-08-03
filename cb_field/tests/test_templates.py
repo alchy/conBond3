@@ -91,6 +91,17 @@ class TestSignatura(unittest.TestCase):
         self.assertIn("!PronType=Int", sig[2])
 
 
+class TestPrenosSmeru(unittest.TestCase):
+    """P-A spec kroku 4: předložka daruje směr svému jádru (přenos)."""
+
+    def test_jadro_dostane_smer_predlozka_ne(self):
+        field = S1                                    # Šel pes do lesa.
+        self.assertEqual(
+            field.activations[3].get("ANCHOR=dir:to"), 0.7)   # lesa ← do
+        with self.assertRaises(KeyError):
+            field.activations[2].get("ANCHOR=dir:to")         # do už ne
+
+
 class TestSlucovani(unittest.TestCase):
     """Jádro T2: shodné vzory se musí slít, rozdílné ne."""
 

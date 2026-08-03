@@ -90,11 +90,26 @@ hypoteticky se pracuje s větším poloměrem — do koše se přibere víc
 kontextu a rozdíl se hledá tam. Teprve když nepomůže ani obecná osa,
 ani r, je to přiznaná mez reprezentace, ne důvod k výjimce.
 
-### P-F · NEVÍM je odpověď
+### P-F · Tři východiska: odpověď, dotaz, nevím
 
-Pod prahem skóre θ, nebo když žádný příspěvek nejde přes dimenzní uzel
-otázky, se odpovídá NEVÍM. Mlčení je levnější než chyba a etalon ho
-měří zvlášť (§ 6).
+* **ODPOVĚĎ** — vítěz s dostatečným skóre i odstupem; vždy s rozkladem.
+* **DOTAZ** — kandidáti jsou blízko (odstup < ε) nebo nerozlišitelní:
+  systém se **zeptá** — uvede dostupný kontext (kandidáty s doložením:
+  věta, koš, top hrany) a uživatel zvolí preferenci. **Volba je učicí
+  signál** (kontrastivní aktualizace, zdroj=dialog) — je to aktivní
+  učení: systém se ptá právě tam, kde se nejvíc naučí.
+* **NEVÍM** — pod prahem θ, nebo dimenze otázky bez příspěvku.
+  Mlčení je levnější než chyba; etalon ho měří zvlášť (§ 6).
+
+### P-G · Cíl není match, ale učení a aktivace uzlů grafu
+
+Párování je prostředek. Produktem je **graf** — vertikály jako uzly,
+W jako vodivost hran — a **aktivace, která jím teče** (spread). Odpověď
+je vedlejší produkt toho, kam aktivace doteče; učení (Hebb, etalon,
+dialog) tvaruje vodivost, růst os přidává uzly. Každý zodpovězený
+i nezodpovězený průchod systém mění: buď zesílí hrany, nebo doloží
+chybějící osu. Proto se každý průchod loguje se stopou (P8) — je to
+zároveň trénovací záznam.
 
 ---
 
@@ -135,9 +150,11 @@ MATCH(otazka, korpus, W):
     q ← spread(pytel(otazka))
     pro každý koš a v korpusu (středy R1):
         s(a) ← q · spread(pytel(a))
-    vítěz ← max s;  pokud s(vítěz) < θ nebo dimenze otázky bez
-    příspěvku → NEVÍM
-    vrať (střed vítěze, rozklad skóre, pořadí kandidátů)
+    vítěz ← max s
+    pokud s(vítěz) < θ nebo dimenze otázky bez příspěvku → NEVÍM
+    pokud s(vítěz) − s(druhý) < ε → DOTAZ: předlož kandidáty
+        s doložením; volba uživatele → UČENÍ_ETALON(pár, zdroj=dialog)
+    jinak → ODPOVĚĎ (střed vítěze, rozklad skóre, pořadí kandidátů)
 
 UČENÍ_HEBB(korpus, W):                      # bez učitele, zdroj=hebb
     pro dvojice vertikál (i, j) souaktivované v témž koši:
@@ -215,6 +232,7 @@ doladění; každé číslo s verzí dat a W.
 | V-5 | koš otázky: celá věta vs. okno | celá věta | měření (krátké otázky ≈ totéž) |
 | V-6 | k (počet dokladů pro novou osu) | 3 | registr prahů |
 | V-7 | eskalace r u nerozlišitelných párů | r+1, jen doloženě | měření (T2 hlídá cenu) |
+| V-8 | odstup ε pro DOTAZ (aktivní učení) | kalibruje se na etalonu | registr prahů |
 
 ---
 
