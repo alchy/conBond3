@@ -1,0 +1,186 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Konfigurace modulu cb-udpipe",
+  "description": "Validuje se při startu (README-MODULES.md § 5). Neznámý klíč je chyba, ne tiché ignorování — obvykle je to překlep a tiše ignorovaný překlep znamená, že běží jiné nastavení, než si člověk myslí.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["config_version", "service", "runtime", "logging", "module"],
+  "properties": {
+    "config_version": {
+      "description": "Verze schématu konfigurace. Nekompatibilní změna ji zvýší a start selže s hláškou, co přenastavit.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "port", "workers", "request_timeout_s",
+                   "max_request_bytes"],
+      "properties": {
+        "host": {
+          "description": "Vždy 127.0.0.1. Vystavení do sítě je vědomá změna, ne výchozí stav (§ 10 politiky).",
+          "type": "string"
+        },
+        "port": {
+          "description": "Základní port modulu. Nula znamená, že port přidělí systém — používají testy, aby neobsazovaly pevná čísla.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "workers": {"type": "integer", "minimum": 1, "maximum": 64},
+        "request_timeout_s": {"type": "number", "exclusiveMinimum": 0},
+        "max_request_bytes": {"type": "integer", "minimum": 1024}
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pid_file", "port_file", "stop_timeout_s"],
+      "properties": {
+        "pid_file": {"type": "string"},
+        "port_file": {
+          "description": "Sem si služba zapíše skutečně přidělený port. Bez toho by ho při service.port=0 nikdo nezjistil.",
+          "type": "string"
+        },
+        "stop_timeout_s": {"type": "number", "exclusiveMinimum": 0},
+        "self_log": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "max_bytes", "keep"],
+          "properties": {
+            "path": {"type": "string"},
+            "max_bytes": {"type": "integer", "minimum": 1024},
+            "keep": {"type": "integer", "minimum": 0}
+          }
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["endpoint", "level"],
+      "properties": {
+        "endpoint": {
+          "description": "Adresa logovátka. Nepovinná závislost: když neběží, klient degraduje a modul běží dál (§ 9 politiky).",
+          "type": "string"
+        },
+        "level": {"type": "string", "enum": ["info", "debug"]},
+        "methods": {
+          "description": "Zúžení podrobné stopy na vyjmenované metody. Prázdné znamená celý modul.",
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["upstream", "tokenizer", "cache", "log_objects"],
+      "properties": {
+        "upstream": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["host", "port", "model", "model_dir", "hf_home",
+                       "vendor_dir", "request_timeout_s", "start_timeout_s",
+                       "threads", "warmup", "warmup_sentence"],
+          "properties": {
+            "host": {"type": "string"},
+            "port": {
+              "description": "Vlastní instance UDPipe 2. Z rozsahu modulu (§ 5 politiky).",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "model": {
+              "description": "Jméno modelu. Je součástí klíče cache — rozbor bez něj není určený (§ 4 koncepce).",
+              "type": "string"
+            },
+            "model_dir": {
+              "description": "Model UDPipe 2 je ADRESÁŘ (váhy + tokenizery), ne soubor.",
+              "type": "string"
+            },
+            "hf_home": {
+              "description": "Cache HuggingFace míří dovnitř modulu. Bez toho si UDPipe stáhne RobeCzech do ~/.cache a při prvním spuštění bez sítě spadne (§ 9 koncepce).",
+              "type": "string"
+            },
+            "vendor_dir": {"type": "string"},
+            "request_timeout_s": {
+              "description": "Volání bez stropu není pomalé, je zamrzlé.",
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "start_timeout_s": {"type": "number", "exclusiveMinimum": 0},
+            "threads": {
+              "description": "Nula znamená odvodit z počtu jader (dvě se nechají systému, ať stroj při rozboru nezamrzne).",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 256
+            },
+            "warmup": {
+              "description": "Síť se načítá líně až při prvním požadavku s taggerem. Předehřátí tu cenu zaplatí při startu, ne u prvního dotazu.",
+              "type": "boolean"
+            },
+            "warmup_sentence": {"type": "string"}
+          }
+        },
+        "tokenizer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "abbrev_min_pairs", "max_sentence_words",
+                       "merge_number_groups", "merge_decimal_comma",
+                       "abbreviations"],
+          "properties": {
+            "mode": {
+              "description": "Šev: pravidla teď, model až bude na čem trénovat (§ 12 koncepce).",
+              "type": "string",
+              "enum": ["rules", "model"]
+            },
+            "abbrev_min_pairs": {
+              "description": "Kolik párů ⟨písmeno⟩⟨tečka⟩ tvoří zkratku. Pod dva by se chytila iniciála „K. Čapek\".",
+              "type": "integer",
+              "minimum": 2
+            },
+            "max_sentence_words": {
+              "description": "Mez serveru UDPipe, ne naše volba. Delší věta se přeskočí s důvodem.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "merge_number_groups": {
+              "description": "„30 000\" jako jeden token. UDPipe z toho dělá dva samostatné nummod:gov a AG-METRON pak naměří 30 (§ 3.4 koncepce).",
+              "type": "boolean"
+            },
+            "merge_decimal_comma": {
+              "description": "„3,14\" jako jeden token místo tří.",
+              "type": "boolean"
+            },
+            "abbreviations": {
+              "description": "Jazykové datum, ne kód (SEAM-8 návrhu). Angličtina má jiné.",
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          }
+        },
+        "cache": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dir", "batch_sentences"],
+          "properties": {
+            "dir": {"type": "string"},
+            "batch_sentences": {
+              "description": "Vět v jednom dorozboru. conBond2: jedno volání na celý článek je pro UDPipe moc a jedno na větu zbytečně pomalé.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        },
+        "log_objects": {
+          "description": "Kolik rozborů jde do objektového kukátka. Na plném korpusu je to 26 tisíc objektů, proto vypínatelné (§ 10 koncepce).",
+          "type": "string",
+          "enum": ["off", "miss", "all", "retokenized"]
+        }
+      }
+    }
+  }
+}

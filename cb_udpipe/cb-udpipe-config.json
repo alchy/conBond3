@@ -1,0 +1,59 @@
+{
+  "config_version": 1,
+  "service": {
+    "host": "127.0.0.1",
+    "port": 42200,
+    "workers": 4,
+    "request_timeout_s": 30,
+    "max_request_bytes": 2097152
+  },
+  "runtime": {
+    "pid_file": "run/service.pid",
+    "port_file": "run/service.port",
+    "stop_timeout_s": 20,
+    "self_log": {
+      "path": "run/self.log",
+      "max_bytes": 1048576,
+      "keep": 3
+    }
+  },
+  "logging": {
+    "endpoint": "http://127.0.0.1:42100",
+    "level": "info",
+    "methods": []
+  },
+  "module": {
+    "upstream": {
+      "host": "127.0.0.1",
+      "port": 42201,
+      "model": "cs_all-ud-2.17-251125",
+      "model_dir": "data-persistent/models/cs_all-ud-2.17-251125.model",
+      "hf_home": "data-persistent/models/hf",
+      "vendor_dir": "vendor/udpipe2-src",
+      "request_timeout_s": 600,
+      "start_timeout_s": 120,
+      "threads": 0,
+      "warmup": true,
+      "warmup_sentence": "Alois Jirásek se narodil 23. srpna 1851."
+    },
+    "tokenizer": {
+      "mode": "rules",
+      "abbrev_min_pairs": 2,
+      "max_sentence_words": 1000,
+      "merge_number_groups": true,
+      "merge_decimal_comma": true,
+      "abbreviations": [
+        "aj", "apod", "atd", "bc", "cca", "cit", "csc", "č", "čp", "doc",
+        "hod", "ing", "judr", "kap", "l", "mgr", "mil", "min", "mj", "mudr",
+        "n", "např", "obr", "phdr", "popř", "prof", "př", "r", "resp",
+        "rndr", "roč", "s", "st", "stol", "str", "stř", "sv", "tab", "tis",
+        "tj", "tzn", "tzv", "vyd", "zn"
+      ]
+    },
+    "cache": {
+      "dir": "data-persistent/cache",
+      "batch_sentences": 60
+    },
+    "log_objects": "miss"
+  }
+}
