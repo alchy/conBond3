@@ -494,7 +494,7 @@ rozsahu vzestupně — nikdy z cizího.
 |---|---|---|---|
 | `cb-logger` | 42100–42199 | **42100** REST API | 42101 kukátko na text · 42102 kukátko na objekty |
 | `cb-udpipe` | 42200–42299 | **42200** REST API | 42201 vlastní instance UDPipe |
-| `cb-field` | 42300–42399 | **42300** REST API | — |
+| `cb-field` | 42300–42399 | **42300** REST API | 42301 kukátko na pole (viewer) |
 | *volné* | 42400–42499 | 42400 | |
 
 Rezerva se hodila hned u prvního modulu, a hned dvakrát: `cb-logger` potřebuje

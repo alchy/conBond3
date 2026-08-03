@@ -30,3 +30,9 @@ transformers==4.49.0
 ufal.udpipe==1.4.0.1
 ufal.morphodita==1.11.3.3
 ufal.chu_liu_edmonds==1.0.3
+
+# --- cb-field: maticová reprezentace pole ---------------------------------
+# Vědomá, zdůvodněná výjimka z pravidla „moduly bez závislostí" (§ 19),
+# schváleno 2026-08-03: koše jsou matice vah (float32, −1…+1) a maticové
+# počítání je přesně to, k čemu numpy je. Import je omezen na cb_field.
+numpy==2.4.6

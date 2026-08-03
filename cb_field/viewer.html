@@ -1,0 +1,335 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>cb-field · pole</title>
+<style>
+  :root {
+    color-scheme: light;
+    --plane:#f9f9f7; --surface:#fcfcfb;
+    --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,0.10);
+    --upos:#2a78d6; --deprel:#eb6834; --feats:#1baf7a; --lem:#52514e;
+    --qlem:#8a2f8a; --anchor:#a8720f; --qanchor:#6a3fb5;
+    --subpos:#4f7d7d; --neg:#c43c3c; --stred:rgba(42,120,214,0.12);
+    --rh:17px; --cw:12px; --cgap:1px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --plane:#0d0d0d; --surface:#1a1a19;
+      --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,0.10);
+      --upos:#3987e5; --deprel:#d95926; --feats:#199e70; --lem:#c3c2b7;
+      --qlem:#d18ad1; --anchor:#d9a53f; --qanchor:#a98be0;
+      --subpos:#7fb3b3; --neg:#e05a5a; --stred:rgba(57,135,229,0.18);
+    }
+  }
+  * { box-sizing:border-box; }
+  /* Plátno, ne responzivní stránka: plocha roste a scrolluje se. */
+  body { margin:0; padding:22px 20px 60px; background:var(--plane);
+         color:var(--ink); width:max-content; min-width:100%;
+         font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  h1 { font-size:19px; margin:0 0 4px; letter-spacing:-0.01em; }
+  h1 .dot { display:inline-block; width:9px; height:9px; border-radius:50%;
+            background:var(--neg); margin-left:8px; vertical-align:middle; }
+  h1 .dot.zivy { background:var(--feats); }
+  .lede { color:var(--ink2); margin:0 0 14px; max-width:80ch; }
+
+  .bar { display:flex; gap:18px; align-items:flex-end; padding:10px 13px;
+         width:max-content; margin-bottom:12px; background:var(--surface);
+         border:1px solid var(--ring); border-radius:8px; }
+  .bar label { display:block; font-size:11px; letter-spacing:.06em;
+               text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .seg { display:inline-flex; border:1px solid var(--axis); border-radius:6px;
+         overflow:hidden; }
+  .seg button { font:inherit; padding:5px 11px; border:0; cursor:pointer;
+                background:transparent; color:var(--ink2); }
+  .seg button + button { border-left:1px solid var(--axis); }
+  .seg button[aria-pressed="true"] { background:var(--ink); color:var(--surface); }
+  .src { color:var(--ink2); max-width:60ch; }
+  .src b { color:var(--ink); }
+
+  .legend { display:flex; flex-wrap:wrap; gap:16px; align-items:center;
+            margin:0 0 12px; color:var(--ink2); font-size:13px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .sw { width:11px; height:11px; border-radius:2px;
+        box-shadow:0 0 0 1px var(--ring); }
+
+  .stage { width:max-content; }
+  /* Jeden koš = jeden rámeček; koše jdou pod sebou a sdílejí sloupce,
+     takže vertikála (atribut=hodnota) je svisle zarovnaná napříč koši. */
+  .kos { background:var(--surface); border:1px solid var(--axis);
+         border-radius:8px; margin-bottom:10px; padding:6px 10px 8px;
+         width:max-content; }
+  .kos .cap { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+              color:var(--muted); margin:0 0 4px; }
+  .kos .cap b { color:var(--ink2); font-weight:600; }
+  .line { display:flex; align-items:center; height:var(--rh); }
+  .line.stred { background:var(--stred); border-radius:3px; }
+  .gut { flex:0 0 var(--gutw, 120px); text-align:right; padding-right:9px;
+         font-size:11px; color:var(--ink2); white-space:nowrap; overflow:hidden;
+         text-overflow:ellipsis; }
+  .line.stred .gut { color:var(--ink); font-weight:650; }
+  .gut .ix { color:var(--muted); font-variant-numeric:tabular-nums;
+             margin-right:5px; font-size:10px; }
+  .rw { display:grid; grid-auto-flow:column; gap:var(--cgap);
+        grid-auto-columns:var(--cw); }
+  .c { height:11px; border-radius:2px; background:var(--grid); }
+  .c.neg { outline:1px solid var(--neg); outline-offset:-1px; }
+
+  .groups { display:flex; gap:2px; margin:0 0 6px; padding-left:var(--gutw, 120px);
+            align-items:flex-end; height:18px; }
+  .groups div { font-size:10px; letter-spacing:.05em; text-transform:uppercase;
+                border-bottom:2px solid currentColor; padding-bottom:2px;
+                white-space:nowrap; overflow:hidden; }
+  .colcap { position:sticky; top:0; z-index:2; background:var(--plane);
+            padding-top:4px; }
+
+  .foot { display:flex; flex-wrap:wrap; gap:20px; margin-top:10px;
+          color:var(--ink2); font-size:13px; }
+  .foot b { color:var(--ink); font-variant-numeric:tabular-nums; }
+  .nic { color:var(--muted); padding:30px 0; }
+  .nic code { font-family:ui-monospace,Menlo,monospace; }
+  #tip { position:fixed; z-index:9; pointer-events:none; opacity:0;
+         background:var(--ink); color:var(--surface); padding:5px 9px;
+         border-radius:6px; font-size:12px; max-width:60ch;
+         transition:opacity .08s; }
+</style>
+
+<h1>cb-field · pole (field) <span class="dot" id="dot"></span></h1>
+<p class="lede">Nahoře <b>věta (sentence) jako pole</b>: řádek (row) na
+slovo, vertikála na dvojici <b>atribut=hodnota</b> (multiatribut je
+rozvinutý na víc vertikál). Pod ní <b>jednotlivé koše (baskets)</b> —
+též expandované; sloupce jsou svisle zarovnané napříč vším. Sytost
+buňky = |váha (weight)|, červený rám = negativní vazba.</p>
+
+<div class="bar">
+  <div><label>Pohled (view)</label><div class="seg" id="view">
+    <button data-v="complete" aria-pressed="true">kompletní (complete)</button>
+    <button data-v="meta" aria-pressed="false">jen atributy (metadata)</button></div></div>
+  <div class="src" id="src"></div>
+</div>
+
+<div class="legend">
+  <span><i class="sw" style="background:var(--upos)"></i> UPOS</span>
+  <span><i class="sw" style="background:var(--deprel)"></i> DEPREL</span>
+  <span><i class="sw" style="background:var(--feats)"></i> FEATS</span>
+  <span><i class="sw" style="background:var(--lem)"></i> LEM — lemma zavřené
+    třídy, strana odpovědi</span>
+  <span><i class="sw" style="background:var(--qlem)"></i> QLEM — tázací
+    slovo, strana otázky (věta s otazníkem)</span>
+  <span><i class="sw" style="background:var(--subpos)"></i> SUBPOS — třída
+    z pozičního tagu (Db, P7, C=…)</span>
+  <span><i class="sw" style="background:var(--anchor)"></i> ANCHOR — kotva
+    odpovědi (space/time/quantity/entity)</span>
+  <span><i class="sw" style="background:var(--qanchor)"></i> QANCHOR — kotva
+    otázky (poptávaná souřadnice)</span>
+  <span style="color:var(--muted)">modrý řádek = střed koše (center)</span>
+</div>
+
+<div class="colcap"><div class="groups" id="grp"></div></div>
+<div class="stage" id="stage"></div>
+<div class="foot" id="foot"></div>
+<div id="tip"></div>
+
+<script>
+"use strict";
+// Pravidla vertikál žijí v Pythonu (cb_field.service.activations);
+// stránka dostává hotové aktivace {klíč: váha} a jen je kreslí.
+const GROUPS = ["UPOS","DEPREL","FEATS","SUBPOS","LEM","QLEM",
+                "ANCHOR","QANCHOR"];
+const GCOL = {UPOS:"var(--upos)", DEPREL:"var(--deprel)",
+              FEATS:"var(--feats)", SUBPOS:"var(--subpos)",
+              LEM:"var(--lem)", QLEM:"var(--qlem)",
+              ANCHOR:"var(--anchor)", QANCHOR:"var(--qanchor)"};
+
+let view = "complete", stamp = -1, model = null;
+
+const $ = s => document.querySelector(s);
+const tip = $("#tip");
+
+// Skupina se čte z prefixu klíče; co není UPOS/DEPREL/LEM/QLEM, je FEATS.
+function groupOf(key) {
+  const g = key.split("=", 1)[0];
+  return GROUPS.includes(g) && g !== "FEATS" ? g : "FEATS";
+}
+
+// Aktivace řádku: dvojice [skupina, atribut=hodnota, váha].
+function actsOf(row) {
+  return Object.entries(row.acts).map(([k, w]) => [groupOf(k), k, w]);
+}
+
+function build(record) {
+  // Sloupce = sjednocení aktivací přes všechny řádky věty, v pořadí
+  // skupin a uvnitř skupiny v pořadí prvního výskytu.
+  const seen = new Map();   // "FEATS|Case=Gen" -> {g, a}
+  const rows = [];          // řádky věty (z košů: každý přispěje středem)
+  for (const b of record.baskets) {
+    const left = Math.max(0, b.center - record.r);
+    rows[b.center] = b.rows[b.center - left];
+  }
+  rows.forEach(r => actsOf(r).forEach(([g, a]) => {
+    const k = g + "|" + a;
+    if (!seen.has(k)) seen.set(k, {g, a});
+  }));
+  const cols = [];
+  for (const g of GROUPS)
+    for (const {g: cg, a} of seen.values()) if (cg === g) cols.push({g, a});
+  return {record, rows, cols};
+}
+
+function colsFor() {
+  // LEM i QLEM jsou gramatika (metadata) — pohledy se liší jen slovy
+  // v gutteru a zdrojovou větou, sloupce zůstávají stejné.
+  return model.cols;
+}
+
+function render() {
+  const stage = $("#stage"), grp = $("#grp"), foot = $("#foot");
+  if (!model) {
+    $("#src").textContent = "";
+    grp.innerHTML = ""; foot.innerHTML = "";
+    stage.innerHTML = '<div class="nic">zatím nic — v CLI zavolej ' +
+      '<code>visualize.sentence(a.sentences[0])</code></div>';
+    return;
+  }
+  const {record, rows} = model;
+  const cols = colsFor();
+  const gutw = view === "complete" ? "120px" : "34px";
+  document.documentElement.style.setProperty("--gutw", gutw);
+
+  $("#src").innerHTML = view === "complete" && record.source
+    ? "věta: <b></b>" : "";
+  if (view === "complete" && record.source)
+    $("#src").querySelector("b").textContent = record.source;
+
+  // hlavička skupin — šířky podle počtu sloupců (rozteč = šířka + mezera)
+  const pitch = 13;
+  grp.innerHTML = "";
+  for (const g of GROUPS) {
+    const n = cols.filter(c => c.g === g).length;
+    if (!n) continue;
+    const d = document.createElement("div");
+    d.textContent = g + " · " + n;
+    d.style.color = GCOL[g];
+    d.style.width = (n * pitch - 1) + "px";
+    grp.appendChild(d);
+  }
+  grp.style.paddingLeft = gutw;
+
+  // Jeden řádek mřížky (slovo + buňky vertikál); vrací i počet svítících.
+  const stat = {lit: 0, cells: 0};
+  function makeLine(row, ix, isCenter, count) {
+    const line = document.createElement("div");
+    line.className = "line" + (isCenter ? " stred" : "");
+    const gut = document.createElement("div");
+    gut.className = "gut";
+    gut.innerHTML = '<span class="ix"></span><span class="fm"></span>';
+    gut.querySelector(".ix").textContent = ix;
+    gut.querySelector(".fm").textContent =
+      view === "complete" ? (row.form ?? "") : "";
+    line.appendChild(gut);
+
+    const rw = document.createElement("div");
+    rw.className = "rw";
+    const have = new Map(actsOf(row).map(([g, a, w]) => [g + "|" + a, w]));
+    for (const c of cols) {
+      const cell = document.createElement("span");
+      cell.className = "c";
+      const w = have.get(c.g + "|" + c.a);
+      if (count) stat.cells++;
+      if (w !== undefined) {
+        if (count) stat.lit++;
+        cell.style.background = GCOL[c.g];
+        cell.style.opacity = 0.25 + 0.75 * Math.abs(w);
+        if (w < 0) cell.classList.add("neg");
+        cell.dataset.tip = (view === "complete" && row.form
+          ? row.form + " · " : "") + c.a + " · váha " + w;
+      }
+      rw.appendChild(cell);
+    }
+    line.appendChild(rw);
+    return line;
+  }
+
+  stage.innerHTML = "";
+
+  // 1 · věta jako spojené pole — referenční mřížka, počítá se z ní hustota
+  const fbox = document.createElement("div");
+  fbox.className = "kos";
+  const fcap = document.createElement("div");
+  fcap.className = "cap";
+  fcap.textContent = "věta (sentence) · " + rows.length + " řádků (rows)";
+  fbox.appendChild(fcap);
+  rows.forEach((row, ix) => fbox.appendChild(makeLine(row, ix, false, true)));
+  stage.appendChild(fbox);
+
+  // 2 · jednotlivé koše — též expandované, střed zvýrazněný
+  for (const b of record.baskets) {
+    const left = Math.max(0, b.center - record.r);
+    const box = document.createElement("div");
+    box.className = "kos";
+    const cap = document.createElement("div");
+    cap.className = "cap";
+    cap.innerHTML = "koš (basket) " + b.center + " · střed (center) <b></b> · " +
+      b.rows.length + " řádků (rows)";
+    cap.querySelector("b").textContent =
+      view === "complete" ? (rows[b.center].form ?? b.center) : "#" + b.center;
+    box.appendChild(cap);
+    b.rows.forEach((row, ri) => {
+      const ix = left + ri;
+      box.appendChild(makeLine(row, ix, ix === b.center, false));
+    });
+    stage.appendChild(box);
+  }
+
+  const dt = record ? new Date(Number(BigInt(stamp) / 1000000n)) : null;
+  foot.innerHTML =
+    "<span>pole (field) <b>" + rows.length + " × " + cols.length +
+    "</b></span>" +
+    "<span>košů (baskets) <b>" + record.baskets.length + "</b></span>" +
+    "<span>r <b>" + record.r + "</b></span>" +
+    "<span>svítí (lit) <b>" + stat.lit + "</b> z <b>" + stat.cells +
+    "</b></span>" +
+    "<span>hustota <b>" +
+    (stat.cells ? (100 * stat.lit / stat.cells).toFixed(1) : 0) +
+    " %</b></span>" +
+    "<span>publikováno (stamp) <b>" +
+    (dt ? dt.toLocaleTimeString("cs-CZ") : "—") + "</b></span>";
+}
+
+async function load() {
+  try {
+    const r = await fetch("/data");
+    const j = await r.json();
+    $("#dot").classList.add("zivy");
+    if (j.stamp !== stamp) {
+      stamp = j.stamp;
+      model = j.record ? build(j.record) : null;
+      render();
+    }
+  } catch {
+    $("#dot").classList.remove("zivy");
+  }
+}
+
+document.querySelectorAll("#view button").forEach(b =>
+  b.addEventListener("click", () => {
+    view = b.dataset.v;
+    document.querySelectorAll("#view button").forEach(x =>
+      x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    render();
+  }));
+
+document.addEventListener("mousemove", e => {
+  const t = e.target.closest("[data-tip]");
+  if (t) {
+    tip.textContent = t.dataset.tip;
+    tip.style.left = Math.min(e.clientX + 14, innerWidth - 260) + "px";
+    tip.style.top = (e.clientY + 16) + "px";
+    tip.style.opacity = 1;
+  } else tip.style.opacity = 0;
+});
+
+load();
+setInterval(load, 1000);
+</script>
