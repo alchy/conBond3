@@ -1,6 +1,6 @@
 """Pole jedné věty — pracovní úroveň knihovny cb_field.
 
-Field zapouzdřuje choreografii vrstev, kterou by si jinak každý vývojář
+SentenceField zapouzdřuje choreografii vrstev, kterou by si jinak každý vývojář
 drátoval sám (a pokaždé trochu jinak): otázkovost věty se spočítá jednou
 v konstruktoru, registr se rodí s kotevními vazbami, matice se staví
 dvoufázově, takže nevzniká past různě širokých vektorů. Nižší vrstvy
@@ -16,17 +16,84 @@ from cb_field.registry import VerticalRegistry
 from cb_field.service import (
     Activations,
     Representation,
-    build_baskets,
     expand_token,
     is_question,
 )
 
 
-class Field:
-    """Pole (field) věty: koše, aktivace, matice a obrázek z jednoho místa.
+class FieldBasket:
+    """Koš uvnitř pole — se stejnou trojicí pohledů jako celá věta.
+
+    metadata / complete jsou vážené aktivace řádků okna (slovníky,
+    čitelné okem); array je matice vah koše s pevným tvarem 2r+1 řádků —
+    za hranicí věty nuly (0.0 = žádná aktivace), střed vždy na y=r.
+    Slovníky ukazují jen skutečné řádky věty, matice drží pevnou
+    geometrii: čitelnost vs. porovnatelnost, každá má svůj pohled.
+    """
+
+    def __init__(self, field: "SentenceField", center: int) -> None:
+        self._field = field
+        self.center = center
+
+    @property
+    def r(self) -> int:
+        return self._field.r
+
+    @property
+    def rows(self) -> tuple:
+        """Tokeny okna; na krajích věty jich je méně."""
+        left = max(0, self.center - self.r)
+        return self._field.tokens[left:self.center + self.r + 1]
+
+    @property
+    def center_token(self):
+        """Token, kolem kterého je koš postavený."""
+        left = max(0, self.center - self.r)
+        return self.rows[self.center - left]
+
+    def _acts(self) -> tuple:
+        left = max(0, self.center - self.r)
+        return self._field.activations[left:self.center + self.r + 1]
+
+    @property
+    def metadata(self) -> tuple:
+        """Aktivace řádků okna bez slov — {vertikála: váha} na řádek."""
+        return tuple(a.weights() for a in self._acts())
+
+    @property
+    def complete(self) -> tuple:
+        """Aktivace řádků okna včetně slov (WORD=…)."""
+        return tuple(a.weights(Representation.COMPLETE) for a in self._acts())
+
+    def matrix(self,
+               representation: Representation = Representation.METADATA
+               ) -> np.ndarray:
+        """Matice koše: výřez matice věty s pevným tvarem 2r+1 řádků."""
+        m = self._field.matrix(representation)
+        out = np.zeros((2 * self.r + 1, m.shape[1]), dtype=m.dtype)
+        for offset in range(-self.r, self.r + 1):
+            j = self.center + offset
+            if 0 <= j < len(self._field.tokens):
+                out[offset + self.r] = m[j]
+        return out
+
+    @property
+    def array(self) -> np.ndarray:
+        """Matice vah koše (primární, bezeslovná reprezentace)."""
+        return self.matrix()
+
+    def __repr__(self) -> str:
+        return (f"FieldBasket(center={self.center} "
+                f"{self.center_token.form!r}, r={self.r}, "
+                f"{len(self.rows)} řádků)")
+
+
+class SentenceField:
+    """Rozebraná věta jako pole: koše, aktivace, matice, obrázek.
 
     Vzniká z rozparsované věty (from_sentence) nebo přímo z tokenů.
-    Registr jde sdílet přes věty: Field.from_sentence(s, registry=reg) —
+    Registr jde sdílet přes věty: SentenceField.from_text(text, parser,
+    registry=reg) —
     závislost se předává parametrem (§ 3), žádný globální stav.
 
     Obsah po konstrukci:
@@ -35,7 +102,7 @@ class Field:
         r           poloměr okna košů
         question    zda je věta tázací — spočteno jednou, používáno všude
         registry    registr vertikál (vlastní, nebo předaný sdílený)
-        baskets     koše posuvného okna (jeden na token)
+        baskets     koše (FieldBasket) — každý s pohledy metadata/complete/array
         rows        vážené řádky věty (expand_token, jeden na token)
         activations Activations řádků — už se správnou stranou Q/A
     """
@@ -48,18 +115,36 @@ class Field:
         self.source = source
         self.question = is_question(self.tokens)
         self.registry = registry if registry is not None else VerticalRegistry()
-        self.baskets = build_baskets(self.tokens, r=r)
         self.rows = tuple(expand_token(t) for t in self.tokens)
         self.activations = tuple(
             Activations.from_row(row, question=self.question)
             for row in self.rows)
+        self.baskets = tuple(
+            FieldBasket(self, center) for center in range(len(self.tokens)))
 
     @classmethod
     def from_sentence(cls, sentence, r: int = 2,
-                      registry: VerticalRegistry | None = None) -> "Field":
+                      registry: VerticalRegistry | None = None) -> "SentenceField":
         """Z věty z cb_udpipe (ParsedSentence: má .tokens a .source)."""
         return cls(sentence.tokens, r=r, registry=registry,
                    source=getattr(sentence, "source", None))
+
+    @classmethod
+    def from_text(cls, text: str, parser, r: int = 2,
+                  registry: VerticalRegistry | None = None) -> "SentenceField":
+        """Rozparsuje text a postaví z něj pole — hlavní vstup pro vývoj.
+
+        Pole je jedna věta. Text s více větami je hlasitá chyba, ne tiché
+        vzetí první — volající má věty rozdělit a stavět pole po větách.
+        Parser se předává parametrem (§ 3): žádné skryté vytváření
+        klienta uvnitř.
+        """
+        sentences = parser.parse(text=text).sentences
+        if len(sentences) != 1:
+            raise ValueError(
+                f"text má {len(sentences)} vět; pole je jedna věta — "
+                f"rozděl text a stav pole na každou zvlášť")
+        return cls.from_sentence(sentences[0], r=r, registry=registry)
 
     # --- matice ---------------------------------------------------------
 
@@ -79,25 +164,25 @@ class Field:
             act.as_array(self.registry, representation, grow=False)
             for act in self.activations])
 
-    def basket_matrix(self, center: int,
-                      representation: Representation = Representation.METADATA
-                      ) -> np.ndarray:
-        """Matice koše: výřez matice věty s pevným tvarem 2r+1 řádků.
+    @property
+    def metadata(self) -> tuple:
+        """Aktivace všech řádků bez slov — {vertikála: váha} na řádek."""
+        return tuple(a.weights() for a in self.activations)
 
-        Za hranicí věty jsou nulové řádky — nula je „žádná aktivace",
-        takže doplnění nic netvrdí. Střed tak leží vždy na řádku r
-        a koše jsou tvarově porovnatelné (fixní x i y).
+    @property
+    def complete(self) -> tuple:
+        """Aktivace všech řádků včetně slov (WORD=…)."""
+        return tuple(a.weights(Representation.COMPLETE)
+                     for a in self.activations)
+
+    @property
+    def array(self) -> np.ndarray:
+        """Matice vah věty (primární, bezeslovná reprezentace).
+
+        Táž trojice pohledů jako u koše: metadata / complete / array —
+        struktura se opakuje na obou úrovních.
         """
-        if not 0 <= center < len(self.tokens):
-            raise IndexError(
-                f"koš {center} není; věta má {len(self.tokens)} tokenů")
-        m = self.matrix(representation)
-        out = np.zeros((2 * self.r + 1, m.shape[1]), dtype=m.dtype)
-        for offset in range(-self.r, self.r + 1):
-            j = center + offset
-            if 0 <= j < len(self.tokens):
-                out[offset + self.r] = m[j]
-        return out
+        return self.matrix()
 
     # --- obrázek --------------------------------------------------------
 
@@ -118,6 +203,6 @@ class Field:
         return path
 
     def __repr__(self) -> str:
-        return (f"Field({len(self.tokens)} tokenů, r={self.r}, "
+        return (f"SentenceField({len(self.tokens)} tokenů, r={self.r}, "
                 f"question={self.question}, "
                 f"registr {len(self.registry)} vertikál)")
