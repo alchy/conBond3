@@ -231,7 +231,7 @@ def _serve(config: dict[str, Any]) -> int:
             _zastav_proces(proces, 10.0)
             return EXIT_FAILED
 
-        sluzba = service.UdpipeService(config)
+        sluzba = service.UdpipeService(config, log=_logovatko(config))
         server = api.make_api_server(sluzba, config=config)
         skutecny_port = server.server_address[1]
         _zapis_stav(config, pid=os.getpid(), port=skutecny_port,
@@ -293,6 +293,48 @@ def _spust_udpipe(config: dict[str, Any]) -> subprocess.Popen | None:
         )
     except OSError as e:
         print(f"nepodařilo se spustit UDPipe: {e}", file=sys.stderr)
+        return None
+
+
+def _logovatko(config: dict[str, Any]) -> Any:
+    """Postaví klienta logovátka, nebo vrátí `None`.
+
+    Logovátko je **nepovinná** závislost (README-MODULES.md § 4): když neběží,
+    jeho klient to ohlásí na chybový výstup, přepne se do spool režimu a nechá
+    nás běžet. Kdyby padlé logovátko shodilo modul, byla by nejméně důležitá
+    součást zároveň nejkřehčí.
+
+    Proto se polyká i chyba importu: modul musí jít spustit i v prostředí, kde
+    cb-logger vůbec není.
+
+    Vstup:
+        config: konfigurace; z bloku `logging` se bere adresa a úroveň.
+
+    Výstup:
+        `LogClient`, nebo `None`, když se ho nepodařilo postavit.
+
+    Při chybě:
+        Nevyhazuje.
+    """
+    try:
+        from cb_logger import LogClient
+    except ImportError as e:
+        print(f"cb-logger není k dispozici, běží se bez logu: {e}",
+              file=sys.stderr)
+        return None
+
+    nastaveni = config["logging"]
+    try:
+        return LogClient(
+            component="udpipe",
+            endpoint=nastaveni["endpoint"],
+            level=nastaveni["level"],
+            methods=tuple(nastaveni.get("methods") or ()),
+            spool_dir=str(_run_dir(config) / "log-spool"),
+        )
+    except Exception as e:                       # noqa: BLE001
+        print(f"logovátko se nepodařilo připojit, běží se bez něj: {e}",
+              file=sys.stderr)
         return None
 
 
