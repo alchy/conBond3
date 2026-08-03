@@ -71,24 +71,30 @@ class TestPropojeni(unittest.TestCase):
                          len(corpus[0].tokens))       # každý token kandidát
 
     def test_tp3_uceni_premosti_ruzne_tvary(self):
-        """Kontrastivní krok spojí VERB z otázky s ADJ z faktu."""
+        """Kontrastivní krok spojí sloveso otázky se jménem odpovědi.
+
+        Otázka schválně bez slovního překryvu s faktem („Kam běžela
+        kočka?" nad „Šel pes do lesa.") — párování samo ji nezvládne
+        a právě tam musí učení postavit most běžet→les. Otázku
+        s překryvem už párování řeší s širokým odstupem a učení se
+        (správně) nespouští.
+        """
         from cb_field.learning import train_on_etalon
         corpus = _scena()
-        otazka = SentenceField((KAM, SEL2, PES2, OTAZNIK), r=1,
-                               registry=corpus.registry, source="Kam šel pes?")
 
         class _Parser:                     # atrapa: vrací zmraženou otázku
             def parse(self, text):
                 class _R:
                     sentences = [type("_S", (), {
-                        "tokens": (KAM, SEL2, PES2, OTAZNIK),
-                        "source": "Kam šel pes?"})()]
+                        "tokens": (KAM, BEZELA2, KOCKA2, OTAZNIK),
+                        "source": "Kam běžela kočka?"})()]
                 return _R()
 
-        train_on_etalon(corpus, [{"otazka": "Kam šel pes?",
+        train_on_etalon(corpus, [{"otazka": "Kam běžela kočka?",
                                   "odpoved_lemma": "les",
                                   "zodpoveditelna": True}], _Parser())
-        hrana = corpus.registry.get_link("WORD=VERB:jít", "WORD=NOUN:les")
+        hrana = corpus.registry.get_link("WORD=VERB:běžet",
+                                         "WORD=NOUN:les")
         self.assertIsNotNone(hrana)
         self.assertGreater(hrana[0], 0)
         self.assertEqual(hrana[1], "etalon")

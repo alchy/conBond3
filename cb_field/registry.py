@@ -43,6 +43,10 @@ class VerticalRegistry:
         #: pro hierarchii kotev, mosty otázka↔odpověď i budoucí synonymii.
         self._links: dict = {}
         self._matrix_cache = None
+        #: Čítač změn vazeb — levný klíč pro cache odvozené z L (rozšířené
+        #: pytle v matching). Růst klíčů starou cache neruší (nové sloupce
+        #: mají ve starých větách nulu); změna vazby ano.
+        self.link_version = 0
         for key in keys:
             self.add(key)
         # Hierarchie kotev je součást jazyka systému, ne volitelný doplněk —
@@ -124,6 +128,7 @@ class VerticalRegistry:
         self.add(dst)
         self._links[(src, dst)] = (weight, source)
         self._matrix_cache = None
+        self.link_version += 1
 
     def links(self) -> tuple:
         """Všechny vazby jako čtveřice (od, do, váha, zdroj)."""

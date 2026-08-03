@@ -50,6 +50,8 @@ dáš tam if, není rozvoj. nejde o stavový automat."*
 
 1. **IDF a W_CENTER** — moje heuristiky; nahradit naučenými koeficienty
    (jsou to jen počáteční hodnoty vah, ne pravidla).
+   *2026-08-04: IDF odstraněno — roli protiváhy hubů převzala saturace
+   (naměřeno 0,61 → 0,67 bez něj; postup-krok4 § 12). W_CENTER trvá.*
 2. **θ = 2.0, ε = 0.25** — nekalibrované; kalibrovat na oddělené sadě.
 3. **Krok učení je mikroskopický**: naměřeno 2026-08-03 — loss klesá
    (867 → 810 → 764), ale trefy 0/32. Marže 1.0 je proti skóre ~20
@@ -58,7 +60,9 @@ dáš tam if, není rozvoj. nejde o stavový automat."*
    `if`.
 4. **Hebb** — dnes nad surovými souvýskyty škodí; má běžet až nad
    strukturou a s NPMI prahem odvozeným z dat.
-5. **Refaktor učení — rozhodnuto 2026-08-03 (J.), pořadí závazné:**
+5. **Refaktor učení — rozhodnuto 2026-08-03 (J.), pořadí závazné**
+   *(2026-08-04: kroky 1+2 hotové — testbed 0,21 → 0,67 při stejné
+   NEVÍM-správnosti; postup-krok4 § 12. Kroky 3+4 zbývají)*:
    1. **tanh po každém kroku šíření** — saturace do −1…+1, tedy do
       rozsahu, který váhy už mají; odstraní huby i potřebu IDF náplasti.
       Dnes systém běží zcela lineárně, což je hlavní příčina loss ve

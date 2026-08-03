@@ -21,7 +21,7 @@ from collections import Counter
 from datetime import date
 from pathlib import Path
 
-from cb_field.matching import MATCH_PREFIXES, match
+from cb_field.matching import MATCH_PREFIXES, W_CENTER, match
 
 MODULE_DIR = Path(__file__).resolve().parent
 REPORT = MODULE_DIR / "docs" / "mereni-uceni.md"
@@ -38,14 +38,21 @@ MIN_COOCCURRENCE = 2
 MAX_EPOCHS = 3
 
 
-def _semantic_bag(sentence, rows) -> dict:
-    """{vertikála: váha} přes dané řádky, jen párovací vertikály."""
+def _semantic_bag(sentence, rows, center=None) -> dict:
+    """{vertikála: váha} přes dané řádky, jen párovací vertikály.
+
+    center: řádek se zdůrazněním W_CENTER — týž profil, jaký má koš
+    kandidáta v match(). Gradient se musí počítat nad touž geometrií,
+    kterou optimalizuje: bez zdůraznění se odpověď ležící v okně obou
+    kandidátů v rozdílu pytlů vyruší a most na ni nikdy nevznikne.
+    """
     bag = {}
     for i in rows:
+        emphasis = W_CENTER if i == center else 1.0
         for key, weight in sentence.complete[i].items():
             if key.startswith(MATCH_PREFIXES) \
                     and not key.startswith("WORD=PUNCT"):
-                bag[key] = bag.get(key, 0.0) + weight
+                bag[key] = bag.get(key, 0.0) + weight * emphasis
     return bag
 
 
@@ -166,23 +173,31 @@ def train_on_etalon(corpus, etalon_entries, parser,
             seen += 1
             correct = next((c for c in result.candidates
                             if c.token.lemma == expected), None)
-            if correct is not None:
+            # Soupeř pro kontrast je nejlepší ŠPATNÝ kandidát — když
+            # vítězí správná s malým odstupem (DOTAZ), je to druhý
+            # v pořadí; kontrast proti vítězi by byl správná proti sobě
+            # (prázdný rozdíl, žádné učení).
+            rival = next((c for c in result.candidates
+                          if c.token.lemma != expected), None)
+            if correct is not None and rival is not None:
                 # hinge loss marže: kolik chybí, aby správná vedla
-                loss_sum += max(0.0, 1.0 + winner.score - correct.score
-                                if winner is not correct else 0.0)
+                # s odstupem — počítá se i pro thin-margin výhry
+                loss_sum += max(0.0, 1.0 + rival.score - correct.score)
             if winner.token.lemma == expected \
                     and result.outcome == "odpoved":
                 correct_now += 1
                 continue
-            if correct is None:
+            if correct is None or rival is None:
                 continue                     # NEPOKRYTÁ — učení nepatří
             q_bag = _semantic_bag(question, range(len(question.tokens)))
             correct_bag = _semantic_bag(
                 correct.sentence,
-                _window_rows(correct.sentence, correct.center, corpus.r))
+                _window_rows(correct.sentence, correct.center, corpus.r),
+                center=correct.center)
             wrong_bag = _semantic_bag(
-                winner.sentence,
-                _window_rows(winner.sentence, winner.center, corpus.r))
+                rival.sentence,
+                _window_rows(rival.sentence, rival.center, corpus.r),
+                center=rival.center)
             stats["hran"] += contrastive_step(
                 corpus.registry, q_bag, correct_bag, wrong_bag, eta)
             corrections += 1

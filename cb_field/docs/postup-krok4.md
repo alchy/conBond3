@@ -153,3 +153,47 @@ aby správná odpověď vedla), trefy na tréninku, počet korekcí a hran.
   učení.
 - Kalibrace Hebba (min_count, práh NPMI, typy hran) po jeho negativním
   výsledku.
+
+## 12 · Refaktor učení, kroky 1+2: tanh + kosinus (2026-08-04)
+
+Provedení závazného pořadí z workflow § D5. Mechanika:
+
+- **tanh po každém kroku šíření** (matching): aktivace se saturují do
+  −1…+1, rozsahu vah (P-B). Lineární trik spread(q)·spread(a) = q_eff·a
+  tím padá — pytle faktů se šíří explicitně a drží se řídce v cache
+  korpusu (klíč: růst korpusu × verze vazeb; tanh nule nechává nulu).
+- **kosinová normalizace**: každý člen skóre je kosinus dvou pytlů.
+  Zdůraznění středu je vlastní člen `(W_CENTER−1)·cos(q̃, střed)` —
+  ×W_CENTER na surovém pytli by pod kosinem správné středy TRESTALO:
+  norma roste o všechno, co střed nese, čitatel jen o setkání s otázkou,
+  a odpověď je z podstaty to, co v otázce není. Naměřeno: s hrubým
+  zdůrazněním 0,03, s vlastním členem 0,61.
+- **IDF náplast odstraněna** (dluh § 11): roli protiváhy hubů převzala
+  saturace. Naměřeno: bez IDF 0,67, s IDF 0,61 — předpověď z rozhodnutí
+  („odstraní huby i potřebu IDF náplasti") potvrzena.
+- **θ = 0,45 · ε = 0,057**: jen přepočet měřítka (medián vítězných
+  skóre 4,90 → 1,11, poměr 0,227), kalibrace na oddělené sadě zůstává
+  dluhem.
+- Učicí pytle dostaly týž profil středu (W_CENTER) jako koš v match():
+  gradient se počítá nad geometrií, kterou optimalizuje — bez toho se
+  odpověď ležící v okně obou kandidátů v rozdílu pytlů vyruší.
+- Soupeřem kontrastu je nejlepší ŠPATNÝ kandidát (ne vítěz): když
+  vítězí správná s malým odstupem (DOTAZ), kontrast proti vítězi by
+  byl správná proti sobě.
+
+| testbed (40 otázek) | přesnost@1 | NEVÍM-správnost |
+|---|---|---|
+| lineárně bez filtrů (§ 11) | 0,21 | 0,00 |
+| tanh + kosinus, bez IDF | **0,67** | 0,00 |
+
+Protiváha drží (NEVÍM-správnost neklesla). SLABÁ spadla na 0 — zbylé
+chyby zodpověditelných jsou DOTAZ (11×), tedy malé odstupy; přesně na
+ně míří kroky 3 (relativní marže) a 4 (Adam).
+
+**Poctivý nález ke kosinu:** normalizace zahodila MOHUTNOST důkazu, na
+které stál řez θ — top-skóre zodpověditelných (1,06–1,58) a
+nezodpověditelných (1,17–1,51) se dnes překrývají, NEVÍM neumí nic
+odmítnout (FALEŠNÁ 3, DOTAZ-nezodp. 4). Není to regres (poctivá
+baseline měla NEVÍM též 0,00), ale kalibrace θ sama nepomůže — chybí
+člen nesoucí mohutnost. Kandidát: učení (4c) zvedne zodpověditelným
+setkání, nebo nový vážený člen; rozhodnutí patří J.
