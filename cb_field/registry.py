@@ -135,6 +135,18 @@ class VerticalRegistry:
         return tuple((s, d, w, src) for (s, d), (w, src)
                      in self._links.items())
 
+    def unlink(self, src: str, dst: str) -> None:
+        """Odebere vazbu — slouží odvolání epochy učení (rollback na
+        stav před ní), ne mazání znalostí. Axiom se neodvolává (P-C);
+        neexistující vazba je tiché nic (rollback jich zkouší tisíce).
+        """
+        existing = self._links.get((src, dst))
+        if existing is None or existing[1] == "axiom":
+            return
+        del self._links[(src, dst)]
+        self._matrix_cache = None
+        self.link_version += 1
+
     def get_link(self, src: str, dst: str):
         """(váha, zdroj) vazby, nebo None, když neexistuje."""
         return self._links.get((src, dst))

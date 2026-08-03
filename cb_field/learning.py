@@ -21,6 +21,8 @@ from collections import Counter
 from datetime import date
 from pathlib import Path
 
+import numpy as np
+
 from cb_field.matching import MATCH_PREFIXES, W_CENTER, match
 
 MODULE_DIR = Path(__file__).resolve().parent
@@ -33,9 +35,32 @@ LEARNED_KORPUSY = (MODULE_DIR / "data-persistent"
 #: Rychlost učení a spodní práh souvýskytů pro Hebba. Startovní hodnoty
 #: (registr prahů modulu); kalibruje protokol níže.
 ETA_HEBB = 0.5
-ETA_CONTRAST = 0.15
+#: Krok Adamu je ~η na hranu bez ohledu na surový gradient (druhý moment
+#: normalizuje). Odvození: hrana je aktivní ~1× na epochu, běh má ~3
+#: epochy a mosty u SGD stavěly celkové posuny řádu 0,01–0,03 na hranu
+#: (η_sgd 0,15 × scale ~0,03) → η = 0,01. S η = 0,15 Adam divergoval:
+#: loss 0,40 → 0,53, trefy 16 → 8 (naměřeno 2026-08-04).
+ETA_CONTRAST = 0.01
 MIN_COOCCURRENCE = 2
-MAX_EPOCHS = 3
+#: Strop epoch je jen pojistka — trénink končí konvergencí: korekcí=0
+#: (marže všude splněna), nebo odvoláním epochy, která zhoršila loss.
+MAX_EPOCHS = 10
+
+#: Relativní marže (krok 3 refaktoru, J. 2026-08-03): o kolik má správná
+#: vést nad nejlepším špatným, vyjádřeno podílem soupeřova skóre — na
+#: absolutní čísla se neváže. 0,2 je přenesená proporce staré absolutní
+#: marže (1,0 proti mediánu vítězných skóre 4,9), ne nové číslo od oka.
+#: Na typickém skóre ~1,1 dává marži ~0,22 > ε: učení míří bezpečně za
+#: pásmo DOTAZ, ne na jeho hranici.
+MARGIN_RATIO = 0.2
+
+#: Adam (krok 4 refaktoru, rozhodl J.: „adam bude"): momenty na hranu,
+#: řídce, bez frameworku (§ 19). Druhý moment přebírá i normalizaci
+#: délky pytle, kterou dřív dělal ruční `scale` — krok na hraně je ~η
+#: bez ohledu na mohutnost surového gradientu.
+BETA1 = 0.9
+BETA2 = 0.999
+ADAM_EPS = 1e-8
 
 
 def _semantic_bag(sentence, rows, center=None) -> dict:
@@ -104,12 +129,29 @@ def _window_rows(sentence, center, r):
                                          center + r + 1))
 
 
+def _restore_links(registry, snapshot: dict) -> None:
+    """Vrátí vazby do stavu snapshotu — odvolání epochy učení."""
+    for src, dst, weight, source in registry.links():
+        kept = snapshot.get((src, dst))
+        if kept is None:
+            registry.unlink(src, dst)
+        elif kept != (weight, source):
+            registry.link(src, dst, kept[0], source=kept[1])
+
+
 def contrastive_step(registry, question_bag: dict, correct_bag: dict,
-                     wrong_bag: dict, eta: float = ETA_CONTRAST) -> int:
-    """Jeden kontrastivní krok: posílit hrany otázka→správná, oslabit
-    otázka→vítěz. Jen na souaktivovaných dvojicích (qᵢ·aⱼ ≠ 0); meze ±1;
-    axiomy chrání registr. Vrací počet upravených hran."""
-    # Gradient marže: ΔW = η · q ⊗ (a⁺ − a⁻). Rozdíl schválně: co mají
+                     wrong_bag: dict, eta: float = ETA_CONTRAST,
+                     state: dict | None = None) -> int:
+    """Jeden kontrastivní krok Adamem: posílit hrany otázka→správná,
+    oslabit otázka→nejlepší špatná. Jen na souaktivovaných dvojicích
+    (qᵢ·aⱼ ≠ 0); meze ±1; axiomy chrání registr. Vrací počet upravených
+    hran.
+
+    state: momenty Adamu {(od, do): (m, v, t)} — drží je volající po
+    dobu tréninku. None = každý krok začíná bez paměti (první krok
+    Adamu je krok znaménka, ±η).
+    """
+    # Gradient marže: g = q ⊗ (a⁺ − a⁻). Rozdíl schválně: co mají
     # správný a špatný kandidát společné, o vítězi nerozhoduje — a bez
     # filtrů je „špatný" obvykle soused ve stejné větě, takže sdílených
     # klíčů je většina. Učit se na nich znamená vyrábět šum (naměřeno:
@@ -123,19 +165,32 @@ def contrastive_step(registry, question_bag: dict, correct_bag: dict,
     if not difference:
         return 0                       # kandidáti jsou v osách totožní
 
-    # normalizace: dlouhý pytel nesmí učit silněji než krátký
-    scale = 1.0 / max(len(question_bag) * len(difference), 1) ** 0.5
+    if state is None:
+        state = {}
+    q_items = tuple(question_bag.items())
+    a_items = tuple(difference.items())
+    gradients = np.outer([w for _, w in q_items],
+                         [d for _, d in a_items])
     changed = 0
-    for q_key, q_weight in question_bag.items():
-        for a_key, delta in difference.items():
+    for row, (q_key, _q_weight) in enumerate(q_items):
+        for col, (a_key, _delta) in enumerate(a_items):
             if q_key == a_key:
                 continue
             existing = registry.get_link(q_key, a_key)
             if existing and existing[1] == "axiom":
                 continue
             old = existing[0] if existing else 0.0
+            gradient = float(gradients[row, col])
+            m, v, t = state.get((q_key, a_key), (0.0, 0.0, 0))
+            t += 1
+            m = BETA1 * m + (1 - BETA1) * gradient
+            v = BETA2 * v + (1 - BETA2) * gradient * gradient
+            state[(q_key, a_key)] = (m, v, t)
+            m_hat = m / (1 - BETA1 ** t)
+            v_hat = v / (1 - BETA2 ** t)
             new = max(-1.0, min(1.0,
-                                old + eta * scale * q_weight * delta))
+                                old + eta * m_hat
+                                / (v_hat ** 0.5 + ADAM_EPS)))
             if new != old:
                 registry.link(q_key, a_key, new, source="etalon")
                 changed += 1
@@ -145,15 +200,20 @@ def contrastive_step(registry, question_bag: dict, correct_bag: dict,
 def train_on_etalon(corpus, etalon_entries, parser,
                     eta: float = ETA_CONTRAST,
                     max_epochs: int = MAX_EPOCHS) -> dict:
-    """4c: kontrastivní doladění na chybách typu SLABÁ/DOTAZ.
+    """4c: kontrastivní doladění na porušeních relativní marže.
 
-    Učí se jen tam, kde správná odpověď kandiduje a prohrává — přesně
+    Učí se tam, kde správná odpověď kandiduje a nevede s marží —
+    prohry (SLABÁ), tenké výhry (DOTAZ) i výhry těsně nad ε; přesně
     kategorie „signál existuje, jen má malý koeficient" z růstového
     zákona. NEPOKRYTÉ chyby se neučí (patří růstu os / dalším krokům).
     """
     from cb_field.field import SentenceField
     stats = {"epoch": 0, "kroku": 0, "hran": 0, "epochy": []}
+    adam_state = {}                    # momenty (m, v, t) na hranu
+    previous_loss = None
     for epoch in range(max_epochs):
+        snapshot = {(s, d): (w, src)
+                    for s, d, w, src in corpus.registry.links()}
         corrections = 0
         loss_sum = 0.0
         correct_now = 0
@@ -179,16 +239,20 @@ def train_on_etalon(corpus, etalon_entries, parser,
             # (prázdný rozdíl, žádné učení).
             rival = next((c for c in result.candidates
                           if c.token.lemma != expected), None)
-            if correct is not None and rival is not None:
-                # hinge loss marže: kolik chybí, aby správná vedla
-                # s odstupem — počítá se i pro thin-margin výhry
-                loss_sum += max(0.0, 1.0 + rival.score - correct.score)
             if winner.token.lemma == expected \
                     and result.outcome == "odpoved":
                 correct_now += 1
-                continue
             if correct is None or rival is None:
                 continue                     # NEPOKRYTÁ — učení nepatří
+            # Hinge s relativní marží: učí se KAŽDÉ porušení marže —
+            # i správná výhra s tenkým odstupem (DOTAZ i odpoved těsně
+            # nad ε). Splněná marže znamená nulový loss a žádný krok;
+            # tím je „korekcí 0" skutečná konvergence, ne artefakt.
+            margin = MARGIN_RATIO * abs(rival.score)
+            loss = max(0.0, margin + rival.score - correct.score)
+            loss_sum += loss
+            if loss == 0.0:
+                continue                     # marže splněna
             q_bag = _semantic_bag(question, range(len(question.tokens)))
             correct_bag = _semantic_bag(
                 correct.sentence,
@@ -199,7 +263,8 @@ def train_on_etalon(corpus, etalon_entries, parser,
                 _window_rows(rival.sentence, rival.center, corpus.r),
                 center=rival.center)
             stats["hran"] += contrastive_step(
-                corpus.registry, q_bag, correct_bag, wrong_bag, eta)
+                corpus.registry, q_bag, correct_bag, wrong_bag, eta,
+                state=adam_state)
             corrections += 1
         stats["epoch"] = epoch + 1
         stats["kroku"] += corrections
@@ -215,6 +280,19 @@ def train_on_etalon(corpus, etalon_entries, parser,
               f"· hran {stats['hran'] - edges_before}", flush=True)
         if corrections == 0:
             break
+        # Druhé kritérium konvergence: relativní marže nemusí být pro
+        # všechny otázky splnitelná najednou (korekce nespadnou na 0)
+        # a další epochy pak rozvracejí, co jiné otázky postavily —
+        # naměřeno: U-křivka s minimem u ~5. epochy a divergencí dál.
+        # Epocha, která loss zhoršila, se ODVOLÁ (vazby zpět na stav
+        # před ní) a trénink končí na minimu, ne za ním.
+        if previous_loss is not None and loss >= previous_loss:
+            _restore_links(corpus.registry, snapshot)
+            stats["epochy"][-1]["odvolana"] = True
+            print(f"    epocha {epoch + 1} odvolána (loss se zhoršil) "
+                  f"— vazby vráceny", flush=True)
+            break
+        previous_loss = loss
     return stats
 
 

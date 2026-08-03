@@ -197,3 +197,33 @@ odmítnout (FALEŠNÁ 3, DOTAZ-nezodp. 4). Není to regres (poctivá
 baseline měla NEVÍM též 0,00), ale kalibrace θ sama nepomůže — chybí
 člen nesoucí mohutnost. Kandidát: učení (4c) zvedne zodpověditelným
 setkání, nebo nový vážený člen; rozhodnutí patří J.
+
+## 13 · Refaktor učení, kroky 3+4: relativní marže + Adam (2026-08-04)
+
+- **Relativní marže** (krok 3): marže = 0,2 × |skóre soupeře| — přenos
+  staré proporce (1,0 / medián 4,9), žádné nové číslo od oka. Soupeř =
+  nejlepší špatný kandidát. Učí se KAŽDÉ porušení marže, i tenká
+  správná výhra; splněná marže = nulový loss a žádný krok, takže
+  „korekcí 0" je skutečná konvergence.
+- **Adam** (krok 4): momenty (m, v, t) na hranu, řídce, bez frameworku;
+  β₁=0,9 · β₂=0,999 · ε=1e-8. Druhý moment přebírá normalizaci délky
+  pytle (ruční `scale` zrušen). **η = 0,01** odvozeno z rozsahu vah:
+  s η = 0,15 Adam divergoval (loss 0,40 → 0,53, trefy 16 → 8);
+  s 0,03 přestřeluje (naměřeno, zapsáno u konstanty).
+- **Odvolání epochy**: korekce nespadnou na nulu (marže není pro
+  všechny otázky splnitelná najednou) a U-křivka lossu má minimum
+  (~5. epocha), za nímž další epochy rozvracejí, co jiné otázky
+  postavily. Epocha, která loss zhoršila, se odvolá (`registry.unlink`,
+  vazby zpět) a trénink končí na minimu. Bez odvolání: eval 0,64;
+  s ním 0,79.
+
+| testbed, protokol 4b+4c | přesnost@1 | NEVÍM-správnost |
+|---|---|---|
+| baseline (tanh+kosinus) | 0,67 | 0,00 |
+| po 4b (Hebb) | 0,45 | 0,00 |
+| po 4c (Adam, konec epocha 5) | **0,79** | 0,00 |
+
+Výrok: PŘIJATO. Loss čitelný (0,32 → 0,20), trefy na tréninku 16 → 24
+z 33, DOTAZ 11 → 6. Hebb dál škodí (dluh D4: má běžet až nad
+strukturou). Pozn.: na testbedu je trénink = etalon (horní odhad, jiná
+sada zatím není) — generalizaci měří korpusy s oddělenou sadou.
