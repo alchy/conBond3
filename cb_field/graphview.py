@@ -67,16 +67,20 @@ def main() -> None:
 
     parser = UdpipeClient()
     corpus = build_complex_corpus(parser)
-    # API viewBase2 po revizi J. (2026-08-05): jediné plátno Canvas
-    # + modulové serve(); metody uzlů/hran beze změny.
-    canvas = vb.Canvas(title="conBond3 — znalostní graf", dimensions=3)
-    graph = FactGraph(emit=viewbase_emitter(canvas))
+    # POZOR na dvě generace balíku: viewBase2 (GitHub, tohle API —
+    # Screen/GraphWindow/Project) vs. staré lokální viewBase
+    # (Canvas+serve). Instalace se dělá VÝHRADNĚ z viewBase2:
+    #   pip install 'viewbase @ git+https://github.com/alchy/viewBase2#subdirectory=python'
+    screen = vb.Screen(title="conBond3 — znalostní graf")
+    window = vb.GraphWindow(screen=screen, dimensions=3)
+    graph = FactGraph(emit=viewbase_emitter(window))
     for field in corpus:
         graph.add_sentence(field)
     stats = graph.stats()
     print(f"graf: {stats['uzlu']} uzlů · {stats['hran']} hran — "
           f"servíruji viewBase2")
-    vb.serve(canvas, port=8080, open_browser=True)
+    project = vb.Project(port=8080)
+    project.serve(screen, open_browser=True)
 
 
 if __name__ == "__main__":
