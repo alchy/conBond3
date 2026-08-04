@@ -102,3 +102,19 @@
 {"otazka": "Jak se jmenoval Hrabalův jediný syn?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící osoba"}
 {"otazka": "Které filmy Hrabal režíroval?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: záměna role — nebyl režisér"}
 {"otazka": "Do kterého jazyka byla jeho díla přeložena nejčastěji?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící detail"}
+{"otazka": "Komu pověděli o horečce Šimonovy příbuzné?", "odpoved_lemma": "Šimon", "zodpoveditelna": true, "most": "mezivětné: KOREFERENCE", "vazba": "věta 1: 'Šimonova tchyně ležela v horečce' / věta 2: 'Hned mu o ní pověděli'"}
+{"otazka": "Co zmizelo po Ježíšově řeknutí malomocnému?", "odpoved_lemma": "malomocenství", "zodpoveditelna": true, "most": "mezivětné: ODKAZ PŘES ČIN", "vazba": "věta 1: 'řekl: Chci, buď čist' / věta 2: 'se jeho malomocenství ztratilo'"}
+{"otazka": "Co Ježíš zakázal sbírat z prokletého fíkovníku?", "odpoved_lemma": "ovoce", "zodpoveditelna": true, "most": "mezivětné: NAVAZUJÍCÍ DĚJ", "vazba": "věta 1: 'nenalezl nic, než listí' / věta 2: 'Ať z tebe nikdo nejí ovoce'"}
+{"otazka": "Jakou přesně barvu měl Ježíšův oděv v chrámě?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "mezivětné: KOREFERENCE", "vazba": "podnět bez odpovídajícího faktu v textu"}
+{"otazka": "Jak dlouho se Ježíš modlil v pusté krajině zcela sám?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "mezivětné: NAVAZUJÍCÍ DĚJ", "vazba": "podnět bez odpovídajícího času v textu"}
+{"otazka": "Jaký byl přesný věk Jana Křtitele, když začal kázat?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "mezivětné: ODKAZ PŘES ČIN", "vazba": "podnět bez věkových údajů v textu"}
+{"otazka": "Kolik dní zůstal Ježíš v Kafarnaum po prvním vstupu do synagógy?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "mezivětné: MÍSTO A DĚJ ODDĚLENĚ", "vazba": "podnět bez konkrétní doby v textu"}
+{"otazka": "Kdo projektoval Čapkovu vilu na Vinohradech?", "odpoved_lemma": "Machoň", "zodpoveditelna": true, "most": "mezivětné: apozice", "vazba": "V1: Postavil architekt Ladislav Machoň V2: Nejprve žil Čapek ve své polovině"}
+{"otazka": "Jaké bylo druhé jméno Čapkovy matky?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "mezivětné: koreference", "vazba": "Text jmenuje jen: Božena Čapková, ne druhé jméno"}
+{"otazka": "Na kterém vysokém škole studoval Čapek medicínu?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "mezivětné: odkaz přes dílo", "vazba": "Text neukazuje Čapkovo medicínské vzdělání, jen filozofické"}
+{"otazka": "Jak se jmenoval Čapkův osobní lékař v Praze?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "mezivětné: navazující děj", "vazba": "Jméno osobního lékaře v textu není"}
+{"otazka": "V kterém roce se Čapek poprvé vydal do Itálie?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "mezivětné: apozice", "vazba": "Cesta do Itálie v textu uvedena není"}
+{"otazka": "Jaká byla Brabalhálova nejoblíbenější barva?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "nezodpověditelné: fakt chybí", "vazba": "Text neobsahuje informaci o barvách"}
+{"otazka": "Jaký hudební nástroj Brabalhál hrál v mládí?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "nezodpověditelné: fakt chybí", "vazba": "Text neobsahuje informaci o hudebních nástrojích"}
+{"otazka": "Jakou měl Neruda oblíbenou techniku kresby?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "nezodpověditelné: fakt v textu není", "vazba": "Text neobsahuje informaci o Nerudově kreslici technice"}
+{"otazka": "Kolik dětí měl Jan Neruda?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "nezodpověditelné: fakt v textu není", "vazba": "Text nezmíňuje Nerudovy děti ani jejich počet"}
