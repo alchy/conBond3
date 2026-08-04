@@ -80,3 +80,23 @@ dáš tam if, není rozvoj. nejde o stavový automat."*
 6. **Dvojité r** (r_words × r_sentences) — rozebrané, nepostavené;
    je to čistý rozvoj konceptu (kontextové pytle + bonus tématu na
    konec), proto má přednost před dalším laděním.
+
+## E · Kde se měří (pravidlo J., 2026-08-04)
+
+> „nepracujeme nad větou *Karel má psa. Petr má kočku.* — to je čítanka
+> pro děti, nic špatného na čítance není, jen my potřebujeme souvisle
+> provázané texty; fakta nejsou jednovětá s utrženým tématem."
+
+**Primární měřiště jsou souvislé korpusy**, ne testbed. Testbed je
+179 nezávislých vět — každá ostrov, každé téma utržené; proto tam
+r_sentences nemá co přinést a proto tam čísla vycházejí vysoko
+(2026-08-04: testbed 1,00 × korpusy 0,50 při téže mechanice).
+
+Testbed tím nekončí, ale mění roli: je to **regresní test mechaniky**
+(rozklad skóre existuje, axiom se nepřepíše, most vznikne, dosah r
+platí) — ne měřítko schopnosti. Číslo z testbedu se smí uvádět jen
+vedle čísla z korpusů, nikdy samo.
+
+Důsledek pro trénink: vzory se berou ze souvislého textu, kde fakt
+navazuje na fakt (koreference, apozice, odkaz do předchozí věty).
+Jednovětá fakta učí systém tvar, který v reálném textu není.
