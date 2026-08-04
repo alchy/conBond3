@@ -387,3 +387,54 @@ nic než definice úspěchu — přesně to, před čím varuje workflow § B5
 - report uvádí tokenovou i větnou přesnost vedle sebe, nikdy jen jednu;
 - volba `token` dá týž výsledek jako dnešní cesta (kontrola, že se
   změnilo jen výchozí rozlišení, ne výpočet).
+
+---
+
+## Krok 6 · Náhled
+
+**Co to je.** Rozšíření kukátka (`viewer.py`, `127.0.0.1:42301`)
+o pohled na to, co se při dotazu rozsvítilo — ne odpověď, ale PRŮBĚH.
+J. celou věc zarámoval jako experiment, kde ještě nečekáme přesnou
+odpověď; k tomu je potřeba vidět, kudy aktivace tekla.
+
+**Co ukáže,** v pořadí, jak se to děje:
+
+1. osy otázky s pokrytím, včetně mrtvých (`fact_gaps`),
+2. nejaktivnější věty s hodnotou (normalizovanou, § 22),
+3. uvnitř vybrané věty pole aktivací po slovech (`activation_field`),
+4. rozklad skóre vítěze po pojmenovaných členech (`top_nodes`).
+
+Všechno to už existuje jako data, takže krok je hlavně o zobrazení,
+ne o nové mechanice.
+
+**Co přibývá navíc a je nejcennější: hrany grafu, po kterých se šlo.**
+U otázky o křtu musí být vidět, že `Jordán` visí na `pokřtěný`
+a `Galilej` na `přijít` — přesně ten rozdíl, který dnešní skóre nevidí
+a graf ano. Bez toho náhled ukazuje jen čísla; s tím ukazuje DŮVOD.
+
+**Proč je poslední.** Až teď je co ukazovat: před krokem 1 není graf,
+před 3 se osy nemění, před 4 není co hlásit jako mezeru.
+
+### Přejímací kritérium
+
+Na dotaz „Kde byl pokřtěn Ježíš?" náhled ukáže správnou větu jako
+nejaktivnější, `Jordán` (2,088) a `Galilej` (2,068) s jejich blízkými
+skóre A K TOMU jejich různé hrany. Člověk u obrazovky musí z náhledu
+poznat, proč systém váhá, aniž by četl kód.
+
+---
+
+## Zavržené varianty (vyvráceno měřením, ne odhadem)
+
+Patří do handoveru stejně jako to přijaté — ušetří příště práci:
+
+1. **Promoce podle `poměr × n/(n+1)`** (krok 2). Tlumení saturuje už
+   při dvaceti hranách, takže nahoru vyplavaly řídce doložené uzly
+   (`muset`, `lékař`, `mnohý`) a nejsilnější uzly grafu (`rok`, `mít`,
+   `moci`) z limitu vypadly. Nahrazeno `různých² / hran`.
+2. **Relativní práh pro detekci mezery** (krok 4). Zbytečný: mrtvá osa
+   dává přesně nulu (v registru není), pokryté začínají na 0,604 —
+   propast, ne škála.
+3. **Rozdělení invalidace a přeučení na dva kroky** (krok 3). Promoce
+   bez přeučení nechá systém v horším stavu a odvolání by se
+   rozhodovalo podle čísla z mezistavu. Sloučeno do atomického cyklu.
