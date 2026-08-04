@@ -210,3 +210,16 @@ novější osou a sloupce navíc by se tiše zahodily.
 |---|---|
 | přejímka § 5/S2 | `./run-python cb_bond/scripts/prejimka-spektrum.py` |
 | rozklad skóre na příkladech | `./run-python cb_bond/scripts/rozklad-skore.py [kolik]` — návod ke čtení v `docs/rozklad-skore.md` |
+
+## GraphRecall (recall.py)
+
+| metoda | co dělá / na čem visí |
+|---|---|
+| `GraphRecall(graph, corpus, *, depth=2)` | graf i korpus parametrem; rejstřík se staví líně a přepočítá s růstem korpusu |
+| `sentences(question, top_k=50)` | pozice vět seřazené sestupně podle záře |
+| `sentence_scores(question)` | `{věta: záře}` — MAXIMUM přes uzly věty (součet zvýhodňuje dlouhé) |
+| `glow(question)` | `{uzel: jas}` — lemata otázky rozsvícená a rozzářená po hranách; záře se při šíření SČÍTÁ |
+
+Naměřeno: proti kosinu slov otázky 53/117 místo 37/117 (top-50)
+a 22/30 místo 17/30 (věta v top-3 na etalonu). Hloubka 2 je provozní
+bod; třetí skok nepřidá nic.

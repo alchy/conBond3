@@ -48,6 +48,7 @@ from cb_bond.training import (  # noqa: E402
     sentence_hit,
 )
 from cb_bond.promotion import CycleOutcome, PromotionCycle  # noqa: E402
+from cb_bond.recall import GraphRecall  # noqa: E402
 from cb_bond.relations import RelationMiner, kmen  # noqa: E402
 from cb_bond.spectral import SpectralMember, truncated_svd  # noqa: E402
 from cb_bond.matcher import (  # noqa: E402
@@ -83,6 +84,7 @@ __all__ = [
     "PromotionCycle",
     "CycleOutcome",
     "GraphMirror",
+    "GraphRecall",
     "SpectralMember",
     "truncated_svd",
     "ContrastiveTrainer",

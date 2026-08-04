@@ -325,3 +325,55 @@ z pěti lepších než nula). Je to ale chudá aproximace téhož —
 náhodná projekce místo spektra — a stojí to průhlednost, rozdíl mezi
 naučenou nulou a chybějící vazbou, a rozptyl stejně velký jako zisk.
 S2 dělá totéž řízeně a deterministicky.
+
+## 19 · Předvýběr patří grafu, ne pytli
+
+Graf jsme postavili v kroku 2, ověřili na 16 074 hranách — a k odpovídání
+ho nepoužívali. Sloužil jen promoci a kreslení. Přitom je to on, kdo nese
+**strukturu**: když se rozsvítí *Ježíš* a *pokřtěný*, záře po hranách
+dojde k *Jordánu*, protože na *pokřtěném* opravdu visí. Pytel vidí jen
+množinu slov a Jordán s Galilejí jsou v něm k nerozeznání — což je přesně
+věta z § 1 zadání, kvůli které graf vznikl.
+
+Naměřeno (117 tréninkových otázek, jejichž odpověď v korpusu je):
+
+| předvýběr | top-50 | top-200 | věta v top-3 (etalon) |
+|---|---|---|---|
+| kosinus slov otázky | 37/117 | 58/117 | 17/30 |
+| GraphRecall depth=1 | 49/117 | 67/117 | 19/30 |
+| **GraphRecall depth=2** | **53/117** | 69/117 | **22/30** |
+| GraphRecall depth=3 | 53/117 | 70/117 | 22/30 |
+
+Hloubka 2 je provozní bod: třetí skok už nepřidá nic. Je to táž mez jako
+u `spread_depth` — signál se dál jen rozmělní.
+
+**Skóre věty je MAXIMUM ze záře jejích uzlů, ne součet.** Součet by
+zvýhodnil dlouhé věty; je to týž degenerát, kvůli kterému je čtení
+gaussovské (naměřeno: max 25/30, součet 23/30).
+
+**Záře se ale při šíření SČÍTÁ.** Uzel, ke kterému vede cesta od víc
+lemat otázky, je nosnější než uzel dosažený jednou cestou. Sečíst při
+šíření a maximovat při čtení věty není nedůslednost — je to dvojí
+otázka: „jak silně tenhle uzel svítí" proti „jak dobře na tuhle větu
+sedí otázka".
+
+## 20 · Stop slova do grafu nepatří — naměřeno
+
+Otázka stála takhle: má být graf zaplněný předložkami a spojkami, nebo
+bez nich? Odpověď je monotónní a nemilosrdná (recall na 117 otázkách):
+
+| graf | uzlů | hran | recall |
+|---|---|---|---|
+| obsahová slova (dnešek) | 5 781 | 15 953 | **54/117** |
+| + předložky | 5 829 | 18 409 | 48/117 |
+| + předložky a spojky | 5 879 | 20 511 | 47/117 |
+| + zájmena a pomocná slovesa | 5 939 | 25 085 | 27/117 (etalon **0/30**) |
+
+Mechanismus je jasný: zavřená slova jsou rozcestí, která leží na KAŽDÉ
+cestě. Podíl `1/hran` sice omezí, kolik jednotlivá hrana předá, ale při
+dvou skocích přes ně dojde záře odevšad všude a rozdíl mezi větami
+zmizí. Přidat je znamená vyrobit si graf, ve kterém svítí všechno —
+tedy nic.
+
+Je to nezávislé potvrzení rozhodnutí z kroku 2 (`NODE_UPOS` bez
+zavřených tříd), které tehdy padlo kvůli shodě s přejímkou 16 074 hran.
