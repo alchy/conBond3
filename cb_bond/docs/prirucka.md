@@ -65,13 +65,31 @@ naměřeno **0,10 (3/30)**. Mlčení 0 souhlasí. Co je o rozdílu známo:
   vychází táž přesnost 3/30, přestože věta s lemmatem odpovědi je
   v shortlistu ve 30/30 případů. Ztrácí se ve skórování, ne v recallu.
 - **Není to hloubkou ani pokrytím.** Pokrytí sedí a k=1 je zadané.
-- **Měřené varianty členu setkání** (30 zodpověditelných otázek):
-  vše 3/30 · jen metadata 2/30 · **jen slova 6/30** · vše s tématem ×3
-  4/30. Směr „obsahová slova víc než gramatika" pomáhá, ale na 11/30
-  nestačí.
+- **Není to definicí metriky.** Ověřeno proti referenci: přesnost je
+  `SPRÁVNĚ / zodpověditelné`, kde SPRÁVNĚ znamená, že lemma nejlepšího
+  TOKENU se rovná `answer_lemma` — přesně tak, jak se měří tady.
+  (Reference to má v `evaluate.evaluate_corpus`; potvrzuje to i tabulka
+  „přesnost@1 (zodpověditelné) 28/33 = 0,85" v jejím měření.)
+- **Měřených sedm variant** (30 zodpověditelných otázek):
+
+  | varianta členu setkání | přesnost |
+  |---|---|
+  | pytel okna, všechny osy (dnešní kód) | 3/30 |
+  | pytel okna, jen metadata | 2/30 |
+  | pytel okna, jen slovní osy | **6/30** |
+  | pytel okna, téma ×3 | 4/30 |
+  | maximum přes ŘÁDKY okna | **6/30** |
+  | jen střed, okno vůbec | 4/30 |
+  | čtení celého korpusu (bez předvýběru) | 3/30 |
 
 Zadání členy skóre vypisuje, ale neurčuje, nad kterou reprezentací se
 počítají a jak se normalizují; kód proto drží doslovný zápis ze zadání
 (vše, včetně WORD=) a rozdíl se přiznává, místo aby se váhy ohýbaly,
-dokud číslo nesedne. Kdo bude krok 3 dolaďovat, má tady změřený
-výchozí bod a čtyři už vyloučené cesty.
+dokud číslo nesedne.
+
+**Kudy dál.** Nejlepší dvě varianty (6/30) míří stejným směrem —
+obsahová slova a řádková struktura váží víc než sečtený pytel všech
+os. Chybějící díl je nejspíš v tom, co zadání nepíše: jak přesně se
+skládá pytel otázky a jak se členy normalizují. Než se to doplní,
+nemá smysl na krok 3 stavět kalibraci θ (krok 10) — měřila by se
+špatná křivka.
