@@ -12,7 +12,8 @@ nic nemění. Odsouhlasené kroky se sem zapisují postupně (J.).
    kritérium různých²/hran, vratná · *odsouhlaseno 2026-08-04*
 3. **Promoční cyklus** — invalidace, přeučení a odvolání jako jedna
    atomická operace · *odsouhlaseno 2026-08-04*
-4. Detekce mezery a dialog — „nemám rychlost, doplň kontext"
+4. **Detekce mezery a dialog** — `fact_gaps()`, `reply()`,
+   `append_context()` · *odsouhlaseno 2026-08-04*
 6. Odpověď jako věta — zapojit úroveň, která už měřením funguje
 7. Náhled — které uzly se rozsvítily
 
@@ -238,3 +239,98 @@ a patří do testu.
 - test: cyklus, který zhorší měření, vrátí registr bit po bitu do
   stavu před sebou (snapshot + `unlink`);
 - regrese: bez promoce se nesmí změnit žádné dnešní číslo.
+
+---
+
+## Krok 4 · Detekce mezery a dialog
+
+**Co vzniká.** Tři funkce, kód anglicky jako zbytek modulu:
+`fact_gaps()` řekne, které osy otázky korpus vůbec nemá; `reply()`
+odpoví a zároveň chybějící osy ohlásí; `append_context()` připojí větu
+od uživatele.
+
+**Není to nová mechanika.** `cover` už dnes počítá nejslabší danou osu
+a mrtvá osa dává nulu — signál v poli je, jen se utopí ve skóre. Krok
+ho vytáhne na povrch.
+
+**Práh není potřeba** a moje obava o něj byla lichá (naměřeno níž):
+mrtvá osa dává PŘESNĚ nulu, protože v registru vůbec není, zatímco
+pokryté osy začínají na 0,604. Mezi tím je propast, ne škála.
+
+**Odpovídá se vždy**, i při mezeře: `reply()` vrátí nejlepšího
+kandidáta a k tomu `outcome="needs_context"` se seznamem chybějícího.
+Při experimentu je to užitečnější než mlčení (vidíš, kam systém sáhl)
+a nic to nezakrývá, protože chybějící osa je vypsaná. Čisté mlčení je
+jednořádková změna na volající straně.
+
+**Věta od uživatele jde stejnou cestou jako každý text**, jen se
+zdrojem `dialog`. Žádná zvláštní větev — pak se na ni vztahuje všechno
+ostatní (koše, promoce, učení) bez výjimek, a přitom jde kdykoli
+zjistit, odkud je, a případně ji odebrat.
+
+### Příklad na reálných datech (korpus 2 912 vět)
+
+    Jak je omezena rychlost na dálnici?
+       WORD=AUX:být          pokrytí 1,000
+       WORD=ADJ:omezený      pokrytí 0,604
+       WORD=NOUN:rychlost    pokrytí 0,604   ← korpus JI ZNÁ (fyzika)
+       WORD=ADP:na           pokrytí 1,000
+       WORD=NOUN:dálnice     pokrytí 0,000   ← MRTVÁ OSA
+
+    Kde byl pokřtěn Ježíš?
+       WORD=AUX:být          pokrytí 1,000
+       WORD=ADJ:pokřtěný     pokrytí 0,604
+       WORD=PROPN:Ježíš      pokrytí 0,885   ← vše pokryto, neptá se
+
+Systém se tedy zeptá přesněji než původní náčrt: „rychlost" zná
+z fyzikálního korpusu, chybí mu jen „dálnice" — ptá se na jednu věc,
+ne na dvě.
+
+### Metakód
+
+    def fact_gaps(question, corpus):
+        """Axes of the question the corpus does not have at all."""
+        gaps = []
+        for axis in given_axes(question):      # WORD= rows without QLEM=
+            coverage = max(tanh(spread(s))[axis] for s in corpus)
+            if coverage == 0:
+                gaps.append(axis)
+        return gaps
+
+    def reply(question, corpus, graph):
+        gaps = fact_gaps(question, corpus)
+        result = match(question, corpus)       # always searches
+        return Reply(best=result.best,
+                     outcome="needs_context" if gaps else result.outcome,
+                     missing=gaps)
+
+    def append_context(text, corpus, graph, parser):
+        """User-supplied sentence enters the same way any text does —
+        no separate path, only a different source."""
+        field = corpus.add_text(text, parser, document="dialog")
+        graph.add_sentence(field, source="dialog")
+        return field
+
+### Průběh dialogu
+
+    q:  Jak je omezena rychlost na dálnici?
+    a:  Neznám „dálnice". („rychlost" mám z fyziky.) Doplň kontext.
+    u:  Dálnice je silnice pro motorová vozidla, kde je stanovena
+        rychlost na 130 km/h.
+    →   corpus += věta (document="dialog")
+    →   graph  += uzly: dálnice, silnice, vozidlo, rychlost,
+                        stanovený, 130
+               += hrany: silnice --nsubj--> dálnice
+                         vozidlo --nmod--> silnice
+                         rychlost --nsubj--> stanovený
+                         130 --obl--> stanovený
+    a:  Přijato: dálnice ~ silnice, rychlost → stanovený → 130.
+
+### Přejímací kritérium
+
+- `fact_gaps` označí `dálnice` a NEoznačí `rychlost`, `Ježíš`,
+  `pokřtěný`, `Jordán`;
+- po `append_context` má `dálnice` nenulové pokrytí a v grafu přibudou
+  uzly i hrany se zdrojem `dialog`;
+- `reply` vrací kandidáta i při mezeře (nemlčí), a `missing` je prázdné
+  u otázek, které korpus pokrývá.
