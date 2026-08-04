@@ -10,7 +10,8 @@ import unittest
 from pathlib import Path
 
 from cb_field.corpus import Corpus
-from cb_field.corpusfile import add_to_corpus, load_corpus_file
+from cb_field.corpusfile import add_to_corpus, etalon_entries, \
+    load_corpus_file
 from cb_field.tests.test_graph import KREST, _Sentence
 
 
@@ -39,14 +40,21 @@ def _valid_data():
 
 
 class _Parser:
-    """Atrapa: každé větě vrátí zmraženou větu o křtu (n_sentences krát)."""
+    """Atrapa: na každé volání vrátí další předepsaný počet vět bloku.
 
-    def __init__(self, n=1):
-        self.n = n
+    Blok se parsuje vcelku, takže atrapa dostává posloupnost počtů
+    po blocích ([2, 1] = první blok dvě věty, druhý jednu).
+    """
+
+    def __init__(self, counts=(2, 1)):
+        self.counts = list(counts)
+        self.texts = []
 
     def parse(self, text):
+        self.texts.append(text)
+        n = self.counts.pop(0)
         class _Result:
-            sentences = [_Sentence(KREST)] * self.n
+            sentences = [_Sentence(KREST)] * n
         return _Result()
 
 
@@ -91,7 +99,7 @@ class TestAddToCorpus(unittest.TestCase):
         corpus.add_sentence(_Sentence(KREST))     # korpus už něco má
         with tempfile.TemporaryDirectory() as tmp:
             cf = load_corpus_file(_write(tmp, _valid_data()))
-            positions = add_to_corpus(corpus, cf, _Parser())
+            positions = add_to_corpus(corpus, cf, _Parser((2, 1)))
         self.assertEqual(positions, (1, 2, 3))    # index vety → pozice
         self.assertEqual(len(corpus), 4)
         # blok = dokument: uvnitř bloku týž marker, přes bloky různý,
@@ -99,13 +107,41 @@ class TestAddToCorpus(unittest.TestCase):
         self.assertIs(corpus.documents[1], corpus.documents[2])
         self.assertIsNot(corpus.documents[2], corpus.documents[3])
 
-    def test_rozpad_vety_parserem_hlasi_index(self):
+    def test_otazky_jdou_prevest_na_etalon(self):
+        corpus = Corpus(r=1)
+        with tempfile.TemporaryDirectory() as tmp:
+            cf = load_corpus_file(_write(tmp, _valid_data()))
+            positions = add_to_corpus(corpus, cf, _Parser((2, 1)))
+        entries = etalon_entries(cf, positions)
+        self.assertEqual(entries[0], {
+            "otazka": "Na co?", "odpoved_lemma": "dva",
+            "zodpoveditelna": True, "answer_position": positions[2]})
+        self.assertEqual(entries[1], {
+            "otazka": "A na co ne?", "odpoved_lemma": None,
+            "zodpoveditelna": False})
+
+    def test_blok_s_puvodnim_textem_se_parsuje_z_nej(self):
+        # převod z txt ukládá původní odstavec: spojení položek mezerou
+        # se může rozparsovat jinak (Válka.cz v citaci), původní text ne
+        data = _valid_data()
+        data["blocks"][0]["text"] = "Věta nula.  Věta jedna."
+        corpus = Corpus(r=1)
+        with tempfile.TemporaryDirectory() as tmp:
+            cf = load_corpus_file(_write(tmp, data))
+            parser = _Parser((2, 1))
+            add_to_corpus(corpus, cf, parser)
+        self.assertEqual(parser.texts[0], "Věta nula.  Věta jedna.")
+        self.assertEqual(parser.texts[1], "Věta dva.")   # bez text: join
+
+    def test_jiny_pocet_vet_z_parseru_hlasi_blok(self):
+        # blok se parsuje vcelku (jako původní ingest po odstavcích);
+        # jiný počet vět než položek by čísla otázek tiše rozjel
         corpus = Corpus(r=1)
         with tempfile.TemporaryDirectory() as tmp:
             cf = load_corpus_file(_write(tmp, _valid_data()))
             with self.assertRaises(ValueError) as ctx:
-                add_to_corpus(corpus, cf, _Parser(n=2))
-            self.assertIn("0", str(ctx.exception))  # globální index věty
+                add_to_corpus(corpus, cf, _Parser((3, 1)))
+            self.assertIn("blok 0", str(ctx.exception))
 
 
 if __name__ == "__main__":

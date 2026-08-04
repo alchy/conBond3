@@ -33,17 +33,30 @@ class CorpusQuestion:
 
 
 @dataclass(frozen=True)
+class CorpusBlock:
+    """Blok = souvislý text; položky jsou jeho očíslovaný rozpad.
+
+    text: původní odstavec (převod z txt). Parsuje se ON, ne spojení
+    položek — věty vytržené z kontextu se mohou rozdělit jinak.
+    """
+
+    sentences: tuple
+    text: str | None = None
+
+
+@dataclass(frozen=True)
 class CorpusFile:
     """Načtený fixovaný korpus: bloky vět a otázky na jejich indexy."""
 
     path: Path
-    blocks: tuple                      # blok = n-tice textů vět
+    blocks: tuple                      # n-tice CorpusBlock
     questions: tuple
 
     @property
     def sentences(self) -> tuple:
         """Věty v globálním číslování souboru (0 od začátku, přes bloky)."""
-        return tuple(text for block in self.blocks for text in block)
+        return tuple(text for block in self.blocks
+                     for text in block.sentences)
 
 
 def load_corpus_file(path: Path) -> CorpusFile:
@@ -67,8 +80,9 @@ def load_corpus_file(path: Path) -> CorpusFile:
         if not sentences or not all(
                 isinstance(s, str) and s.strip() for s in sentences):
             raise ValueError(f"{path}: blok {b} nemá neprázdné věty")
-        blocks.append(tuple(sentences))
-    total = sum(len(block) for block in blocks)
+        blocks.append(CorpusBlock(sentences=tuple(sentences),
+                                  text=block.get("text")))
+    total = sum(len(block.sentences) for block in blocks)
     questions = []
     for q, entry in enumerate(data.get("questions", [])):
         question = CorpusQuestion(
@@ -97,26 +111,60 @@ def add_to_corpus(corpus: Corpus, corpus_file: CorpusFile,
                   parser) -> tuple:
     """Přidá věty souboru do korpusu; vrací pozice po globálních indexech.
 
+    Blok se parsuje VCELKU — věta vytržená z odstavce se může sama
+    o sobě rozdělit jinak (dvojtečka s uvozovkou), zatímco v kontextu
+    bloku parser dělí stejně jako původní ingest po odstavcích. Rozpad
+    se pak rovná položkám: jiný POČET vět i jiné ZNĚNÍ věty je hlasitá
+    chyba s adresou — číslování, na které míří otázky, se nesmí tiše
+    rozjet.
+
     Blok = dokument (kontext r_sentences nepřetéká hranici bloku);
     marker hranice je anonymní objekt — jméno souboru významovou váhu
-    nést nesmí. Rozpad položky na víc vět parserem je hlasitá chyba
-    se jménem souboru a globálním indexem věty: číslování, na které
-    míří otázky, by se tiše rozjelo.
+    nést nesmí.
     """
     positions = []
     index = 0
-    for block in corpus_file.blocks:
+    for b, block in enumerate(corpus_file.blocks):
         marker = object()
-        for text in block:
-            try:
-                corpus.add_text(text, parser, document=marker)
-            except ValueError as error:
+        items = block.sentences
+        parsed = parser.parse(
+            text=block.text or " ".join(items)).sentences
+        if len(parsed) != len(items):
+            raise ValueError(
+                f"{corpus_file.path}: blok {b} má {len(items)} položek, "
+                f"parser z něj udělal {len(parsed)} vět (věty "
+                f"{index}–{index + len(items) - 1})")
+        for text, sentence in zip(items, parsed):
+            source = getattr(sentence, "source", None)
+            if source and " ".join(source.split()) \
+                    != " ".join(text.split()):
                 raise ValueError(
-                    f"{corpus_file.path}: věta {index} ({text!r}) — "
-                    f"{error}") from None
+                    f"{corpus_file.path}: věta {index} zní {text!r}, "
+                    f"parser vrátil {source!r} — fixace se rozjela")
+            corpus.add_sentence(sentence, document=marker)
             positions.append(len(corpus) - 1)
             index += 1
     return tuple(positions)
+
+
+def etalon_entries(corpus_file: CorpusFile,
+                   positions: tuple | None = None) -> list:
+    """Otázky souboru ve tvaru etalonu (evaluate/learning).
+
+    positions: pozice vět v korpusu (výstup add_to_corpus) — s nimi
+    zodpověditelná otázka nese i answer_position, tedy zemní pravdu
+    na úrovni VĚTY. Token ji má v odpoved_lemma; obě metriky se pak
+    dají počítat vedle sebe.
+    """
+    entries = []
+    for question in corpus_file.questions:
+        entry = {"otazka": question.text,
+                 "odpoved_lemma": question.answer_lemma,
+                 "zodpoveditelna": question.answerable}
+        if question.answerable and positions is not None:
+            entry["answer_position"] = positions[question.sentence]
+        entries.append(entry)
+    return entries
 
 
 def _validate(paths) -> int:

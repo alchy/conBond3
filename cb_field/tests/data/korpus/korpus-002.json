@@ -1,0 +1,249 @@
+{
+  "format_version": 1,
+  "language": "cs",
+  "blocks": [
+    {
+      "topic": "Český les a stromy",
+      "sentences": [
+        "Český les pokrývá téměř třetinu území státu.",
+        "Nejrozšířenějším jehličnanem je smrk ztepilý, který roste hlavně v horských oblastech.",
+        "Na nižších polohách převažují listnaté stromy jako dub a buk.",
+        "Dub letní dokáže dožít se stáří přes pět set let.",
+        "Buk lesní má hladkou šedou kůru a hustou korunu.",
+        "Borovice lesní snáší sucho lépe než smrk a roste i na písčité půdě.",
+        "Jedle bělokorá dříve tvořila rozsáhlé porosty, dnes je vzácnější kvůli znečištění ovzduší.",
+        "Lesní půda ukrývá houby, mechy a kořeny mnoha rostlin.",
+        "Podzimní listí se rozkládá a vytváří úrodnou vrstvu humusu.",
+        "V korunách stromů hnízdí sovy, datli a další ptáci.",
+        "Datel černý vytesává do kmenů hluboké dutiny pro hnízdění.",
+        "Lesní mravenci budují velká hnízda z jehličí a větviček.",
+        "Podrost tvoří borůvčí, kapradiny a mladé stromky.",
+        "Smrkové monokultury jsou náchylnější k napadení kůrovcem než smíšené lesy.",
+        "Kůrovec se přemnožuje zejména po suchých a teplých letech.",
+        "Lesníci proto stále více vysazují smíšené porosty s více druhy dřevin.",
+        "Divoký les bez zásahu člověka se nazývá prales.",
+        "V Beskydech a na Šumavě se dochovaly zbytky původních pralesů."
+      ]
+    },
+    {
+      "topic": "Řeky a rybníky",
+      "sentences": [
+        "Nejdelší řekou pramenící na území Česka je Vltava.",
+        "Vltava pramení na Šumavě a protéká Prahou.",
+        "Labe odvádí vodu z velké části Čech do Severního moře.",
+        "Morava protéká na východě země a vlévá se do Dunaje.",
+        "Řeky napájejí rybníky, které lidé budují už od středověku.",
+        "Jihočeské rybníky sloužily především k chovu kapra.",
+        "Rybník Rožmberk patří mezi největší vodní plochy v Česku.",
+        "Vodní hladinu rybníků zdobí leknín bílý a stulík žlutý.",
+        "V rákosí u břehů hnízdí rákosníci a kachny divoké.",
+        "Volavka popelavá loví ryby a obojživelníky v mělké vodě.",
+        "Bobr evropský staví hráze a mění tok menších potoků.",
+        "Vydra říční se vrátila do mnoha řek díky ochraně přírody.",
+        "Pstruh potoční potřebuje čistou a okysličenou vodu horských toků.",
+        "Štika obecná patří mezi nejrychlejší dravé ryby v našich vodách.",
+        "Jarní tání sněhu zvyšuje průtok řek a někdy způsobuje povodně.",
+        "Meandry řek vytvářejí klidné zákoutí vhodné pro vodní ptactvo.",
+        "Rybníkářství má v jižních Čechách tradici starou několik století."
+      ]
+    },
+    {
+      "topic": "Ptáci České republiky",
+      "sentences": [
+        "V českých lesích a na loukách žije přes dvě stě druhů ptáků.",
+        "Sýkora koňadra patří mezi nejběžnější ptáky zahrad a parků.",
+        "Vrabec domácí, kdysi hojný druh, dnes ve městech ubývá.",
+        "Čáp bílý staví velká hnízda na komínech a sloupech.",
+        "Čápi odlétají na zimu do Afriky a vrací se na jaře.",
+        "Sova pálená loví hlodavce především za soumraku a v noci.",
+        "Výr velký je největší evropská sova a samice dorůstají hmotnosti až čtyři kilogramy.",
+        "Orel mořský hnízdí u velkých rybníků a řek s dostatkem ryb.",
+        "Sokol stěhovavý dosahuje při střemhlavém letu rychlosti přes tři sta kilometrů za hodinu.",
+        "Skřivan polní zpívá za letu vysoko nad poli a loukami.",
+        "Kukačka obecná klade vejce do hnízd jiných ptačích druhů.",
+        "Datel černý bubnuje zobákem do kmenů starých stromů.",
+        "Konipas bílý hledá hmyz poblíž vody a lidských sídel.",
+        "Labuť velká hnízdí u rybníků a brání okolí hnízda.",
+        "Husa velká táhne na podzim ve výrazných hejnech do teplých krajin.",
+        "Krkavec velký je nejchytřejší pěvec s hlubokým a chraptivým hlasem.",
+        "Ptačí tah přes české území sledují ornitologové každý rok na jaře a na podzim."
+      ]
+    },
+    {
+      "topic": "Savci v českých lesích",
+      "sentences": [
+        "V českých lesích žije jelen evropský, který je největším původním sudokopytníkem.",
+        "Srnec obecný je menší a štíhlejší příbuzný jelena s krátkými parohy.",
+        "Divoké prase, zvané také kanec, hledá potravu rypákem v lesní půdě.",
+        "Liška obecná je přizpůsobivá šelma, která žije i na okraji měst.",
+        "Jezevec lesní si buduje rozsáhlé nory s mnoha chodbami a vchody.",
+        "Rys ostrovid je největší kočkovitá šelma žijící v Česku, hlavně na Šumavě.",
+        "Vlk obecný se do českých lesů po letech nepřítomnosti postupně vrací.",
+        "Los evropský patří mezi nejvzácnější velké savce žijící v Česku.",
+        "Veverka obecná sbírá na podzim semena a ořechy do zásoby.",
+        "Ježek západní přezimuje ve spánku ukrytý pod listím nebo v dutinách.",
+        "Netopýr velký si za dne odpočívá v podkroví nebo dutinách stromů.",
+        "Kuna lesní loví hlodavce a ptáky obratně mezi větvemi stromů.",
+        "Zajíc polní žije spíše na loukách a polích než přímo v lese.",
+        "Divoká kočka je v Česku vzácná a skrývá se v hlubokých lesích.",
+        "Myšice lesní je drobný hlodavec tvořící důležitou potravu pro sovy a lišky.",
+        "Ondatra pižmová pochází ze Severní Ameriky a dnes žije podél mnoha řek.",
+        "Plch velký spí zimním spánkem sedm až osm měsíců v roce."
+      ]
+    },
+    {
+      "topic": "Hory České republiky",
+      "sentences": [
+        "Nejvyšší horou Česka je Sněžka s nadmořskou výškou 1603 metrů.",
+        "Sněžka leží v Krkonoších na hranici s Polskem.",
+        "Krkonoše jsou pásmo hor táhnoucí se podél severní hranice Čech.",
+        "Nad horní hranicí lesa v Krkonoších rostou jen kleč a horské louky.",
+        "Šumava tvoří rozsáhlé pohoří na jihozápadě země, pokryté hlubokými lesy.",
+        "Nejvyšším vrcholem Šumavy je Plechý s výškou 1378 metrů.",
+        "Jeseníky se rozkládají na severní Moravě a jejich vrcholem je Praděd.",
+        "Praděd dosahuje výšky 1491 metrů a je druhou nejvyšší horou Česka.",
+        "Beskydy na východě země jsou známé hlubokými lesy a pastvinami.",
+        "Orlické hory oddělují Čechy od polského území na severovýchodě.",
+        "Horské oblasti mají chladnější podnebí a delší sněhovou pokrývku než nížiny.",
+        "V horách rostou odolné druhy jako smrk, borovice kleč a jeřáb.",
+        "Kamzík horský byl do Krkonoš vysazen na přelomu devatenáctého a dvacátého století.",
+        "Na horských loukách kvetou vzácné rostliny jako hořec a prha arnika.",
+        "Turisté vystupují na Sněžku po značených cestách z několika směrů.",
+        "Horské potoky mají prudký spád a čistou studenou vodu.",
+        "Zimní bouře a silný vítr formují na vrcholcích hor zvláštní tvary sněhu."
+      ]
+    },
+    {
+      "topic": "Počasí a roční období",
+      "sentences": [
+        "Česko má mírné podnebí se čtyřmi zřetelně odlišenými ročními obdobími.",
+        "Jaro přináší tání sněhu, první kvetoucí rostliny a návrat tažných ptáků.",
+        "Léto bývá nejteplejším obdobím roku s průměrnými teplotami kolem dvaceti stupňů.",
+        "Letní bouřky často přinášejí prudké přeháňky, blesky a někdy i kroupy.",
+        "Podzim je typický klesajícími teplotami, mlhami a barevným listím stromů.",
+        "V říjnu a listopadu opadává listí z listnatých stromů před zimou.",
+        "Zima přináší mráz, sníh a v horách i vydatné sněhové srážky.",
+        "Nejchladnějším měsícem bývá leden, kdy teploty často klesají pod nulu.",
+        "Sníh se v nížinách obvykle drží jen několik týdnů v roce.",
+        "V horských oblastech leží sníh mnohem déle, často až do dubna.",
+        "Průměrné roční srážky v Česku se pohybují kolem šesti set milimetrů.",
+        "Nejvíce srážek spadne v horských oblastech na severu a jihozápadě země.",
+        "Sucho v posledních letech ovlivňuje lesy i zemědělskou půdu v nížinách.",
+        "Mrazivé dny na jaře mohou poškodit rozkvetlé ovocné stromy.",
+        "Podzimní inverze zadržuje studený vzduch a smog v nížinách a kotlinách.",
+        "Letní vedra v posledních letech přibývají a trápí především velká města.",
+        "Roční období silně ovlivňují život rostlin i zvířat v celé krajině."
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "text": "Kdo staví hráze a mění tok menších potoků?",
+      "sentence": 28,
+      "answer_lemma": "bobr",
+      "answerable": true
+    },
+    {
+      "text": "Co klade kukačka obecná do hnízd jiných ptáků?",
+      "sentence": 45,
+      "answer_lemma": "vejce",
+      "answerable": true
+    },
+    {
+      "text": "Kde pramení řeka Vltava?",
+      "sentence": 19,
+      "answer_lemma": "Šumava",
+      "answerable": true
+    },
+    {
+      "text": "Kdy bývá v Česku podle textu nejchladněji?",
+      "sentence": 93,
+      "answer_lemma": "leden",
+      "answerable": true
+    },
+    {
+      "text": "Kolik metrů měří hora Praděd?",
+      "sentence": 76,
+      "answer_lemma": "1491",
+      "answerable": true
+    },
+    {
+      "text": "Čím datel černý bubnuje do kmenů stromů?",
+      "sentence": 46,
+      "answer_lemma": "zobák",
+      "answerable": true
+    },
+    {
+      "text": "Jak loví kuna lesní svou kořist mezi větvemi stromů?",
+      "sentence": 63,
+      "answer_lemma": "obratně",
+      "answerable": true
+    },
+    {
+      "text": "Z čeho lesní mravenci budují svá hnízda?",
+      "sentence": 11,
+      "answer_lemma": "jehličí",
+      "answerable": true
+    },
+    {
+      "text": "Co sbírá veverka obecná na podzim do zásoby?",
+      "sentence": 60,
+      "answer_lemma": "ořech",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá nejvyšší vrchol pohoří Šumava?",
+      "sentence": 74,
+      "answer_lemma": "Plechý",
+      "answerable": true
+    },
+    {
+      "text": "Co představuje Rožmberk mezi vodními plochami Česka?",
+      "sentence": 24,
+      "answer_lemma": "rybník",
+      "answerable": true
+    },
+    {
+      "text": "Kolik stupňů mívají průměrné letní teploty?",
+      "sentence": 88,
+      "answer_lemma": "dvacet",
+      "answerable": true
+    },
+    {
+      "text": "Kolik druhů savců žije celkem v českých lesích?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kdy byl založen první národní park v Krkonoších?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kde se nachází nejhlubší jezero v Česku?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kdo poprvé vystoupil na vrchol Sněžky?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Jakou barvu má peří orla mořského?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik dní v roce v průměru sněží v Krkonoších?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    }
+  ]
+}

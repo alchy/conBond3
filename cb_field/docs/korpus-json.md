@@ -54,6 +54,10 @@ Pravidla:
 - **Blok = souvislý text** (hranice dokumentu pro `r_sentences`):
   kontext teče jen uvnitř bloku. `topic` je popisek pro člověka,
   program na něm nesmí nic stavět.
+- Blok smí nést volitelné `text` — **původní odstavec** (převod
+  z txt). Parsuje se ten, ne spojení položek: věta vytržená
+  z kontextu se může sama rozdělit jinak. Rozpad se pak rovná
+  položkám počtem i zněním, jinak hlasitá chyba.
 - `answer_lemma` je základní tvar slova, které ve větě s odpovědí
   opravdu je (kontroluje validace parserem).
 
