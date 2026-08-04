@@ -413,3 +413,28 @@ prostě neexistuje. Není to náhoda ani šum; je to nepokrytá buňka
 mřížky typ × vzor. Měřit se proto má pokrytí té mřížky, ne jen
 úspěšnost po typech — a T2 (podíl faktů sdílejících šablonu) je 0,34
 při r=1, takže dvě třetiny faktů dnes žádný sdílený vzor nemají.
+
+## 18 · Dosah r jako jediná legitimní příčina nenalezení (2026-08-04, J.)
+
+> „matchnout správnou odpověď (v rámci metadat) neumíme jen tehdy, kdy
+> je mimo naše r vět. jinak by měla být vždy v kandidátech."
+
+Změřeno na testbedu: pro každou zodpověditelnou otázku se hledá, zda
+koš správné odpovědi obsahuje aspoň jedno **dané** slovo otázky (tedy
+zda podnět a odpověď padnou do jednoho koše), a na kterém místě
+kandidát skončí.
+
+| r | v dosahu a v top 3 | mimo dosah r | v dosahu, ale hluboko |
+|---|---|---|---|
+| 1 | 8/33 | 25/33 | 0 |
+| 2 | **33/33** | **0** | 0 |
+
+Teze platí doslova: při r=2 **není jediná odpověď mimo dosah** a všechny
+jsou v první trojce. Zbylé chyby tedy nejsou o dosahu ani o kandidatuře,
+ale výhradně o pořadí mezi několika málo vážnými kandidáty — a to je
+práce pro váhy a query basket, ne pro širší okno.
+
+Zároveň je to druhé, nezávislé zdůvodnění r=2 (první bylo přesností):
+r=1 nechává dvě třetiny odpovědí bez podnětu v koši a systém je trefuje
+jen díky členům přes celou větu (téma, pokrytí) — tedy náhradou za
+dosah, ne dosahem samotným.
