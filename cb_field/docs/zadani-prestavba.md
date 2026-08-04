@@ -21,9 +21,10 @@ a slov. To na výběr věty nestačí, a každý důvod je naměřený:
   je rozdíl triviální: Jordán visí na *pokřtěný*, Galilej na
   *přijít*. Proto graf faktů.
 - **Osa roste se světem donekonečna**, NN chce pevnou vstupní
-  dimenzi. Proto promoce: ≤328 custom slotů, o které slova soutěží
-  statistikou grafu; s růstem korpusu se osa stabilizuje (výměny
-  slotů 38 % → 16 % na stejný přírůstek).
+  dimenzi. Proto promoce do custom slotů — **pojmenovaných neuronů
+  vstupní vrstvy** (plné vysvětlení u kroku 2): omezená kapacita
+  vynucuje zobecnění, soutěž ji obsazuje nejnosnějšími, vratnost je
+  plasticita (výměny slotů se stabilizují 38 % → 16 % na přírůstek).
 - **Učení nad slovy memoruje** (párové mosty slovo↔slovo se mezi
   otázkami nepřenášejí — naměřeno). Proto invariant: učení jen nad
   metadaty vertikál; slovo jen promocí.
@@ -152,11 +153,48 @@ v Galileji a byl v Jordánu pokřtěn od Jana."):
                Jordán --obl--> pokřtěný    Jan --obl:arg--> pokřtěný
     NodeStat(přijít) = occurrences 1 · edges 5 · distinct 5 · ratio 1,0
 
+**Co custom slot JE (koncept, vysvětlit vývojáři přesně takhle).**
+Slot není cache častých slov — je to **pojmenovaný neuron vstupní
+vrstvy NN**. Tři vlastnosti, každá s důvodem:
+
+1. **Omezená kapacita** (limit ≤328) — vynucuje zobecnění: co se
+   do slotů nevejde, MUSÍ do učení projít metadaty a vztahy, ne
+   jménem. Kapacita je tlak, ne úspora. Číslo 328 je dnes od oka —
+   je to HYPERPARAMETR s křivkou (K7), jako σ a k.
+2. **Soutěž** — mechanismus obsazení kapacity nejnosnějšími:
+   skóre různých²/hran žádá mnoho sousedů A ZÁROVEŇ neopakovat se
+   do týchž míst (efektivní počet různých sousedů). Je to
+   statistické zdůvodnění, proč si slovo zaslouží jméno v ose.
+3. **Vratnost** — plasticita vstupní vrstvy: přepočet s růstem
+   korpusu; kdo z limitu vypadne, uvolní slot (i s hranami).
+   Naměřená stabilizace: výměny 38 % → 16 % na stejný přírůstek.
+
+Proč slot, a ne SVD: latentní osy nemají jména — padla by
+transparentnost (rozklad skóre, vysvícení grafu) i čistota
+invariantu „slovo do učení jen promocí". Spektrální člen (S2) sloty
+DOPLŇUJE spojitým zobecněním, nenahrazuje je.
+
 **Reálný vzorek — select_verticals** (korpus 2 912 vět): rok
 162 různých/191 hran → 162²/191 = **137,4** (1. místo); mít 131,6;
 moci 96,3; hranice 328. místa **12,1**; Praha 19., Karel 35., Ježíš
 45., Hrabal mimo; jmen 11 (3 %). Vrací se CELÝ cílový stav —
 promoce je vratná.
+
+**Kritérium rozšířené o užitek otázkám (schváleno J.).** Čistá
+korpusová statistika má dvě naměřené slabiny: hranice plave se
+žánrem (po záplavě NZ vystoupala 12,1 → 41,9 a rychlost 33,8 i smět
+41,7 vypadly těsně) a sloty si zatím nevydělaly na přesnost
+(C−B = 0). Slot si má vydělávat SLUŽBOU OTÁZKÁM:
+
+    score(node) = (distinct² / edges)
+                  × (1 + W_USAGE · doklady uzlu v otázkách
+                                   a odpovědích supervize)
+
+Užitek je vážený člen, ne filtr: základ zůstává korpusový, ale
+slova, která otázky reálně potřebují (rychlost, smět), neprohrají
+s biblickou frekvencí. W_USAGE je páka ke kalibraci; přejímka:
+rychlost a smět v limitu, jmen ≤ 10 %, stabilizační křivka dál
+klesá, přesnost/dosah neklesnou.
 
 **Reálný vzorek — illuminate** (kandidát = věta o křtu, váha 1,0;
 lemata otázky {pokřtěný, Ježíš}, boost 2):
