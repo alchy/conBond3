@@ -9,7 +9,7 @@ from cb_field.corpus import Corpus
 from cb_field.graph import FactGraph
 from cb_field.registry import VerticalRegistry
 from cb_field.relations import DEFINITION_WEIGHT, definition_links, \
-    ensure_definition
+    derivation_links, ensure_definition
 from cb_field.tests.test_dialog import DALNICE, OTAZKA_KREST
 from cb_field.tests.test_graph import KREST, _Sentence
 
@@ -77,6 +77,58 @@ class TestDefinicniHrany(unittest.TestCase):
         lit = registry.unvectorize(np.tanh(spread))
         self.assertIn("WORD=NOUN:silnice", lit)
         self.assertGreater(lit["WORD=NOUN:silnice"], 0.3)
+
+
+class TestDerivacniVazby(unittest.TestCase):
+    """Krok E: derivace jako KMEN × PŘEKRYV sousedství — vážený
+    součin, ne práh (sonda: překryv sám nestačí, zpěv×zpívat ≈
+    náhoda; kmen sám by páral pes×peří)."""
+
+    def _tok(self, id, form, lemma, upos, head, deprel):
+        from cb_udpipe import Token
+        return Token(id=id, form=form, lemma=lemma, upos=upos, xpos="",
+                     feats=None, head=head, deprel=deprel, deps=None,
+                     misc=None)
+
+    def test_kmen_a_prekryv_daji_vazenou_vazbu(self):
+        graph = FactGraph()
+        # rychlost—{klesnout, limit}; rychlostní—{limit} → překryv 1,0
+        graph.add_sentence(_Sentence((
+            self._tok(1, "Rychlost", "rychlost", "NOUN", 3, "nsubj"),
+            self._tok(2, "limitu", "limit", "NOUN", 1, "nmod"),
+            self._tok(3, "klesla", "klesnout", "VERB", 0, "root"))))
+        graph.add_sentence(_Sentence((
+            self._tok(1, "rychlostní", "rychlostní", "ADJ", 2, "amod"),
+            self._tok(2, "limit", "limit", "NOUN", 0, "root"))))
+        # planeta—planetka: dlouhý kmen bez společného souseda →
+        # slabá vazba jen z kmene
+        graph.add_sentence(_Sentence((
+            self._tok(1, "Planeta", "planeta", "NOUN", 2, "nsubj"),
+            self._tok(2, "obíhá", "obíhat", "VERB", 0, "root"))))
+        graph.add_sentence(_Sentence((
+            self._tok(1, "Planetka", "planetka", "NOUN", 2, "nsubj"),
+            self._tok(2, "letěla", "letět", "VERB", 0, "root"))))
+        # naléhavý—náledí: po složení diakritiky kmen jen 4 znaky →
+        # žádný pár (zavržená v2 je pářila)
+        graph.add_sentence(_Sentence((
+            self._tok(1, "naléhavý", "naléhavý", "ADJ", 2, "amod"),
+            self._tok(2, "případ", "případ", "NOUN", 0, "root"))))
+        graph.add_sentence(_Sentence((
+            self._tok(1, "náledí", "náledí", "NOUN", 2, "nsubj"),
+            self._tok(2, "klouzalo", "klouzat", "VERB", 0, "root"))))
+        registry = VerticalRegistry(anchors=False)
+        derivation_links(graph, registry)
+        silna = registry.get_link("WORD=NOUN:rychlost",
+                                  "WORD=ADJ:rychlostní")
+        slaba = registry.get_link("WORD=NOUN:planeta",
+                                  "WORD=NOUN:planetka")
+        self.assertIsNotNone(silna)
+        self.assertEqual(silna[1], "derivace")
+        self.assertIsNotNone(slaba)
+        self.assertGreater(silna[0], slaba[0])     # překryv zesiluje
+        self.assertGreater(slaba[0], 0.0)          # kmen sám dá slabou
+        self.assertIsNone(registry.get_link("WORD=ADJ:naléhavý",
+                                            "WORD=NOUN:náledí"))
 
 
 class _Parser:

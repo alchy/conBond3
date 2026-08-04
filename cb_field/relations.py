@@ -66,6 +66,76 @@ def _field_definition_link(field, registry: VerticalRegistry) -> int:
     return 1
 
 
+#: Váha derivační vazby v plné síle; skutečná váha ji škáluje složením
+#: kmene a překryvu sousedství.
+DERIVATION_WEIGHT = 0.7
+
+#: Párovací podmínka kmene: sdílený začátek lemmat (bez diakritiky)
+#: aspoň 5 znaků A ZÁROVEŇ aspoň 75 % kratšího lemmatu. Zavrženo
+#: měřením: v1 (3 znaky) — 19 644 vazeb, předpona pro- párovala
+#: pronásledovaný↔procitnout; v2 (4 znaky, 60 %) — 32 812 vazeb,
+#: naléhavý↔náledí. Přísný kmen nechá krátkokmenné páry
+#: (stavba–stavět, hudba–hudební) i střídání samohlásek
+#: (křtít–pokřtěný) na slovotvorný zdroj (DeriNet) nebo typy vztahů
+#: — vážená hrana za tu cenu nesmí zaplavit L šumem.
+_STEM_MIN = 5
+_STEM_SHARE = 0.75
+
+
+def _fold(text: str) -> str:
+    """Malá písmena bez diakritiky (vzkaz–vzkázat sdílí kmen až po
+    složení á→a)."""
+    import unicodedata
+    decomposed = unicodedata.normalize("NFD", text.lower())
+    return "".join(c for c in decomposed
+                   if not unicodedata.combining(c))
+
+
+def derivation_links(graph, registry: VerticalRegistry) -> int:
+    """Krok E: derivační vazby SLOŽENÍM kmene a překryvu sousedství.
+
+    Dvojice se sdíleným kmenem (viz _STEM_MIN/_STEM_SHARE) dostane
+    obousměrnou vazbu s vahou DERIVATION_WEIGHT × (kmen/2 + překryv/2)
+    — kmen sám dá slabou vazbu (stavba–stavět bez společných sousedů),
+    překryv ji zesílí (rychlost–rychlostní). Sonda: překryv sám je na
+    úrovni náhody, kmen sám páruje předpony — signál nese složení.
+    """
+    nodes = []
+    for key, stat in graph.node_stats().items():
+        if stat.edges:
+            lemma = _fold(key.split(":", 1)[1])
+            if len(lemma) >= _STEM_MIN:
+                nodes.append((key, lemma, set(stat.neighbours)))
+    groups: dict = {}
+    for entry in nodes:
+        groups.setdefault(entry[1][:_STEM_MIN], []).append(entry)
+    added = 0
+    for group in groups.values():
+        for i, (key_a, lemma_a, near_a) in enumerate(group):
+            for key_b, lemma_b, near_b in group[i + 1:]:
+                stem = 0
+                for x, y in zip(lemma_a, lemma_b):
+                    if x != y:
+                        break
+                    stem += 1
+                shorter = min(len(lemma_a), len(lemma_b))
+                if stem < _STEM_MIN or stem < _STEM_SHARE * shorter:
+                    continue
+                overlap = (len(near_a & near_b)
+                           / min(len(near_a), len(near_b))
+                           if near_a and near_b else 0.0)
+                strength = stem / max(len(lemma_a), len(lemma_b))
+                weight = min(1.0, DERIVATION_WEIGHT
+                             * (0.5 * strength + 0.5 * overlap))
+                for src, dst in ((f"WORD={key_a}", f"WORD={key_b}"),
+                                 (f"WORD={key_b}", f"WORD={key_a}")):
+                    if registry.get_link(src, dst) is None:
+                        registry.link(src, dst, weight,
+                                      source="derivace")
+                        added += 1
+    return added
+
+
 def wikipedia_definition(term: str) -> str | None:
     """První odstavec úvodu hesla české Wikipedie, nebo None.
 
