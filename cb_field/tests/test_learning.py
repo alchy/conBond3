@@ -74,14 +74,18 @@ class TestCustomOsyVUceni(unittest.TestCase):
     zvláštní větve. Šíření pytlů maticí zavrženo měřením (22,9M hran,
     0,43 → 0,17)."""
 
-    def test_aktivovana_custom_osa_dostava_gradient(self):
+    def test_uceni_je_metadatovy_model_slovo_jen_promoci(self):
+        # učení probíhá nad metadaty (J.): konkrétní slovo do pytle
+        # nevstupuje — jedinou branou je promoce do vertikál
         registry = VerticalRegistry(anchors=False)
         registry.set_custom_axes(("CUSTOM=NOUN:pes",))
         field = SentenceField((SEL, PES, DO, LESA, TECKA), r=1,
                               registry=registry)
         bag = _semantic_bag(field, range(len(field.tokens)))
-        self.assertEqual(bag["CUSTOM=NOUN:pes"], bag["WORD=NOUN:pes"])
-        self.assertNotIn("CUSTOM=NOUN:les", bag)   # nepromovaný osu nemá
+        self.assertNotIn("WORD=NOUN:pes", bag)     # slovo ne
+        self.assertNotIn("WORD=NOUN:les", bag)
+        self.assertEqual(bag["CUSTOM=NOUN:pes"], 0.7)   # promované ano
+        self.assertIn("LEM=ADP:do", bag)           # zavřená třída zůstává
         changed = contrastive_step(registry, {"QLEM=ADV:kde": 0.7},
                                    bag, {}, eta=0.2)
         self.assertGreater(changed, 0)

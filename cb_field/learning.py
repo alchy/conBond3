@@ -66,31 +66,21 @@ BETA2 = 0.999
 ADAM_EPS = 1e-8
 
 
-#: Na čem se učí. Pravidlo J. (2026-08-04): *„vzory pro trénink musí
-#: pokrývat variabilní plochu, ale nesmí utíkat k posilování vazeb
-#: synonymy — ideálně pracujeme na vzorech jen s metadaty a teprve poté
-#: můžeme povýšit ty, kde sedí vlastní lemma."*
+#: Na čem se učí. Pravidlo J. (2026-08-04): *„učení probíhá nad
+#: metadaty — nevstupují do něj konkrétní slova z korpusu, jen vše,
+#: co je ve vertikálách a lexikální analýze. Učení páruje otázku
+#: s větou jen jako METADATOVÝ MODEL, bez konkrétního lemmatu, s
+#: výjimkou, kdy se slovo dostalo do vertikál."*
 #:
-#: Tlumená je hrana WORD→WORD (synonymum pár po páru; naměřeno § 15,
-#: že se mezi otázkami nepřenáší). Hrana WORD→metadata zakázaná NENÍ —
-#: to je právě to „povýšení, kde sedí vlastní lemma": slovo se váže na
-#: TYP („řeka → místo"), a typ už platí pro celý druh otázek. Vyhodit
-#: slova z učení úplně byl můj přehmat: pak se vazba řeka→místo nemohla
-#: naučit vůbec a musel ji dodávat zvláštní mechanismus.
-#: CUSTOM= (promované osy) jsou v MATCH_PREFIXES: po promoci je
-#: aktivační průchod zapíše přímo do řádků pole (J. 2026-08-04 —
-#: „projde se znovu text a identifikovaná pole se aktivují; teprve
-#: potom jde učení"), takže je surový pytel nese jako každou jinou osu.
-LEARN_PREFIXES = MATCH_PREFIXES
-
-#: Útlum synonymní hrany (slovo↔slovo). NENÍ to zákaz ani filtr —
-#: J.: „žádné filtry, musíme učit nn, ne dělat if-then konstrukce."
-#: Dvojice slovo↔slovo se tedy učí dál, jen desetkrát pomaleji než
-#: hrana slovo→typ: gradient tudy teče, takže učení o signál nepřijde,
-#: ale cesta nejmenšího odporu vede k metadatovému vzoru, který
-#: generalizuje. Kdo se chce učit synonyma, musí pro ně mít desetkrát
-#: víc dokladů — a to je váha, ne brána.
-SYNONYM_DAMPING = 0.1
+#: WORD= proto v učicích pytlích NENÍ: jedinou branou konkrétního
+#: slova do učení je promoce do custom slotů (aktivace CUSTOM= při
+#: přegenerování korpusu). LEM=/QLEM= zůstávají — nesou jen zavřené
+#: třídy (předložky, tázací slova), tedy lexikální analýzu, ne svět.
+#: Dřívější mezistav (WORD= v pytlích s útlumem synonymních párů
+#: SYNONYM_DAMPING=0,1) tím končí: párové mosty slovo↔slovo se mezi
+#: otázkami stejně nepřenášely (§ 15) a povýšení slova řeší promoce.
+LEARN_PREFIXES = ("LEM=", "QLEM=", "ANCHOR=", "QANCHOR=",
+                  "Polarity=", "CUSTOM=")
 
 
 def _semantic_bag(sentence, rows, center=None, prefixes=None) -> dict:
@@ -284,8 +274,6 @@ def contrastive_step(registry, question_bag: dict, correct_bag: dict,
                 continue
             old = existing[0] if existing else 0.0
             gradient = float(gradients[row, col])
-            if q_key.startswith("WORD=") and a_key.startswith("WORD="):
-                gradient *= SYNONYM_DAMPING      # útlum, ne zákaz
             m, v, t = state.get((q_key, a_key), (0.0, 0.0, 0))
             t += 1
             m = BETA1 * m + (1 - BETA1) * gradient
