@@ -1,4 +1,8 @@
-"""Učení vah propojení — fáze 4b (Hebb) a 4c (kontrastivně na etalonu).
+"""Učení vah propojení — fáze 4c (kontrastivně na etalonu) + mlčení.
+
+Fáze 4b (Hebb) je z přejímací cesty VYŘAZENÁ (J. 2026-08-04): nad
+surovými souvýskyty blokuje (korpusy 0,43 → 0,17). Mechanismus hebb()
+zůstává a vrátí se až nad strukturou (dluh D4).
 
 Spuštění celého protokolu s měřením před/po každou fází:
 
@@ -429,9 +433,11 @@ def main() -> None:
               f"NEVÍM-správnost {mlceni:.2f} · {counts}")
 
     measure("baseline (axiomy)")
-    hebb_stats = hebb(corpus)
-    print(f"4b Hebb: {hebb_stats}")
-    measure("po 4b (Hebb)")
+    # 4b (Hebb) VYŘAZEN z přejímací cesty (rozhodl J. 2026-08-04):
+    # nad surovými souvýskyty prokazatelně blokuje — korpusy 0,43 →
+    # 0,17 a zvedá vstupní loss učení (0,87 vs 0,64). Mechanismus
+    # hebb() zůstává; vrátí se až nad strukturou s prahem NPMI
+    # odvozeným z dat (dluh D4, postup-krok4 § 15).
     train_stats = train_on_etalon(corpus, trenink, parser)
     print(f"4c kontrastivně: {train_stats}")
     measure("po 4c (etalon)")
@@ -443,7 +449,10 @@ def main() -> None:
 
     corpus.registry.save(LEARNED_KORPUSY if korpusy else LEARNED)
 
-    baseline, final = phases[0], phases[-1]
+    # Přejímka srovnává srovnatelné: baseline a stav po učení při TÉMŽ
+    # výchozím θ. Fáze s kalibrovaným θ je provozní bod (jiný řez mění
+    # směnu přesnost×mlčení záměrně), ne přejímací brána.
+    baseline, final = phases[0], phases[1]
     protivaha_ok = final[2] >= baseline[2]
     verdict = ("PŘIJATO" if protivaha_ok and final[1] >= baseline[1]
                else "NEPŘIJATO — protiváha" if not protivaha_ok
@@ -451,11 +460,12 @@ def main() -> None:
     print(f"\nprotiváha (NEVÍM-správnost neklesla): "
           f"{'ano' if protivaha_ok else 'NE'} → {verdict}")
 
-    lines = ["# Měření učení vah (4b Hebb + 4c kontrastivně)"
+    lines = ["# Měření učení vah (4c kontrastivně + mlčení; 4b vyřazen)"
              + (" — komplexní korpusy" if korpusy else ""), ""]
-    lines.append(f"- datum: {date.today().isoformat()} · η_hebb={ETA_HEBB} "
+    lines.append(f"- datum: {date.today().isoformat()} "
                  f"· η_kontrast={ETA_CONTRAST} · epochy≤{MAX_EPOCHS}")
-    lines.append(f"- Hebb: {hebb_stats}")
+    lines.append("- 4b (Hebb) vyřazen z přejímací cesty (J. 2026-08-04; "
+                 "D4 — vrátí se až nad strukturou)")
     lines.append(f"- kontrastivně: epoch={train_stats['epoch']} "
                  f"kroků={train_stats['kroku']} hran={train_stats['hran']}")
     lines.append(f"- kalibrace θ na trénovací sadě (D2): "
