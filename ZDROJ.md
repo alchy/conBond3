@@ -82,10 +82,26 @@ Zatím žádné. Až přijdou, platí pro ně totéž co pro model:
 | Nový zákon (Markovo evangelium) | moderní český překlad, převzato z conBond2 | **licencovaný text** | **ne** — `cb_field/data-persistent/corpora/` |
 | `fyzika_gravitace.txt` | psáno ručně v conBond2 | vlastní | **ne** (drží se u ostatních korpusů) |
 | doména vesmír (`korpus-201.json`) | česká Wikipedie, staženo přes API | **CC BY-SA 4.0** | **ne** — `cb_field/data-persistent/korpus/` |
+| doména hudba (`korpus-202.json`) | česká Wikipedie, staženo přes API | **CC BY-SA 4.0** | **ne** — `cb_field/data-persistent/korpus/` |
+| Nový zákon po knihách (`korpus-301…326.json`) | týž moderní překlad, převzato z conBond2 | **licencovaný text** | **ne** — `cb_field/data-persistent/korpus/` |
 
 Pořízení: `./cb_field/scripts/fetch-korpusy.sh` (kopíruje z `~/Projects/conBond2/data/raw/`).
 Měření (`docs/mereni-korpusy.md`) nese otisky souborů, aby čísla byla
 srovnatelná i bez dat v gitu.
+
+### Doména hudba
+
+`korpus-202.json` pořizuje `./cb_field/scripts/fetch-hudba.py` — týž
+mechanismus jako u vesmíru, články od hesla „Hudba": Hudba, Tón,
+Melodie, Harmonie, Rytmus, Hudební nástroj, Klavír, Housle, Orchestr,
+Opera, Jazz, Antonín Dvořák, Bedřich Smetana. **CC BY-SA 4.0**, mimo git.
+
+### Nový zákon po knihách
+
+`korpus-301…326.json` pořizuje `./cb_field/scripts/fetch-novy-zakon.py`
+z `~/Projects/conBond2/data/raw/bible_*.txt` (bez Markova evangelia —
+to je v korpusu-101 — a bez Exodu, který je Starý zákon). Je to týž
+**licencovaný moderní překlad** jako u Marka, proto **mimo git**.
 
 ### Doména vesmír
 
