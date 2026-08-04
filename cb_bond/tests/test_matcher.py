@@ -11,9 +11,10 @@ import unittest
 import numpy as np
 
 from cb_bond import (Matcher, MatchResult, ScoreCandidate,
-                     ScoreWeights, saturate)
+                     ScoreWeights, saturate, semantic_bag)
 from cb_bond.tests.vzorky import KRESTA, OTAZKA_KREST, SYNAGOGA
 from cb_field import Corpus, SentenceField
+from cb_bond.matcher import _cos
 
 
 def _korpus(*vety, r=1):
@@ -67,6 +68,98 @@ class TestDaneOsy(unittest.TestCase):
                                     "WORD=PROPN:Ježíš"})
         # „kde" se ptá, netvrdí — mezi dané osy nepatří
         self.assertNotIn("WORD=ADV:kde", osy)
+
+
+class TestSemantickaMaska(unittest.TestCase):
+
+    def test_strukturni_osy_z_pytle_uplne_vypadnou(self):
+        corpus = _korpus(KRESTA)
+        otazka = _otazka(corpus)
+
+        pytel = semantic_bag(otazka.complete)
+
+        for klic in pytel:
+            self.assertFalse(klic.startswith(("UPOS=", "DEPREL=", "Case=",
+                                              "SUBPOS=", "Gender=",
+                                              "Number=")),
+                             f"strukturní osa {klic} v pytli zůstala")
+
+    def test_vyznamove_osy_v_pytli_zustanou(self):
+        corpus = _korpus(KRESTA)
+
+        pytel = semantic_bag(_otazka(corpus).complete)
+
+        self.assertIn("WORD=PROPN:Ježíš", pytel)
+        self.assertIn("QLEM=ADV:kde", pytel)
+        self.assertTrue(any(k.startswith("QANCHOR=") for k in pytel))
+
+    def test_pytel_je_soucet_pres_radky(self):
+        corpus = _korpus(KRESTA)
+        pole = corpus[0]
+
+        pytel = semantic_bag(pole.complete)
+
+        rucne = sum(radek.get("WORD=PROPN:Ježíš", 0.0)
+                    for radek in pole.complete)
+        self.assertAlmostEqual(pytel["WORD=PROPN:Ježíš"], rucne, places=5)
+
+
+class TestCleny(unittest.TestCase):
+
+    def test_meet_je_soucet_dvou_kosinu_ne_kosinus_souctu(self):
+        # Identita kroku 3b: meet = cos(q̃, okno) + (W_CENTER−1)·cos(q̃, střed).
+        # Kdo počítá cos(q̃, okno + 2·střed) nad surovým pytlem, trestá
+        # středy s bohatou morfologií — proto je zdůraznění vlastní člen.
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        matcher = Matcher(corpus, spread_depth=1,
+                          weights=ScoreWeights(center=2.0))
+
+        kandidat = matcher.match(_otazka(corpus)).candidates[0]
+        okno, stred = matcher.candidate_vectors(kandidat.sentence,
+                                                kandidat.token)
+        q = matcher.question_vector(_otazka(corpus))
+
+        ocekavano = (_cos(q, okno) + (2.0 - 1.0) * _cos(q, stred))
+        self.assertAlmostEqual(kandidat.decomposition()["meet"], ocekavano,
+                               places=5)
+
+    def test_okno_je_harmonicky_vazene_a_jednotkove(self):
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        matcher = Matcher(corpus, spread_depth=1)
+
+        okno, stred = matcher.candidate_vectors(0, 3)
+
+        self.assertAlmostEqual(float(np.linalg.norm(okno)), 1.0, places=5)
+        self.assertAlmostEqual(float(np.linalg.norm(stred)), 1.0, places=5)
+
+    def test_pokryti_radi_VETY_ne_tokeny(self):
+        # cover je mohutnost věty, ne kosinus: všichni kandidáti téže věty
+        # mají týž člen, různé věty různý
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        matcher = Matcher(corpus, spread_depth=1)
+
+        kandidati = matcher.match(_otazka(corpus)).candidates
+        podle_vety = {}
+        for kandidat in kandidati:
+            podle_vety.setdefault(kandidat.sentence, set()).add(
+                round(kandidat.decomposition()["cover"], 6))
+
+        for veta, hodnoty in podle_vety.items():
+            self.assertEqual(len(hodnoty), 1, f"věta {veta} má cover různý")
+        self.assertGreater(len(set().union(*podle_vety.values())), 1,
+                           "všechny věty mají týž cover — člen neřadí věty")
+
+    def test_pokryti_vety_je_minimum_pres_dane_osy(self):
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        matcher = Matcher(corpus, spread_depth=1)
+        otazka = _otazka(corpus)
+
+        pokryti = matcher.sentence_coverage(otazka)
+
+        # křestní věta má všechny tři dané osy, synagoga jen Ježíše →
+        # její minimum je 0 (propast, ne škála)
+        self.assertGreater(pokryti[0], 0.0)
+        self.assertEqual(pokryti[1], 0.0)
 
 
 class TestCoverage(unittest.TestCase):
@@ -158,19 +251,16 @@ class TestMatch(unittest.TestCase):
         # a teprve tam je společná souřadnice. Šířit jen otázku znamená
         # měřit setkání v místě, kam druhá strana nedošla.
         corpus = _korpus(KRESTA, SYNAGOGA)
-        matcher = Matcher(corpus, spread_depth=1)
-        otazka = _otazka(corpus)
+        bez_sireni = Matcher(corpus, spread_depth=0)
+        se_sirenim = Matcher(corpus, spread_depth=1)
 
-        kandidat = matcher.match(otazka).candidates[0]
-        pole = corpus[kandidat.sentence]
-        kos = pole.baskets[kandidat.token]
+        okno_0, stred_0 = bez_sireni.candidate_vectors(0, 3)
+        okno_1, stred_1 = se_sirenim.candidate_vectors(0, 3)
 
-        q = saturate(_vektor(corpus, otazka.complete), matcher.links, 1)
-        okno = saturate(_vektor(corpus, kos.complete), matcher.links, 1)
-        ocekavano = float(np.dot(q, okno) /
-                          (np.linalg.norm(q) * np.linalg.norm(okno)))
-        self.assertAlmostEqual(kandidat.decomposition()["meet"], ocekavano,
-                               places=5)
+        self.assertFalse(np.allclose(okno_0, okno_1),
+                         "okno kandidáta se po vazbách nešíří")
+        self.assertFalse(np.allclose(stred_0, stred_1),
+                         "střed kandidáta se po vazbách nešíří")
 
     def test_interpunkce_neni_kandidat(self):
         # tečka odpovědí být nemůže; jako kandidát jen ředí pořadí

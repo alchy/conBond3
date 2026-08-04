@@ -38,6 +38,7 @@ from cb_bond.matcher import (  # noqa: E402
     ScoreCandidate,
     ScoreWeights,
     saturate,
+    semantic_bag,
 )
 
 __all__ = [
@@ -52,5 +53,6 @@ __all__ = [
     "ScoreWeights",
     "LinkOperator",
     "saturate",
+    "semantic_bag",
     "__version__",
 ]

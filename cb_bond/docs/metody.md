@@ -49,6 +49,10 @@ Veřejné API modulu. Co tady není, je vnitřek a smí se změnit
 | `recall(question, top_k)` | pozice vět ke jemnému čtení — jeden součin (§ 5/S1) |
 | `match(question)` | `MatchResult` se seřazenými kandidáty a východiskem |
 | `links` | řídký operátor vazeb registru (postaví se při první potřebě) |
+| `question_vector(question)` | pytel CELÉ otázky: součet řádků → maska → saturace |
+| `candidate_vectors(sentence, token)` | `(okno, střed)` — harmonicky vážené, saturované, JEDNOTKOVÉ |
+| `sentence_coverage(question)` | `{věta: pokrytí}` — mohutnost, ne kosinus; člen řadící VĚTY |
+| `semantic_bag(rows)` (funkce modulu) | součet řádků přes semantickou masku |
 
 | objekt | co to je |
 |---|---|
@@ -57,6 +61,7 @@ Veřejné API modulu. Co tady není, je vnitřek a smí se změnit
 | `MatchResult` | `candidates`, `outcome` (answer/ask/silent), `best`, `sentences()`, algebra `&` `\|` `~` |
 | `LinkOperator` | vazby registru jako tři pole (řádky/sloupce/váhy) — v·L bez husté matice (§ 5/S3) |
 | `saturate(v, links, steps)` | šíření s tanh po KAŽDÉM kroku |
+| `SEMANTIC_PREFIXES` | co projde maskou: WORD=, LEM=, QLEM=, ANCHOR=, QANCHOR=, Polarity=, CUSTOM= |
 
 | co | jak |
 |---|---|

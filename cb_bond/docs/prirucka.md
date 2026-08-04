@@ -48,61 +48,42 @@ skript skončí s kódem 2 a řekne to — netváří se, že prošel.
 
 ## Krok 3: co sedí a co ne
 
-**Sedí přesně.** Pokrytí otázky o křtu 1,000 / 0,604 / 0,885 —
-hodnoty ze zadání do třetího místa. Mrtvá osa je **přesná nula**
-(`WORD=NOUN:dálnice` v biblicko-fyzikálním korpusu), takže detekce
-mezery pro krok 8 stojí na propasti, ne na prahu. Ověřeno i na vzorku
-kroku 8: být 1,000 · omezený 0,604 · rychlost 0,604 · na 1,000 ·
-dálnice 0,000 — celá pětice souhlasí.
+**Sedí přesně.** Pokrytí otázky o křtu 1,000 / 0,604 / 0,885 a mrtvá
+osa jako **přesná nula** (`WORD=NOUN:dálnice` v biblicko-fyzikálním
+korpusu). Souhlasí i celá pětice ze vzorku kroku 8. Čísla dávají
+smysl: `tanh(0,7) = 0,604` je jeden výskyt slovní osy, `tanh(1,4) =
+0,885` dva.
 
-Čísla dávají smysl: `tanh(0,7) = 0,604` je jeden výskyt slovní osy,
-`tanh(1,4) = 0,885` dva, saturovaná jednička mnoho.
+Sedí i přejímka S1: čtení top-50 vět dá **touž přesnost** jako čtení
+celého korpusu (2 912 vět) — předvýběr nic neztrácí.
 
-**NESEDÍ přesnost.** Zadání má baseline 0,3667 (11/30 etalonu),
-naměřeno **0,10 (3/30)**. Mlčení 0 souhlasí. Co je o rozdílu známo:
+**Dvě čísla, ne jedno.** Přejímkové 0,3667 je SPRÁVNĚ **s řezem**
+(top-1 lemma a zároveň outcome „odpoved"); totéž **bez řezu** je
+0,4667 (14/30), rozdíl jsou tři otázky spadlé do DOTAZ/NEVÍM. Kdo
+měří s `theta=0`, poměřuje se se 14/30.
 
-- **Není to předvýběrem vět.** Při čtení CELÉHO korpusu (top_k = 2 912)
-  vychází táž přesnost 3/30, přestože věta s lemmatem odpovědi je
-  v shortlistu ve 30/30 případů. Ztrácí se ve skórování, ne v recallu.
-- **Není to hloubkou ani pokrytím.** Pokrytí sedí a k=1 je zadané.
-- **Není to definicí metriky.** Ověřeno proti referenci: přesnost je
-  `SPRÁVNĚ / zodpověditelné`, kde SPRÁVNĚ znamená, že lemma nejlepšího
-  TOKENU se rovná `answer_lemma` — přesně tak, jak se měří tady.
-  (Reference to má v `evaluate.evaluate_corpus`; potvrzuje to i tabulka
-  „přesnost@1 (zodpověditelné) 28/33 = 0,85" v jejím měření.)
-- **Měřených sedm variant** (30 zodpověditelných otázek):
+**Kde se přesnost ztrácela (vyřešeno).** Původní stavba hledala chybu
+v členu *setkání* a sedm jeho variant skončilo mezi 2/30 a 6/30.
+Ablace ukázala, že to bylo hledání na špatném místě — nosné jsou
+`given` a `cover`, ne `meet`:
 
-  | varianta členu setkání | přesnost |
-  |---|---|
-  | pytel okna, všechny osy (dnešní kód) | 3/30 |
-  | pytel okna, jen metadata | 2/30 |
-  | pytel okna, jen slovní osy | **6/30** |
-  | pytel okna, téma ×3 | 4/30 |
-  | maximum přes ŘÁDKY okna | **6/30** |
-  | jen střed, okno vůbec | 4/30 |
-  | čtení celého korpusu (bez předvýběru) | 3/30 |
+| konfigurace | reference | tady |
+|---|---|---|
+| plné skóre | 14/30 | 10/30 |
+| bez tématu (topic=0) | 12/30 | 10/30 |
+| bez zdůraznění středu (center=1) | 9/30 | 8/30 |
+| bez pokrytí (cover=0) | 7/30 | 2/30 |
+| bez postihu daného (given=0) | **0/30** | **0/30** |
+| jen setkání | **0/30** | **0/30** |
 
-Zadání členy skóre vypisuje, ale neurčuje, nad kterou reprezentací se
-počítají a jak se normalizují; kód proto drží doslovný zápis ze zadání
-(vše, včetně WORD=) a rozdíl se přiznává, místo aby se váhy ohýbaly,
-dokud číslo nesedne.
+Obě nulové hodnoty sedí přesně, a jsou to ty nejtvrdší: **bez postihu
+−3 za střed, jehož slovo otázka sama uvádí, vyhrává vždycky ozvěna
+otázky.** Proto se žádná varianta setkání nemohla k referenci
+přiblížit — chyba byla jinde, než kam mířilo hledání.
 
-**Kudy dál.** Nejlepší dvě varianty (6/30) míří stejným směrem —
-obsahová slova a řádková struktura váží víc než sečtený pytel všech
-os. Chybějící díl je nejspíš v tom, co zadání nepíše: jak přesně se
-skládá pytel otázky a jak se členy normalizují. Než se to doplní,
-nemá smysl na krok 3 stavět kalibraci θ (krok 10) — měřila by se
-špatná křivka.
-
-## Past konvoluce v gaussovském čtení
-
-`np.convolve(pole, jadro, mode="same")` vrací pole o délce **delšího**
-vstupu. Jádro má při σ=1,5 devět vzorků, takže u věty kratší než devět
-tokenů by výsledek byl delší než věta a `argmax` by vrátil index mimo
-ni — vrchol by ukazoval na slovo, které tam není. Proto se počítá
-`full` a řeže se přesně na délku věty.
-
-Zadání uvádí jádro jako k0 = 0,267 · k1 = 0,213 · k2 = 0,109. Poloměr
-`int(3σ)` = 4 dá 0,267 / 0,213 / **0,1096**; třetí hodnota se tedy
-liší v zaokrouhlení posledního místa. Obě odvozené přejímky sedí
-přesně: shluk 0,693 → 0,69 a špička 0,400 → 0,40.
+**Co po doplnění kroku 3b zbývá.** Přesnost stoupla z 3/30 na 10/30
+proti referenčním 14/30. Šest z deseti zbývajících chyb je „pořadí 1"
+— správná odpověď je těsně druhá (např. „Kolem čeho obíhá Země?":
+měsíc 2,25 před slunce 2,13). Rozdíl je tedy v měřítku členů, ne
+v jejich skladbě. Poznámka k parametrům: s oknem `r=2` vychází 11/30,
+ale referenční konfigurace je `r=1`, takže kód zůstává u ní.

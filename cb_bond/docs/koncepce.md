@@ -117,3 +117,43 @@ mez kroku 3 (viz prirucka.md).
 Poloměr jádra je `int(3σ)`: za třemi sigmami nese zvon pod 1,2 % hmoty
 a jen by prodlužoval konvoluci. Při σ=1,5 to dá 9 vzorků a hodnoty
 k0 = 0,267 · k1 = 0,213 — přesně ty ze zadání.
+
+
+## 11 · Skórování podle kroku 3b: každý člen nad jiným vektorem
+
+Doplněk zadání (commit cab983e), bez kterého se baseline nedal
+zopakovat. Klíč je, že členy skóre **nežijí nad týmž vektorem** —
+každý měří něco jiného a nad jinou reprezentací.
+
+**Semantická maska.** Do pytle jde jen to, co roste s významem:
+`WORD=`, `LEM=`, `QLEM=`, `ANCHOR=`, `QANCHOR=`, `Polarity=`,
+`CUSTOM=`. Strukturní osy (`UPOS=`, `DEPREL=`, `Case=`, `SUBPOS=`,
+morfologické rysy) vypadnou ÚPLNĚ — sdílí je skoro každá věta, takže
+by kosinus měřil podobnost gramatiky. Maskuje se PŘED sečtením, aby
+strukturní osy nemohly nafouknout normu.
+
+**Pytel otázky je jeden na celou otázku.** Ne po řádcích: otázka nemá
+střed, na kterém by záleželo — roli nese pád, ne pozice (princip 5).
+`q_words` se bere ze surového pytle, saturovaný slouží setkání.
+
+**Okno kandidáta je harmonické.** Řádek ve vzdálenosti `o` přispívá
+vahou `1/(1+|o|)` — sousedství doznívá, místo aby končilo hranou.
+Okno i střed se saturují a normují na JEDNOTKOVÝ vektor zvlášť.
+
+**Zdůraznění středu je vlastní člen, ne násobek.** Odtud identita,
+kterou musí každá přestavba zachovat:
+
+    meet = q̃·(okno + (W_CENTER−1)·střed) / ‖q̃‖
+         = cos(q̃, okno) + (W_CENTER−1)·cos(q̃, střed)
+
+Kdo počítá `cos(q̃, okno + 2·střed)` nad surovým pytlem, trestá středy
+s bohatou morfologií — norma součtu roste s tím, kolik os střed nese.
+
+**Pokrytí není kosinus, je to mohutnost.** Minimum přes dané osy nad
+`tanh(spread(celá věta))`. Je to tedy člen VĚTNÝ: pro všechny
+kandidáty téže věty stejný, takže **řadí věty**, kdežto `meet`
+a `given` řadí tokeny uvnitř věty. Dvě různé práce, dva různé členy.
+
+**Nosný je postih, ne setkání.** Naměřeno ablací: bez `given` je
+přesnost 0/30 a samotné setkání také 0/30. Bez postihu za střed,
+jehož slovo otázka sama uvádí, vyhrává vždycky ozvěna otázky.

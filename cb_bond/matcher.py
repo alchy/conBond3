@@ -49,6 +49,31 @@ DTYPE = np.float32
 #: všech ostatních zůstává bez výjimky.
 NEKANDIDATI = frozenset({"PUNCT", "SYM", "X"})
 
+#: Významové osy — co projde SEMANTICKOU MASKOU do pytle.
+#:
+#: Strukturní osy (UPOS=, DEPREL=, Case=, SUBPOS= a morfologické rysy)
+#: vypadnou úplně. Nesou tvar, ne význam: sdílí je skoro každá věta,
+#: takže by kosinus měřil podobnost gramatiky. Zbývá to, co roste
+#: s významem — slovo, lemma zavřených tříd, kotvy, polarita a custom
+#: sloty. Je to táž množina, nad kterou se smí učit (invariant 1),
+#: rozšířená o WORD=; párování slovo vidět smí, učení ne.
+SEMANTIC_PREFIXES = ("WORD=", "LEM=", "QLEM=", "ANCHOR=", "QANCHOR=",
+                     "Polarity=", "CUSTOM=")
+
+
+def semantic_bag(rows) -> dict:
+    """Součet řádků přes SEMANTICKOU MASKU — jeden pytel na celek.
+
+    Maskuje se PŘED sečtením: strukturní osy do pytle vůbec nevstoupí,
+    takže nemohou nafouknout normu a utopit v ní významové osy.
+    """
+    pytel: dict[str, float] = {}
+    for radek in rows:
+        for klic, vaha in radek.items():
+            if klic.startswith(SEMANTIC_PREFIXES):
+                pytel[klic] = pytel.get(klic, 0.0) + vaha
+    return pytel
+
 
 @dataclass(frozen=True)
 class ScoreWeights:
@@ -293,7 +318,7 @@ class Matcher:
         je celý recall: co se sem nedostane, se po tokenech nečte.
         """
         self._priprav()
-        q = saturate(self._pytel(question), self._links, self.spread_depth)
+        q = self.question_vector(question)
         if not q.any() or not len(self._bags):
             return tuple(range(min(top_k or self.top_k, len(self.corpus))))
         skore = self._bags @ q
@@ -304,49 +329,103 @@ class Matcher:
         nejlepsi = np.argpartition(-skore, k - 1)[:k]
         return tuple(int(i) for i in nejlepsi[np.argsort(-skore[nejlepsi])])
 
+    # --- vektory (krok 3b) ----------------------------------------------
+
+    def question_vector(self, question) -> np.ndarray:
+        """Pytel CELÉ otázky: součet řádků → maska → saturace.
+
+        Jeden pytel na celou otázku, ne po řádcích: otázka nemá střed,
+        na kterém by záleželo — roli nese pád, ne pozice (princip 5).
+        """
+        self._priprav()
+        return saturate(self._vektor(semantic_bag(question.complete)),
+                        self._links, self.spread_depth)
+
+    def candidate_vectors(self, sentence: int, token: int) -> tuple:
+        """(okno, střed) kandidáta — obojí saturované a JEDNOTKOVÉ.
+
+        Okno je harmonicky vážené: řádek ve vzdálenosti `o` od středu
+        přispívá vahou 1/(1+|o|), takže sousedství doznívá, místo aby
+        končilo hranou. Střed se saturuje a normuje ZVLÁŠŤ, protože
+        zdůraznění středu je vlastní člen skóre, ne násobek uvnitř okna
+        — jinak by se trestaly středy s bohatou morfologií.
+        """
+        self._priprav()
+        pole = self.corpus[sentence]
+        radky = pole.complete
+        okno: dict[str, float] = {}
+        for offset in range(-pole.r, pole.r + 1):
+            j = token + offset
+            if not 0 <= j < len(radky):
+                continue
+            vaha = 1.0 / (1.0 + abs(offset))
+            for klic, hodnota in semantic_bag((radky[j],)).items():
+                okno[klic] = okno.get(klic, 0.0) + vaha * hodnota
+        okno_v = _jednotkovy(saturate(self._vektor(okno), self._links,
+                                      self.spread_depth))
+        stred_v = _jednotkovy(saturate(
+            self._vektor(semantic_bag((radky[token],))), self._links,
+            self.spread_depth))
+        return okno_v, stred_v
+
+    def sentence_coverage(self, question) -> dict:
+        """{pozice věty: pokrytí daných os TOU větou}.
+
+        Pokrytí NENÍ kosinus — je to **mohutnost**: nejslabší daná osa
+        v poli věty. Proto je to člen VĚTNÝ (pro všechny kandidáty věty
+        stejný, řadí věty), kdežto meet a given řadí tokeny uvnitř věty.
+        """
+        self._priprav()
+        registry = self.corpus.registry
+        indexy = [registry.index(osa) for osa in self.given_axes(question)
+                  if osa in registry]
+        if not indexy:
+            return {i: 0.0 for i in range(len(self.corpus))}
+        sloupce = self._bags[:, indexy]
+        return {i: float(sloupce[i].min()) for i in range(len(self.corpus))}
+
     # --- párování -------------------------------------------------------
 
     def match(self, question) -> MatchResult:
         """Spáruje otázku s korpusem a vrátí seřazené kandidáty."""
         self._priprav()
-        q = saturate(self._pytel(question), self._links, self.spread_depth)
-        q_slova = self._pytel(question, jen_slova=True)
-        pokryti = self.coverage(question)
-        nejslabsi = min(pokryti.values()) if pokryti else 0.0
-        dane = set(self.given_axes(question))
+        q = self.question_vector(question)
+        q_norma = float(np.linalg.norm(q))
+        q_slova = self._vektor(semantic_bag(question.complete), jen_slova=True)
+        pokryti_vet = self.sentence_coverage(question)
 
         kandidati = []
         for pozice in self.recall(question):
             pole = self.corpus[pozice]
-            veta_slova = self._word_bags[pozice]
-            tema = _cos(q_slova, veta_slova)
-            for i, kos in enumerate(pole.baskets):
+            tema = _cos(q_slova, self._word_bags[pozice])
+            cover = pokryti_vet.get(pozice, 0.0)
+            for i in range(len(pole.tokens)):
                 if pole.tokens[i].upos in NEKANDIDATI:
                     continue
                 kandidati.append(self._kandidat(
-                    q, q_slova, pozice, i, pole, kos, nejslabsi, tema, dane))
+                    q, q_norma, q_slova, pozice, i, pole, cover, tema))
 
         kandidati.sort(key=lambda k: -k.score)
         return MatchResult(kandidati, self._vychodisko(kandidati), question)
 
     # --- vnitřek --------------------------------------------------------
 
-    def _kandidat(self, q, q_slova, pozice, i, pole, kos, nejslabsi, tema,
-                  dane) -> ScoreCandidate:
+    def _kandidat(self, q, q_norma, q_slova, pozice, i, pole, cover,
+                  tema) -> ScoreCandidate:
         # Obě strany se šíří stejně: otázka nese QANCHOR=, věta ANCHOR=,
         # a společnou souřadnici mají až o krok dál (ANCHOR=space). Šířit
         # jen otázku by znamenalo měřit setkání v místě, kam druhá strana
         # nedošla — členy by pak měřily podobnost gramatiky, ne významu.
-        okno = saturate(self._vektor_radku(kos.complete), self._links,
-                        self.spread_depth)
-        stred = saturate(self._vektor_radku((pole.complete[i],)), self._links,
-                         self.spread_depth)
-        stred_slova = self._vektor_radku((pole.complete[i],), jen_slova=True)
+        okno, stred = self.candidate_vectors(pozice, i)
+        # Okno i střed jsou jednotkové, takže součin s q/‖q‖ JE kosinus
+        # a platí identita meet = cos(q̃,okno) + (W_CENTER−1)·cos(q̃,střed).
+        combined = okno + (self.weights.center - 1.0) * stred
+        stred_slova = self._vektor(semantic_bag((pole.complete[i],)),
+                                   jen_slova=True)
 
         cleny = {
-            "meet": _cos(q, okno),
-            "center": (self.weights.center - 1.0) * _cos(q, stred),
-            "cover": self.weights.cover * nejslabsi,
+            "meet": float(np.dot(q, combined) / q_norma) if q_norma else 0.0,
+            "cover": self.weights.cover * cover,
             "topic": self.weights.topic * tema,
             "given": self.weights.given * _cos(q_slova, stred_slova),
             "fit": self.weights.fit * 0.0,
@@ -378,36 +457,37 @@ class Matcher:
         bags = np.zeros((len(self.corpus), sirka), dtype=DTYPE)
         slova = np.zeros((len(self.corpus), sirka), dtype=DTYPE)
         for i, pole in enumerate(self.corpus):
-            bags[i] = saturate(self._vektor_radku(pole.complete), self._links,
+            pytel = semantic_bag(pole.complete)
+            bags[i] = saturate(self._vektor(pytel), self._links,
                                self.spread_depth)
-            slova[i] = self._vektor_radku(pole.complete, jen_slova=True)
+            slova[i] = self._vektor(pytel, jen_slova=True)
         self._bags = bags
         self._word_bags = slova
         self._norms = np.linalg.norm(bags, axis=1)
         self._word_norms = np.linalg.norm(slova, axis=1)
         self._cache_klic = klic
 
-    def _pytel(self, field, jen_slova: bool = False) -> np.ndarray:
-        """SUROVÝ pytel pole — bez šíření.
+    def _vektor(self, pytel, jen_slova: bool = False) -> np.ndarray:
+        """Pytel {osa: váha} jako vektor nad osou korpusu — BEZ šíření.
 
-        Šíří se výslovně u volajícího. Kdyby pytel saturoval sám, snadno
-        by se šířilo dvakrát (naměřeno: otázka pak běžela v hloubce 2,
-        když měla v 1) a hloubka by přestala být pákou, kterou nastavuje
-        `spread_depth`.
+        Šíří se výslovně u volajícího. Kdyby vektor saturoval sám,
+        snadno by se šířilo dvakrát (naměřeno: otázka pak běžela
+        v hloubce 2, když měla v 1) a hloubka by přestala být pákou.
         """
-        return self._vektor_radku(field.complete, jen_slova=jen_slova)
-
-    def _vektor_radku(self, radky, jen_slova: bool = False) -> np.ndarray:
-        """Součet aktivací řádků do jednoho vektoru nad osou korpusu."""
         registry = self.corpus.registry
         vec = np.zeros(len(registry), dtype=DTYPE)
-        for radek in radky:
-            for klic, vaha in radek.items():
-                if jen_slova and not klic.startswith("WORD="):
-                    continue
-                if klic in registry:
-                    vec[registry.index(klic)] += vaha
+        for klic, vaha in pytel.items():
+            if jen_slova and not klic.startswith("WORD="):
+                continue
+            if klic in registry:
+                vec[registry.index(klic)] += vaha
         return vec
+
+
+def _jednotkovy(vector) -> np.ndarray:
+    """Vektor o jednotkové normě; nulový zůstane nulový."""
+    norma = float(np.linalg.norm(vector))
+    return vector if norma == 0.0 else (vector / norma).astype(DTYPE)
 
 
 def _cos(a, b) -> float:
