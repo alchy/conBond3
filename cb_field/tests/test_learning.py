@@ -3,8 +3,8 @@
 import unittest
 
 from cb_field import Corpus, SentenceField, VerticalRegistry
-from cb_field.learning import _semantic_bag, contrastive_step, hebb, \
-    sentence_hit, split_etalon
+from cb_field.learning import LEARN_PREFIXES, _semantic_bag, \
+    contrastive_step, hebb, sentence_hit, split_etalon
 from cb_field.tests.test_templates import (BEZELA, DO, KOCKA, LESA, PARKU,
                                            PES, SEL, TECKA)
 
@@ -74,6 +74,20 @@ class TestCustomOsyVUceni(unittest.TestCase):
     učicí pytel nese osu jako každou jinou — transparentně, bez
     zvláštní větve. Šíření pytlů maticí zavrženo měřením (22,9M hran,
     0,43 → 0,17)."""
+
+    def test_invariant_nn_trenuje_jen_nad_metadaty_z_vertikal(self):
+        # NEPORUŠITELNÉ (J. 2026-08-04): „nemůžeme nikdy trénovat NN
+        # nad jinými daty, než metadaty z vertikál." Pojistka proti
+        # vakuu: řádky věty slova NESOU (WORD= v COMPLETE existuje),
+        # a přesto do učicího pytle neprojdou.
+        field = SentenceField((SEL, PES, DO, LESA, TECKA), r=1)
+        self.assertTrue(any(k.startswith("WORD=")
+                            for row in field.complete for k in row))
+        bag = _semantic_bag(field, range(len(field.tokens)))
+        self.assertTrue(bag)                       # pytel není prázdný
+        self.assertTrue(all(k.startswith(LEARN_PREFIXES) for k in bag))
+        self.assertFalse(any(k.startswith("WORD=") for k in bag))
+        self.assertNotIn("WORD=", "".join(LEARN_PREFIXES))
 
     def test_uceni_je_metadatovy_model_slovo_jen_promoci(self):
         # učení probíhá nad metadaty (J.): konkrétní slovo do pytle

@@ -18,6 +18,13 @@ kde tréninkový loss klesal a validační stoupl.)*
 
 ## 2 · Architektura NN v pojmech pole
 
+**Invariant (J., neporušitelný): NN se NIKDY netrénuje nad jinými
+daty než metadaty z vertikál.** Konkrétní slovo světa se k učení
+dostane jedině tak, že se samo stane vertikálou (promoce do custom
+slotu). Hlídá to pojistkový test a výčet `LEARN_PREFIXES`; platí
+i pro každý budoucí učicí mechanismus (vrátí-li se Hebb nad
+strukturou, podléhá témuž pravidlu).
+
 | vrstva | realizace | stav |
 |---|---|---|
 | **vstup** | osy UDPipe + ≤328 custom slotů; promoce = transparentní chování: selekt (graf, různých²/hran) → **přegenerování celého korpusu** (koše nesou aktivaci samy) → teprve trénink | zapnuto; přejímky 27/27 |
