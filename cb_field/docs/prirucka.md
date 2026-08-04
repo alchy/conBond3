@@ -76,3 +76,17 @@ stav: smazání je neškodné, jen zmizí poslední publikovaná věta.
 **Logy parse volání.** Každé `parse()` jde přes službu cb-udpipe a je
 vidět v kukátku loggeru (http://127.0.0.1:42102/) včetně celých tokenů —
 hodí se, když nevěříš vlastním očím.
+
+**Index věty v souboru není pozice v korpusu.** Fixace čísluje od nuly
+sama za sebe; složený korpus má věty za sebou. Převod dělá návratová
+hodnota `add_to_corpus` (a `corpus.positions[jméno]`) — otázka
+z `otazky-201.json` míří na index 6, ale v korpusu je to pozice 2918.
+Kdo indexy zamění, měří na cizí větě a ničeho si nevšimne.
+
+**Zadání cb_bond ukazuje větu o dálnici na indexu 12.** Ve skutečnosti
+je v `korpus-001.json` na indexu 4 (vzorek v zadání je zkrácený). Test
+se na 12 vázat nesmí.
+
+**Jméno souboru nesmí nic znamenat.** Program ho bere jako neprůhledný
+identifikátor. Žádné mapy klíčované doménou („3xx je bible") — co má
+program vědět o obsahu, stojí uvnitř souboru.

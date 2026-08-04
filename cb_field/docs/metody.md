@@ -66,3 +66,24 @@ tady je smysl a závislosti.
 | publikace | `sentence.show()`; starší cesta `visualize.sentence(parsed_sentence)` |
 | kontrakt | `GET /` stránka · `GET /data` aktuální záznam · `GET /health` |
 | data | `run/current.json` — soukromá přepravka, aktivace počítá Python, stránka jen kreslí |
+
+## Corpus (corpus.py)
+
+| metoda | co dělá / na čem visí |
+|---|---|
+| `add_sentence(sentence, document=None)` | přidá rozparsovanou větu; osu doplní hned (viz koncepce § 11) |
+| `add_text(text, parser, document=None)` | jedna věta přes parser; víc vět je ValueError |
+| `add_document(text, parser, document=None)` | odstavec vcelku — všechny jeho věty pod jedním markerem |
+| `documents` / `document_span(i)` | markery dokumentů a meze bloku pro čtení kontextu |
+| `regenerate()` | přestaví pole z tokenů proti aktuální ose; **neparsuje**, markery drží |
+| `positions` | jméno fixace → pozice jejích vět (neprůhledný identifikátor, princip 7) |
+
+## Fixovaný korpus (corpusfile.py)
+
+| funkce | co dělá / na čem visí |
+|---|---|
+| `load_corpus_file(path)` | přečte a zvaliduje tvar: `format_version`, neprázdné bloky, rozsahy indexů, zodpověditelná otázka musí mít index |
+| `add_to_corpus(corpus, corpus_file, parser)` | vloží věty do korpusu, vrátí pozice; blok s `text` parsuje vcelku a ověří rozpad |
+| `build_corpus(paths, parser, r, r_sentences)` | složí fixace za sebe nad jedním registrem; otázkové soubory přeskočí |
+| `etalon_entries(corpus_file, positions)` | otázky ve tvaru etalonu + `answer_position` (zemní pravda na úrovni věty) |
+| `main()` | `./run-python -m cb_field.corpusfile <soubor>…` — validace vč. `answer_lemma` proti lemmatům (potřebuje UDPipe) |

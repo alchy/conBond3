@@ -8,7 +8,7 @@ s váženými vazbami a kukátko (viewer) na prohlížení.
 Vývojářský průvodce s ukázkami je v kořeni: `README-FIELD.md`.
 Návrhová rozhodnutí a pasti: `docs/`.
 
-## Stav: mockup (verze 0.5.0)
+## Stav: mockup (verze 0.6.0)
 
 Vědomě zatím **není** plný modul podle README-MODULES § 2: chybí
 konfigurace se schématem, logování přes cb-logger, REST API (`api.py`),
@@ -20,6 +20,9 @@ usadí. Co už platí: čistá doménová logika bez cest a HTTP (`service.py`,
 
 | jméno | co to je |
 |---|---|
+| `Corpus` | posloupnost polí nad JEDNÍM registrem: `add_sentence`/`add_text`/`add_document`, `documents`, `document_span`, `regenerate()`, `positions` |
+| `load_corpus_file`, `add_to_corpus`, `build_corpus`, `etalon_entries` | fixovaný korpus v JSON (`corpusfile.py`) — čtení, validace, stavba, otázky ve tvaru etalonu |
+| `CorpusFile`, `CorpusBlock`, `CorpusQuestion` | přečtená fixace: bloky (odstavce) a otázky mířící na index věty |
 | `SentenceField` | pracovní úroveň: `from_text` / `from_sentence`, pohledy `metadata`/`complete`/`array`, `baskets`, `matrix()`, `show()` |
 | `FieldBasket` | koš pole s touž trojicí pohledů; `array` má pevný tvar 2r+1 řádků |
 | `VerticalRegistry` | append-only osa sloupců: `add`, `key(i)`, `vectorize`/`unvectorize`, `link`/`links`/`spread`, `save`/`load` |
@@ -62,6 +65,7 @@ Až vznikne konfigurace modulu, prahy se přestěhují do ní.
 | soubor | formát | verze |
 |---|---|---|
 | registr vertikál (`save`/`load`) | JSON: `format_version`, `keys[]`, `links[[od,do,váha]]` | 1 — cizí verze se odmítá |
+| fixovaný korpus (`corpusfile`) | JSON: `format_version`, `language`, `blocks[{topic,text,sentences}]`, `questions[{text,sentence,answer_lemma,answerable}]`; otázkový soubor navíc `corpus` | 1 — cizí verze se odmítá |
 | `run/current.json` | soukromá přepravka viewer↔stránka; žije a umírá s kukátkem | neverzuje se |
 
 ## Co modul vědomě neřeší
@@ -80,8 +84,16 @@ Až vznikne konfigurace modulu, prahy se přestěhují do ní.
 ## Testy
 
 ```
-./run-python -m unittest discover -s cb_field -t .    # 35 testů
+./run-python -m unittest discover -s cb_field -t .    # 59 testů
 ```
 
 Zmražená data přímo v testech (skutečné výstupy UDPipe z 2026-08-03);
-žádný test nepotřebuje běžící službu.
+žádný test nepotřebuje běžící službu. Testy korpusu si parser atrapují,
+data korpusu čtou ze zmražených souborů v `tests/data/korpus/`.
+
+Validace datového souboru (tahle potřebuje běžící UDPipe, protože
+kontroluje rozpad vět a `answer_lemma` proti lemmatům):
+
+```
+./run-python -m cb_field.corpusfile cb_field/tests/data/korpus/korpus-001.json
+```

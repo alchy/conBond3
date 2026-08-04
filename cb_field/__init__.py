@@ -6,6 +6,16 @@ hodnoty, spočítat aktivace per atribut=hodnota a držet pro ně append-only
 registr vertikál — základ maticové podoby pole. K tomu kukátko (viewer).
 """
 
+from cb_field.corpus import Corpus
+from cb_field.corpusfile import (
+    CorpusBlock,
+    CorpusFile,
+    CorpusQuestion,
+    add_to_corpus,
+    build_corpus,
+    etalon_entries,
+    load_corpus_file,
+)
 from cb_field.field import FieldBasket, SentenceField
 from cb_field.registry import VerticalRegistry
 from cb_field.service import (
@@ -29,10 +39,19 @@ from cb_field.viewer import Visualizer, visualize
 
 #: Verze modulu; roste s každou změnou chování. Objektové ukládání košů
 #: zahozeno v 0.1.0 ve prospěch maticové cesty; 0.2.0 otázková strana;
-#: 0.5.0 třída SentenceField jako pracovní úroveň (věta → pole → matice).
-__version__ = "0.5.0"
+#: 0.5.0 třída SentenceField jako pracovní úroveň (věta → pole → matice);
+#: 0.6.0 Corpus a fixovaný korpus v JSON (krok 1 stavby cb_bond).
+__version__ = "0.6.0"
 
 __all__ = [
+    "Corpus",
+    "CorpusBlock",
+    "CorpusFile",
+    "CorpusQuestion",
+    "load_corpus_file",
+    "add_to_corpus",
+    "build_corpus",
+    "etalon_entries",
     "SentenceField",
     "FieldBasket",
     "Basket",

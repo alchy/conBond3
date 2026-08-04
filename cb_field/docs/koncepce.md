@@ -106,3 +106,30 @@ Viewer jen čte (`run/current.json`, poll 1 s), pravidla vertikál žijí
 v Pythonu a stránka kreslí hotové aktivace — pravidla nesmí žít dvakrát.
 Šířky mřížky se počítají explicitně v px (Firefox počítá intrinsic
 šířky vnořeného flexu/gridu jinak než Chrome — naměřeno).
+
+## 11 · Korpus: jedna osa, hranice odstavců, přestavba bez parseru
+
+Krok 1 stavby cb_bond (`docs/zadani.md` v cb_bond). Korpus není seznam
+vět, protože tři věci se jinak drátují ručně a pokaždé jinak.
+
+**Osa se doplňuje při přidání, ne až při čtení.** `matrix()` nechává
+registr růst líně; dvě pole čtená v různém pořadí pak mají různě širokou
+matici — a to je přesně past, kvůli které korpus existuje. `Corpus`
+proto registruje vertikály věty hned (v reprezentaci COMPLETE, tedy
+i `WORD=`: slovní vrstvu potřebuje promoce, custom slot vzniká z osy).
+Naměřeno na 12 258 větách: 14 748 vertikál, z toho 14 095 `WORD=`.
+
+**Blok = hranice dokumentu.** Kontext přes sousední věty (`r_sentences`)
+nesmí přetéct z odstavce do odstavce: sousedství v souboru není
+sousedství významem. Každá věta nese marker dokumentu a `document_span`
+z něj dělá meze — ne filtr v datové cestě, jen mez okna.
+
+**`regenerate()` neparsuje.** Promoce mění osu a všechna pole se staví
+znovu — ale z týchž tokenů. Kdyby se parsovalo, mohl by parser vrátit
+jiný rozbor a měřila by se změna, která z promoce nevznikla.
+
+**Blok se parsuje vcelku.** Věta vytržená z odstavce se dělí jinak
+(naměřeno v referenci: „In: Válka." + „cz [online]." se spojením
+rozpadly 6→5 vět). Fixace proto nese `text` původního odstavce a rozpad
+se musí rovnat položkám počtem i zněním; nerovná-li se, je to hlasitá
+chyba zápisu dat — číslování otázek by se tiše rozjelo.
