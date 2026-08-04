@@ -24,6 +24,7 @@ učení od šumu.
 
 import json
 import sys
+import time
 from pathlib import Path
 
 from cb_bond import ContrastiveTrainer, Matcher
@@ -31,6 +32,52 @@ from cb_field.corpusfile import build_corpus
 from cb_udpipe import UdpipeClient
 
 TRENINK = Path("cb_field/tests/data/trenink-otazky-korpusy.jsonl")
+
+
+def _hlasic(kazda: int = 10):
+    """Průběh na stderr — učení běží desítky sekund a nesmí mlčet.
+
+    V terminálu se postup přepisuje na jednom řádku (\r). Když stderr
+    míří do souboru nebo roury, `\r` nic nepřepíše a vznikl by
+    kilometrový výpis — tam se proto hlásí jen každá `kazda`-tá otázka,
+    každá na svém řádku.
+    """
+    zacatek = [time.time()]
+    terminal = sys.stderr.isatty()
+    # Python 3.11 nepustí zpětné lomítko dovnitř f-stringu, tak si ho
+    # připravíme dopředu; zároveň je pak vidět, čím se řádky liší.
+    navrat = "\r" if terminal else "  "
+    konec = "" if terminal else "\n"
+
+    def hlas(zprava):
+        faze = zprava["faze"]
+        if faze == "start":
+            print(f"učím: {zprava['trenink']} otázek "
+                  f"(+{zprava['validace']} odložených na validaci)",
+                  file=sys.stderr, flush=True)
+        elif faze == "validace_pred":
+            print(f"  výchozí validační loss {zprava['loss']:.4f}",
+                  file=sys.stderr, flush=True)
+        elif faze == "otazka":
+            hotovo, celkem = zprava["hotovo"], zprava["celkem"]
+            if not terminal and hotovo % kazda and hotovo != celkem:
+                return
+            print(f"{navrat}  epocha {zprava['epocha']}: "
+                  f"{hotovo:3}/{celkem} "
+                  f"· {time.time() - zacatek[0]:5.0f} s "
+                  f"· {zprava['otazka'][:40]:42}",
+                  end=konec, file=sys.stderr, flush=True)
+        elif faze == "validace":
+            print(f"{navrat}  epocha {zprava['epocha']}: validuji…"
+                  f"{' ' * 50}", end=konec, file=sys.stderr, flush=True)
+        elif faze == "epocha":
+            stav = "ODVOLÁNA" if zprava["odvolano"] else "ponechána"
+            print(f"{navrat}  epocha {zprava['epocha']} {stav:10} "
+                  f"loss {zprava['loss']:.4f} · valid "
+                  f"{zprava['loss_valid']:.4f} · hran {zprava['hran']:5}"
+                  f"{' ' * 12}", file=sys.stderr, flush=True)
+
+    return hlas
 
 
 def main(argv=None) -> int:
@@ -44,16 +91,23 @@ def main(argv=None) -> int:
         return 2
 
     parser = UdpipeClient()
+    print(f"stavím korpus z {len(paths)} souborů…", file=sys.stderr,
+          flush=True)
+    t0 = time.time()
     corpus = build_corpus(paths, parser, r=1)
+    print(f"  {len(corpus)} vět · osa {len(corpus.registry)} vertikál "
+          f"· {time.time() - t0:.0f} s", file=sys.stderr, flush=True)
     trenink = [json.loads(r) for r in TRENINK.read_text(encoding="utf-8").
                splitlines() if r.strip()]
 
     pred = {(src, dst): vaha
             for src, dst, vaha in corpus.registry.links()}
     trener = ContrastiveTrainer(corpus, Matcher(corpus, spread_depth=1,
-                                                theta=0.0), parser)
+                                                theta=0.0), parser,
+                                progress=_hlasic())
     trener.top_changes = max(kolik, 20)
     zprava = trener.train(trenink, max_epochs=6)
+    print(file=sys.stderr, flush=True)
 
     print("=" * 72)
     print("1) PO VRSTVÁCH — mezi kterými vrstvami reprezentace se učilo")

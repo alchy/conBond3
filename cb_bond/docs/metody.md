@@ -184,6 +184,7 @@ vstupní vrstvy a pole by tiše přestala aktivovat `CUSTOM=`.
 | `TrainingReport.epochs[i]["zmeny"]` | `[(zdroj, cíl, stará, nová)]` — CO se v epoše naučilo, podle velikosti kroku |
 | `TrainingReport.epochs[i]["vrstvy"]` | `{(prefix zdroje, prefix cíle): počet}` — MEZI KTERÝMI vrstvami se učilo |
 | `ContrastiveTrainer.top_changes` | kolik změn si epocha pamatuje (výchozí 20); strop VÝPISU, ne učení |
+| `ContrastiveTrainer(..., progress=…)` | hlásič průběhu, parametrem (§ 3); dostává `{"faze": start\|validace_pred\|otazka\|validace\|epocha, …}`. Bez něj je učení tiché — jádro na výstup nepíše samo |
 
 | co | jak |
 |---|---|

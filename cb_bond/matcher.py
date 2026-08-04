@@ -262,6 +262,11 @@ class Matcher:
         self._word_bags = None     # jen slovní osy, pro téma
         self._norms = None
         self._word_norms = None
+        #: Pytle řádků po větách. Okno se staví přes CELOU větu, takže
+        #: bez zapamatování by se týž řádek maskoval znovu pro každého
+        #: kandidáta — kvadraticky v délce věty (naměřeno: 68 % času
+        #: match). Maže se s cache.
+        self._radky: dict = {}
 
     @property
     def links(self):
@@ -383,19 +388,26 @@ class Matcher:
         středy s bohatou morfologií.
         """
         self._priprav()
-        pole = self.corpus[sentence]
-        radky = pole.complete
+        radky = self._radky_vety(sentence)
         okno: dict[str, float] = {}
         for j in range(len(radky)):
             vaha = 1.0 / (1.0 + abs(j - token))
-            for klic, hodnota in semantic_bag((radky[j],)).items():
+            for klic, hodnota in radky[j].items():
                 okno[klic] = okno.get(klic, 0.0) + vaha * hodnota
         okno_v = _jednotkovy(saturate(self._vektor(okno), self._links,
                                       self.spread_depth))
         stred_v = _jednotkovy(saturate(
-            self._vektor(semantic_bag((radky[token],))), self._links,
-            self.spread_depth))
+            self._vektor(radky[token]), self._links, self.spread_depth))
         return okno_v, stred_v
+
+    def _radky_vety(self, sentence: int) -> tuple:
+        """Maskované pytle řádků věty — spočítají se jednou za cache."""
+        hotove = self._radky.get(sentence)
+        if hotove is None:
+            hotove = tuple(semantic_bag((radek,))
+                           for radek in self.corpus[sentence].complete)
+            self._radky[sentence] = hotove
+        return hotove
 
     def sentence_coverage(self, question) -> dict:
         """{pozice věty: pokrytí daných os TOU větou}.
@@ -451,7 +463,7 @@ class Matcher:
         combined = okno + (self.weights.center - 1.0) * stred
         stred_slova = self._vektor(
             {klic: vaha
-             for klic, vaha in semantic_bag((pole.complete[i],)).items()
+             for klic, vaha in self._radky_vety(pozice)[i].items()
              if not klic.startswith("WORD=PUNCT:")}, jen_slova=True)
 
         cleny = {
@@ -501,6 +513,7 @@ class Matcher:
                  if not klic.startswith("WORD=PUNCT:")}, jen_slova=True)
         self._bags = bags
         self._word_bags = slova
+        self._radky = {}
         self._norms = np.linalg.norm(bags, axis=1)
         self._word_norms = np.linalg.norm(slova, axis=1)
         self._cache_klic = klic

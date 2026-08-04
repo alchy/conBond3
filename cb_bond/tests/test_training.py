@@ -288,6 +288,41 @@ class TestPohledNaVahy(unittest.TestCase):
             self.assertGreater(pocet, 0)
 
 
+class TestPrubeh(unittest.TestCase):
+    """Učení běží desítky sekund — nesmí u toho mlčet."""
+
+    def test_hlasi_prubeh_uz_BEHEM_epochy(self):
+        corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE)
+        zpravy = []
+        trener = _trener(corpus, margin=9.0, progress=zpravy.append)
+
+        trener.train([ZAZNAM, dict(ZAZNAM), dict(ZAZNAM)], max_epochs=1)
+
+        faze = [z["faze"] for z in zpravy]
+        self.assertIn("otazka", faze)      # ne až po epoše
+        self.assertIn("epocha", faze)
+
+    def test_prubeh_nese_kolik_je_hotovo_z_kolika(self):
+        corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE)
+        zpravy = []
+        trener = _trener(corpus, margin=9.0, progress=zpravy.append)
+
+        trener.train([ZAZNAM], max_epochs=1)
+
+        otazky = [z for z in zpravy if z["faze"] == "otazka"]
+        self.assertTrue(otazky)
+        self.assertIn("hotovo", otazky[0])
+        self.assertIn("celkem", otazky[0])
+
+    def test_bez_hlasice_se_nic_nedeje(self):
+        # výchozí stav je tichý — jádro nesmí psát na výstup samo
+        corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE)
+
+        zprava = _trener(corpus, margin=9.0).train([ZAZNAM], max_epochs=1)
+
+        self.assertTrue(zprava.epochs)
+
+
 class TestZasah(unittest.TestCase):
 
     def test_sentence_hit_hleda_lemma_mezi_TOP_vetami(self):

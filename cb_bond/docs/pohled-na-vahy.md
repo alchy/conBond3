@@ -12,6 +12,22 @@ reprezentace učení pracovalo a které konkrétní hrany o tom rozhodly.
 Potřebuje běžící cb-udpipe a korpusy v `data-persistent` (mimo git).
 Nic nemění — postaví korpus, doučí a vypíše; stav se nikam neukládá.
 
+**Trvá to zhruba minutu** (2 912 vět, 6 epoch po 85 otázkách) a průběh
+se hlásí na stderr, takže je vidět, že to běží:
+
+```
+stavím korpus z 7 souborů…
+  2912 vět · osa 6671 vertikál · 5 s
+učím: 85 otázek (+35 odložených na validaci)
+  výchozí validační loss 0.1144
+  epocha 1:  40/85 ·     4 s · V kterých vojenských objektech se narodi
+  epocha 1 ponechána  loss 0.0949 · valid 0.1146 · hran   664
+```
+
+V terminálu se postup přepisuje na jednom řádku; při přesměrování do
+souboru se hlásí každá desátá otázka na svém řádku (jinak by `\r`
+nepřepsal nic a vznikl by kilometrový výpis).
+
 ---
 
 ## Co se vypisuje

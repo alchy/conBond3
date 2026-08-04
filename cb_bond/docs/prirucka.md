@@ -154,3 +154,14 @@ VÁHY existujících hran, takže počet zůstane stejný a cache by dál
 vracela zastaralé pytle — validace by se pak měřila na stavu, který už
 neplatí. Zadání to předepisuje (`cache na (růst, link_version,
 axis_version, …)`) a chybělo to.
+
+
+## Okno přes celou větu je kvadratické — pamatuj si řádky
+
+Harmonické okno sahá přes celou větu, takže naivně se každý řádek
+maskuje znovu pro každého kandidáta: u dvacetislovné věty 400 průchodů
+místo 20. Naměřeno profilem — **68 % času `match()`**. `Matcher` proto
+drží pytle řádků po větách (`_radky_vety`) a maže je s cache.
+
+Po zapamatování: **31 ms na otázku místo 78**, tedy 2,5×. Celý běh
+učení (6 epoch × 85 otázek + validace) spadl pod minutu.

@@ -165,7 +165,8 @@ class ContrastiveTrainer:
 
     def __init__(self, corpus, matcher, parser, *, split=None,
                  lr: float = 0.001, margin: float = 0.2,
-                 sigma: float = 1.5, tolerance: float = 0.01) -> None:
+                 sigma: float = 1.5, tolerance: float = 0.01,
+                 progress=None) -> None:
         self.corpus = corpus
         self.matcher = matcher
         self.parser = parser
@@ -182,6 +183,10 @@ class ContrastiveTrainer:
         #: strop učení, jen strop VÝPISU — hran bývá stovky a člověk
         #: chce vidět ty, které rozhodly.
         self.top_changes = 20
+        #: Hlásič průběhu — dostává slovníky {"faze": …}. Předává se
+        #: parametrem (§ 3): jádro na výstup nepíše samo, ale učení běží
+        #: desítky sekund a nesmí u toho mlčet.
+        self.progress = progress or (lambda zprava: None)
         self.report = TrainingReport()
         self._adam: dict = {}
 
@@ -194,11 +199,15 @@ class ContrastiveTrainer:
         # Validace se změří JEŠTĚ PŘED učením. Bez toho by první epocha
         # neměla s čím porovnávat a prošla by, i kdyby zhoršila všechno —
         # a právě první epocha bývá ta nejdivočejší.
+        self.progress({"faze": "start", "trenink": len(trenink),
+                       "validace": len(validace)})
         predchozi_valid = self._validacni_loss(validace)
+        self.progress({"faze": "validace_pred", "loss": predchozi_valid})
 
-        for _ in range(max_epochs):
+        for cislo in range(1, max_epochs + 1):
             snap = self.corpus.registry.snapshot()
-            statistika = self._epocha(trenink)
+            statistika = self._epocha(trenink, cislo)
+            self.progress({"faze": "validace", "epocha": cislo})
             valid = self._validacni_loss(validace)
             odvolat = valid > predchozi_valid * (1.0 + self.tolerance)
             if odvolat:
@@ -208,17 +217,22 @@ class ContrastiveTrainer:
             statistika.update({"loss_valid": round(valid, 4),
                                "odvolano": odvolat})
             self.report.epochs.append(statistika)
+            self.progress({"faze": "epocha", "epocha": cislo,
+                           **statistika})
             if odvolat or not statistika["korekci"]:
                 break
         return self.report
 
-    def _epocha(self, entries) -> dict:
+    def _epocha(self, entries, cislo: int = 1) -> dict:
         # Váhy na začátku epochy — proti nim se pak čte, CO se naučilo.
         pred = {(src, dst): vaha
                 for src, dst, vaha in self.corpus.registry.links()}
         loss_celkem = korekci = hran = 0
         vrcholy_spravnych = []
-        for zaznam in entries:
+        for poradi, zaznam in enumerate(entries, 1):
+            self.progress({"faze": "otazka", "epocha": cislo,
+                           "hotovo": poradi, "celkem": len(entries),
+                           "otazka": zaznam.get("otazka", "")})
             krok = self._krok(zaznam)
             if krok is None:
                 continue
