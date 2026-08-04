@@ -75,6 +75,35 @@ matice ukazovaly na sloupce, které mezitím znamenají něco jiného; to je
 tiché poškození dat, ne výpadek, takže se to musí hlídat verzí, ne
 kontrolou při čtení.
 
+### Limit 328 platí na CUSTOM vertikály
+
+Upřesnění J.: **328 je strop pro custom vertikály** — osy z UDPipe
+(`UPOS`, `DEPREL`, `Case`, `Polarity`, kotvy) stojí vedle a do soutěže
+o místo nevstupují. Celý rozpočet je tedy k dispozici promoci.
+
+**Co už je zastoupené, se jako custom nepřidává** (pravidlo J.). Není
+to úspora místa, ale ochrana před duplicitou: naměřeno, že podle čisté
+frekvence by prvních sto míst obsadila slova `a, být, on, se, v, na, z,
+ten, s, který, do` — a každé z nich už nese některá UDPipe osa
+(`SUBPOS=RR`, `UPOS=CCONJ`, `UPOS=PRON`, `UPOS=AUX`). Systém by tutéž
+informaci držel dvakrát, jen jednou pojmenovanou jinak, a rozpočet by
+padl na balast. Pokrytí by přitom vypadalo výborně (150 nejčastějších
+slov = 46 % výskytů), což je přesně ten druh čísla, které se kupuje
+místo aby se vydělalo.
+
+Provozní podoba pravidla: kandidát má cenu tehdy, když **rozliší dvě
+místa, která mají stejný UDPipe popis** — `v Jordánu` × `v lednu` se
+gramaticky neliší, liší se typem jména; `dálnice` × `silnice` totéž.
+Je to táž logika jako rozmanitost konců, jen měřená proti existující
+reprezentaci místo proti korpusu.
+
+Nad obsahovými slovy je pak rozpočet pohodlný: 289 nejčastějších
+obsahových lemmat pokrývá 38 % výskytů, takže se do 328 vejde skoro
+celá ta množina i s rezervou na promované typy vztahů. Zbývá rozhodnout
+dělení rozpočtu mezi slova a typy — v jedné společné soutěži by slova
+typy přehlasovala počtem, ačkoli typ je cennější (platí pro celý druh
+otázek, ne pro jedno slovo).
+
 Doplňující mez k frekvenci: promuje se podle **rozmanitosti konců**, ne
 podle počtu výskytů. `rychlost → 130` má jeden konec a nepromuje nikdy;
 `X → stanovená hodnota` má konců mnoho a promuje jako typ. Je to táž
