@@ -19,7 +19,8 @@ Zadání celé stavby (deset kroků, zmražené přejímky, páky systému):
 | 8 | `Responder` — dialogová vrstva | hotovo (průběh o dálnici sedí) |
 | 6 | `PromotionCycle` — výměna vstupní vrstvy | hotovo (rollback bit po bitu sedí) |
 | 9 | `GraphMirror` — zrcadlo do viewBase2 | hotovo (proti skutečnému oknu) |
-| 5, 10 | trénink · měřicí protokol | zbývá |
+| 5 | `ContrastiveTrainer` — učení | hotovo (věta v top-3: 20 → 21/30) |
+| 10 | měřicí protokol | zbývá |
 
 Vědomě zatím **není** plný modul podle README-MODULES § 2: chybí
 konfigurace se schématem, logování přes cb-logger, `api.py`,
@@ -48,6 +49,8 @@ usadí — stejně jako u cb_field.
 | `QuestionExpander`, `Expansion` | rozšíření otázky o oblast kolem jejích slov |
 | `PromotionCycle`, `CycleOutcome` | promoční cyklus: selekt → přegenerování → učení → měření → přijmout/vrátit |
 | `GraphMirror` | delty grafu → okno viewBase2; `emit`, `mirror`, `refresh`, `illuminate` |
+| `ContrastiveTrainer`, `ValidationSplit`, `TrainingReport` | kontrastivní učení nad metadaty; validace řídí konec |
+| `learning_bag`, `sentence_hit`, `LEARN_PREFIXES` | učicí pytel (bez WORD=) a větné měřítko úspěchu |
 
 ## Závislosti
 
@@ -64,7 +67,7 @@ Na registru cb_fieldu smí cb_bond volat jen `link` / `unlink` /
 ## Testy
 
 ```
-./run-python -m unittest discover -s cb_bond -t .     # 103 testů
+./run-python -m unittest discover -s cb_bond -t .     # 118 testů
 ```
 
 Zmražené rozbory v `tests/vzorky.py` (skutečné výstupy UDPipe
@@ -80,6 +83,7 @@ Přejímka na skutečném korpusu (potřebuje UDPipe a data mimo git):
 ./run-python cb_bond/scripts/prejimka-dialog.py     # krok 8 — sedí
 ./run-python cb_bond/scripts/prejimka-promoce.py    # krok 6 — sedí
 ./run-python cb_bond/scripts/prejimka-zrcadlo.py    # krok 9 — sedí
+./run-python cb_bond/scripts/prejimka-uceni.py      # krok 5 — hlásí vadu DAT
 ```
 
 Porovnají naměřené se zmraženými hodnotami § 6 zadání a skončí

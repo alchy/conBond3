@@ -39,6 +39,14 @@ from cb_bond.dialog import (  # noqa: E402
     Responder,
 )
 from cb_bond.mirror import GraphMirror  # noqa: E402
+from cb_bond.training import (  # noqa: E402
+    LEARN_PREFIXES,
+    ContrastiveTrainer,
+    TrainingReport,
+    ValidationSplit,
+    learning_bag,
+    sentence_hit,
+)
 from cb_bond.promotion import CycleOutcome, PromotionCycle  # noqa: E402
 from cb_bond.relations import RelationMiner, kmen  # noqa: E402
 from cb_bond.matcher import (  # noqa: E402
@@ -74,5 +82,11 @@ __all__ = [
     "PromotionCycle",
     "CycleOutcome",
     "GraphMirror",
+    "ContrastiveTrainer",
+    "TrainingReport",
+    "ValidationSplit",
+    "learning_bag",
+    "sentence_hit",
+    "LEARN_PREFIXES",
     "__version__",
 ]

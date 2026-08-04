@@ -91,3 +91,25 @@ Poslední zavřená mezera byla vlastní nedůslednost: harmonická váha
 na ±r, čímž se hrana vrátila. Okno přes celou větu dá 11/30 místo
 10/30. Ořez na ±3 dá totéž co celá věta — dozvuk za třetí pozicí už
 váží málo, ale hrana tam být nesmí.
+
+## Krok 5: co učení udělalo a co ne
+
+Naměřeno na 2 912 větách, 120 otázkách supervize (validace 30 %,
+semínko 328), etalon 40 stranou:
+
+| | před učením | po učení |
+|---|---|---|
+| přesnost@1 | 11/30 | 11/30 |
+| věta v top-3 | 20/30 | **21/30** |
+
+Učení tedy zvedlo VĚTNÉ čtení, ne tokenové — což dává smysl, protože
+učicí vztah je otázka(meta) → věta(meta). Validační loss klesla 0,1194
+→ 0,1193 a hned se ustálila: po první epoše je marže u většiny otázek
+splněna, takže korekce ustanou samy (21 korekcí, 920 hran na epochu).
+
+**Pozor na míchání dvou sad.** V etalonu jsou DVĚ otázky, které stojí
+i v tréninkové sadě: „Kdo pokřtil Ježíše?" a „Kolem čeho obíhá
+Slunce?". Etalon má být od tréninku oddělený (§ 7 zadání), takže je to
+vada dat, ne kódu — přejímka kroku 5 ji hlásí a končí nenulově.
+Naměřených čísel se to zatím nedotýká (obě otázky systém stejně
+netrefí), ale s lepším skórováním by je nadhodnocovalo.

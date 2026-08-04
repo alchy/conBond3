@@ -169,3 +169,18 @@ vstupní vrstvy a pole by tiše přestala aktivovat `CUSTOM=`.
 | živý graf | `./run-python -m cb_bond.graphview "Kde byl pokřtěn Ježíš?"` (:8080) |
 | přejímka kroku 9 | `./run-python cb_bond/scripts/prejimka-zrcadlo.py` — proti SKUTEČNÉMU oknu, ne atrapě |
 | otisk frontendu | ověřuje `graphview.bundle_fingerprint()` při startu |
+
+## ContrastiveTrainer (training.py)
+
+| metoda / objekt | co dělá / na čem visí |
+|---|---|
+| `learning_bag(rows)` | součet řádků přes UČICÍ masku; `WORD=` tam není a nikdy nebude |
+| `LEARN_PREFIXES` | LEM=, QLEM=, ANCHOR=, QANCHOR=, Polarity=, CUSTOM= |
+| `ValidationSplit(share=0.3, seed=328)` | vrstvený deterministický los podle zodpověditelnosti |
+| `ContrastiveTrainer(corpus, matcher, parser, *, split, lr=0.003, margin=0.2, sigma=1.5)` | učí vazby registru; parser i matcher parametrem |
+| `train(entries, max_epochs=10)` | `TrainingReport`; epocha, která zhorší validaci, se odvolá |
+| `sentence_hit(result, lemma, corpus, top=3)` | nese některá z TOP vět lemma odpovědi? |
+
+| co | jak |
+|---|---|
+| přejímka kroku 5 | `./run-python cb_bond/scripts/prejimka-uceni.py` |
