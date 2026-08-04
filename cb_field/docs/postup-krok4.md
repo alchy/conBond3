@@ -438,3 +438,34 @@ Zároveň je to druhé, nezávislé zdůvodnění r=2 (první bylo přesností):
 r=1 nechává dvě třetiny odpovědí bez podnětu v koši a systém je trefuje
 jen díky členům přes celou větu (téma, pokrytí) — tedy náhradou za
 dosah, ne dosahem samotným.
+
+## 19 · Typ z okolí pomohl málo — a ukazuje proč (2026-08-04)
+
+Řetěz J. *kde → místo ← řeka* je v reprezentaci doložitelný: „Jordánu"
+má ANCHOR=space z NameType=Geo, „řece" jen dir:at z předložky. Chybí
+tedy hrana obecné jméno → dimenze. `learn_types()` ji učí z textu
+(NPMI nad dvojicí slovo × kotva v koši, jen dimenze bez dir:*).
+
+Korpusy r=2, 549 typových hran z 2 298 doložených dvojic:
+
+| | přesnost@1 | vada | mimo dosah |
+|---|---|---|---|
+| baseline | 0,50 | 4 | 6 |
+| po typech | 0,50 | 4 | 6 |
+
+Pořadí vadných se posunulo (Nazareto 10 → 6, Čapek 87 → 59, řeka
+1159 → 912), ale **žádná vada nezmizela** a přesnost se nehnula.
+
+**Proč: typ sám nerozlišuje.** Hranu ke space dostane každé slovo,
+které opakovaně stojí v koši s místní kotvou — a to je v souvislém
+textu spousta slov (549 hran). Aktivace se tedy přelije do „místa"
+u všech kandidátů okolí najednou; „řeka" se posune, ale spolu s ní
+i její sousedé. Typ je nutná podmínka (bez něj se odpověď s otázkou
+vůbec nepotká), ne dostatečná.
+
+Co z toho plyne pro další krok: rozlišit musí **kombinace** — „je to
+místo" ∧ „je v koši s podnětem otázky (křtít)". Přesně to je query
+basket: cílený metadatový vzor, ne jednotlivá osa. Dnešní skóre umí
+členy jen SČÍTAT, takže dvě slabé shody dají totéž co jedna silná;
+konjunkce (součin) uvnitř skóre chybí — a je to táž mechanika, kterou
+už mají AND/OR/NOT v `query.py`, jen zatím nad výsledky, ne uvnitř.
