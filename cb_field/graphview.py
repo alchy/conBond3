@@ -19,7 +19,22 @@ import sys
 
 
 def viewbase_emitter(graph_window):
-    """Emitor delt FactGraph → okno viewBase2 (závislost parametrem)."""
+    """Emitor delt FactGraph → okno viewBase2 (závislost parametrem).
+
+    Každý uzel nese v metadatech seznam SOUSEDŮ s deprel („ADJ:pokřtěný
+    (obl)") — viewBase2 metadata ukazuje v detailu uzlu, takže důvod
+    hrany je vidět bez čtení kódu. Seznam se doplňuje průběžně s každou
+    hranou (živé zrcadlo), stav drží adaptér, ne graf.
+    """
+    neighbours: dict = {}
+
+    def _note(node, other, deprel):
+        near = neighbours.setdefault(node, [])
+        entry = f"{other} ({deprel})"
+        if entry not in near:
+            near.append(entry)
+            graph_window.update_node(node, sousede=", ".join(near),
+                                     stupen=len(near))
 
     def emit(delta):
         op = delta["op"]
@@ -30,6 +45,8 @@ def viewbase_emitter(graph_window):
             # drží dál, jen se do vizualizace nepřekládá
             if delta["src"] != delta["dst"]:
                 graph_window.ensure_edge(delta["src"], delta["dst"])
+                _note(delta["src"], delta["dst"], delta["deprel"])
+                _note(delta["dst"], delta["src"], delta["deprel"])
         elif op == "style":
             graph_window.update_node(delta["id"], glow=delta["glow"])
 

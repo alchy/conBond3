@@ -207,7 +207,8 @@ class TestViewbaseAdapter(unittest.TestCase):
             def ensure_edge(self, src, dst, **kw):
                 self.calls.append(("edge", src, dst))
             def update_node(self, node_id, **kw):
-                self.calls.append(("style", node_id, kw.get("glow")))
+                self.calls.append(("meta" if "sousede" in kw
+                                   else "style", node_id, kw.get("glow")))
 
         window = _Window()
         graph = FactGraph(emit=viewbase_emitter(window))
@@ -215,7 +216,28 @@ class TestViewbaseAdapter(unittest.TestCase):
         light_up(graph, [(_Sentence(KREST), 1.0)],
                  question_lemmas={"pokřtěný"})
         kinds = {c[0] for c in window.calls}
-        self.assertEqual(kinds, {"node", "edge", "style"})
+        self.assertEqual(kinds, {"node", "edge", "style", "meta"})
+
+    def test_uzel_nese_metadata_sousedu(self):
+        from cb_field.graphview import viewbase_emitter
+
+        class _Window:
+            meta = {}
+            def ensure_node(self, node_id, **kw): pass
+            def ensure_edge(self, src, dst, **kw): pass
+            def update_node(self, node_id, **kw):
+                if "sousede" in kw:
+                    self.meta[node_id] = kw["sousede"]
+
+        window = _Window()
+        graph = FactGraph(emit=viewbase_emitter(window))
+        graph.add_sentence(_Sentence(KREST))
+        self.assertIn("ADJ:pokřtěný (obl)",
+                      window.meta["PROPN:Jordán"])
+        self.assertIn("PROPN:Jordán (obl)",
+                      window.meta["ADJ:pokřtěný"])
+        self.assertIn("VERB:přijít (conj)",
+                      window.meta["ADJ:pokřtěný"])
 
 
 class TestPromoteVerticals(unittest.TestCase):
