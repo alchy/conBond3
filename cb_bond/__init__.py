@@ -38,6 +38,7 @@ from cb_bond.dialog import (  # noqa: E402
     Reply,
     Responder,
 )
+from cb_bond.mirror import GraphMirror  # noqa: E402
 from cb_bond.promotion import CycleOutcome, PromotionCycle  # noqa: E402
 from cb_bond.relations import RelationMiner, kmen  # noqa: E402
 from cb_bond.matcher import (  # noqa: E402
@@ -72,5 +73,6 @@ __all__ = [
     "Expansion",
     "PromotionCycle",
     "CycleOutcome",
+    "GraphMirror",
     "__version__",
 ]

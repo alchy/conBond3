@@ -255,3 +255,28 @@ obsazení, verze 0) a v koších nezbyla ani jedna `CUSTOM=` aktivace.
 0,30 a cyklus se vrátil — což souhlasí s referencí, kde je C−B = 0
 („sloty si zatím nevydělaly na přesnost"). Proto zadání zavádí užitek
 otázkám jako vážený člen selektu; to je páka, kterou se to má zlomit.
+
+## 17 · Zrcadlo: co graf umí, obrázek musí unést
+
+Princip 6 říká, že graf a jeho vizualizace jsou totéž. V praxi to
+znamená tři překlady, protože obrázek má jiná omezení než data —
+a všechna tři se ukázala až při běhu proti skutečnému oknu:
+
+**Typ uzlu se musí zavést napřed.** viewBase odmítne uzel
+s nedefinovaným typem. Zrcadlo si typ zavede samo při prvním setkání;
+jinak by ingest spadl uprostřed, jakmile se objeví nový slovní druh.
+
+**`source` znamená jinde něco jiného.** V deltě grafu je to
+provenience (text × dictionary × dialog), ve viewBase ZDROJOVÝ UZEL
+hrany. Do okna proto chodí jako `origin`.
+
+**Hrana je v obrázku neorientovaná a jen jednou.** Graf počítá hranové
+instance s opakováním (16 074 na 2 912 vět) a orientaci nese v deprelu;
+viewBase klíčuje dvojici nesetříděně a duplicitu odmítá výjimkou.
+Dedup proto patří do kresby, ne do dat — kdo by ho dal do grafu,
+rozbil by skóre promoce, které na opakování stojí.
+
+Naměřeno proti skutečnému oknu: Jordán dostane `glow` 1,67, Galilej
+1,20 — tytéž hodnoty, které vypočítá `illuminate`, doputují až do
+metadat uzlu, a s nimi i čitelné `sousede = "ADJ:pokřtěný (obl)"`
+a `stupen = 1`.

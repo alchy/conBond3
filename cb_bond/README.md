@@ -18,7 +18,8 @@ Zadání celé stavby (deset kroků, zmražené přejímky, páky systému):
 | 7 | `RelationMiner` — definice a derivace | hotovo (94 vazeb sedí) |
 | 8 | `Responder` — dialogová vrstva | hotovo (průběh o dálnici sedí) |
 | 6 | `PromotionCycle` — výměna vstupní vrstvy | hotovo (rollback bit po bitu sedí) |
-| 5, 9, 10 | trénink · zrcadlo · měření | zbývá |
+| 9 | `GraphMirror` — zrcadlo do viewBase2 | hotovo (proti skutečnému oknu) |
+| 5, 10 | trénink · měřicí protokol | zbývá |
 
 Vědomě zatím **není** plný modul podle README-MODULES § 2: chybí
 konfigurace se schématem, logování přes cb-logger, `api.py`,
@@ -46,6 +47,7 @@ usadí — stejně jako u cb_field.
 | `DefinitionResolver` | opatří definici: korpus → úložiště → slovník → dialog |
 | `QuestionExpander`, `Expansion` | rozšíření otázky o oblast kolem jejích slov |
 | `PromotionCycle`, `CycleOutcome` | promoční cyklus: selekt → přegenerování → učení → měření → přijmout/vrátit |
+| `GraphMirror` | delty grafu → okno viewBase2; `emit`, `mirror`, `refresh`, `illuminate` |
 
 ## Závislosti
 
@@ -53,6 +55,7 @@ usadí — stejně jako u cb_field.
 |---|---|
 | `cb_field` | pole věty, registr vertikál, korpus |
 | `cb_udpipe` | rozbor věty — **předává se parametrem**, modul si klienta nevytváří |
+| `viewbase` (viewBase2) | jen `graphview.py`; jádro (`graph.py`, `mirror.py`) na něm NEZÁVISÍ — okno se předává parametrem |
 
 Na registru cb_fieldu smí cb_bond volat jen `link` / `unlink` /
 `get_link` / `spread` / `set_custom_axes` / `snapshot` / `restore`
@@ -61,7 +64,7 @@ Na registru cb_fieldu smí cb_bond volat jen `link` / `unlink` /
 ## Testy
 
 ```
-./run-python -m unittest discover -s cb_bond -t .     # 92 testů
+./run-python -m unittest discover -s cb_bond -t .     # 103 testů
 ```
 
 Zmražené rozbory v `tests/vzorky.py` (skutečné výstupy UDPipe
@@ -76,6 +79,7 @@ Přejímka na skutečném korpusu (potřebuje UDPipe a data mimo git):
 ./run-python cb_bond/scripts/prejimka-vztahy.py     # krok 7 — sedí
 ./run-python cb_bond/scripts/prejimka-dialog.py     # krok 8 — sedí
 ./run-python cb_bond/scripts/prejimka-promoce.py    # krok 6 — sedí
+./run-python cb_bond/scripts/prejimka-zrcadlo.py    # krok 9 — sedí
 ```
 
 Porovnají naměřené se zmraženými hodnotami § 6 zadání a skončí
@@ -88,4 +92,5 @@ očekávaným 14/30 (bez řezu; s řezem je referenční hodnota 11/30).
 - **Vlastní parsování.** Rozbor dodává cb_udpipe, vždy parametrem.
 - **Vlastní perzistenci grafu.** Graf se staví z korpusu; co má přežít
   restart, drží registr cb_fieldu (`save`/`load`).
-- **Kreslení.** Graf jen emituje delty; kreslí viewBase2 (krok 9).
+- **Kreslení.** Graf jen emituje delty; kreslí viewBase2. Zrcadlo je
+  překladač, ne kreslítko — okno se mu předává parametrem.

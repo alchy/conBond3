@@ -36,3 +36,15 @@ ufal.chu_liu_edmonds==1.0.3
 # schváleno 2026-08-03: koše jsou matice vah (float32, −1…+1) a maticové
 # počítání je přesně to, k čemu numpy je. Import je omezen na cb_field.
 numpy==2.4.6
+
+# --- cb-bond: živý graf faktů (viewBase2) --------------------------------
+# Vědomá výjimka jako numpy (§ 19), schváleno 2026-08-04: graf a jeho
+# vizualizace jsou totéž (princip 6 zadání cb_bond) a kreslítko se nepíše
+# znovu. Import je omezen na cb_bond/graphview.py — jádro (graph.py,
+# mirror.py) na viewbase NEZÁVISÍ, okno se předává parametrem.
+#
+# Instaluje se VÝHRADNĚ z viewBase2; starý projekt viewBase má jiné API
+# a jednou už podvrhl starou generaci frontendu:
+#   pip install 'viewbase @ git+https://github.com/alchy/viewBase2#subdirectory=python'
+# Otisk frontendu ověřuje cb_bond/graphview.py při startu.
+viewbase

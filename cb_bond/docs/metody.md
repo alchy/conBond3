@@ -152,3 +152,20 @@ Veřejné API modulu. Co tady není, je vnitřek a smí se změnit
 Soubor registru je od těchto změn `format_version` **2**: nese navíc
 `custom_axes` a `axis_version`. Bez nich by se registr načetl bez
 vstupní vrstvy a pole by tiše přestala aktivovat `CUSTOM=`.
+
+## GraphMirror (mirror.py) a graphview
+
+| metoda | co dělá / na čem visí |
+|---|---|
+| `GraphMirror(window)` | okno parametrem — jádro na viewBase nezávisí, testy si vystačí s atrapou |
+| `emit(delta)` | jedna delta grafu → jedno volání okna; `KnowledgeGraph(emit=mirror.emit)` je celé zapojení |
+| `mirror(graph)` | dožene graf, který vznikl bez zrcadla |
+| `refresh(graph)` | doplní uzlům `sousede` a `stupen`; hromadně po ingestu, ne při každé hraně |
+| `illuminate(graph, ranked, lemmas, boost=2.0)` | rozsvítí kandidáty a promítne jas do okna |
+| `TYPE_STYLES` | barva podle slovního druhu — na obrázku je hned vidět, co uzel nese |
+
+| co | jak |
+|---|---|
+| živý graf | `./run-python -m cb_bond.graphview "Kde byl pokřtěn Ježíš?"` (:8080) |
+| přejímka kroku 9 | `./run-python cb_bond/scripts/prejimka-zrcadlo.py` — proti SKUTEČNÉMU oknu, ne atrapě |
+| otisk frontendu | ověřuje `graphview.bundle_fingerprint()` při startu |
