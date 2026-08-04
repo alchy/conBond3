@@ -169,6 +169,14 @@ def main() -> None:
         metrics_e = _measure(corpus, etalon, parser, spread_steps=2)
         report_arm("E hloubka k=2 nad C", metrics_e)
 
+    # Stav větve E se ukládá (J. 2026-08-05: postupujeme po E) —
+    # registr nese verzi osy, reply z něj může vyjít bez přeučování.
+    if outcome["prijato"]:
+        target = MODULE_DIR / "data-persistent" / "registr-e.json"
+        corpus.registry.save(target)
+        print(f"stav E uložen: {target.name} "
+              f"(osa v{corpus.registry.axis_version})")
+
     # F · kalibrace θ na tréninkové sadě (dluh D2) a měření s řezem —
     # mlčení bez kalibrovaného θ je vždy 0 (Paul Verlaine atraktory)
     from cb_field.learning import calibrate_theta

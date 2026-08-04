@@ -103,11 +103,12 @@ W_CENTER = 2.0
 W_CONTEXT = 0.5
 
 #: Hloubka šíření: kolikrát se zopakuje krok v + v·L, s tanh po KAŽDÉM
-#: kroku (P-B). 1 = dnešní chování (jednovrstvé). Druhý krok dosáhne
-#: přes mezistanici (slovo → typ → kotva otázky) — de facto druhá
-#: vrstva sítě nad touž maticí L; jestli pomáhá, rozhoduje měření,
-#: ne dojem (experiment NN, J. 2026-08-04).
-SPREAD_STEPS = 1
+#: kroku (P-B). Druhý krok dosáhne přes mezistanici (slovo → typ →
+#: kotva otázky) — druhá vrstva sítě nad touž maticí L. VÝCHOZÍ 2:
+#: větev E (J. 2026-08-05, „postupujeme po větvi E") — hloubka se
+#: s promocí a učením skládá nadaditivně (0,467 na 240 otázkách;
+#: třikrát po sobě nejlepší rameno). k=1 zůstává jako volba.
+SPREAD_STEPS = 2
 
 
 def saturate(vector, links, steps: int = SPREAD_STEPS):

@@ -6,21 +6,21 @@
 
 | osa | pokrytí před | po doplnění |
 |---|---|---|
-| WORD=AUX:být | 1.000 | 1.000 |
-| WORD=ADJ:omezený | 0.604 | 0.604 |
-| WORD=NOUN:rychlost | 0.604 | 0.604 |
-| WORD=ADP:na | 1.000 | 1.000 |
-| WORD=NOUN:dálnice | 0.000 | 0.604 |
+| WORD=AUX:být | 0.761 | 0.761 |
+| WORD=ADJ:omezený | 0.540 | 0.540 |
+| WORD=NOUN:rychlost | 0.540 | 0.540 |
+| WORD=ADP:na | 0.761 | 0.761 |
+| WORD=NOUN:dálnice | 0.000 | 0.540 |
 
-Východisko před: **needs_context** (missing ['WORD=NOUN:dálnice']), po: **odpoved**.
+Východisko před: **needs_context** (missing ['WORD=NOUN:dálnice']), po: **dotaz**.
 
 ## Kde byl pokřtěn Ježíš?
 
 | osa | pokrytí |
 |---|---|
-| WORD=AUX:být | 1.000 |
-| WORD=ADJ:pokřtěný | 0.604 |
-| WORD=PROPN:Ježíš | 0.885 |
+| WORD=AUX:být | 0.761 |
+| WORD=ADJ:pokřtěný | 0.540 |
+| WORD=PROPN:Ježíš | 0.709 |
 
 ## Co dialog přidal do grafu
 
