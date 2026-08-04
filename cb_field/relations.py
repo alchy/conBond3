@@ -91,15 +91,23 @@ def _fold(text: str) -> str:
                    if not unicodedata.combining(c))
 
 
-def derivation_links(graph, registry: VerticalRegistry) -> int:
+def derivation_links(graph, registry: VerticalRegistry,
+                     around=None) -> int:
     """Krok E: derivační vazby SLOŽENÍM kmene a překryvu sousedství.
 
     Dvojice se sdíleným kmenem (viz _STEM_MIN/_STEM_SHARE) dostane
     obousměrnou vazbu s vahou DERIVATION_WEIGHT × (kmen/2 + překryv/2)
-    — kmen sám dá slabou vazbu (stavba–stavět bez společných sousedů),
-    překryv ji zesílí (rychlost–rychlostní). Sonda: překryv sám je na
-    úrovni náhody, kmen sám páruje předpony — signál nese složení.
+    — kmen sám dá slabou vazbu, překryv ji zesílí
+    (rychlost–rychlostní). Sonda: překryv sám je na úrovni náhody,
+    kmen sám páruje předpony — signál nese složení.
+
+    around: lemmata, na jejichž okolí se párování omezí (kmeny slov
+    otázky a její expanze). PLOŠNÉ nasazení do L je zavržené měřením
+    (11 268 vazeb stálo baseline 3,3 bodu přesnosti) — derivace se
+    pouští CÍLENĚ při expanzi otázky; None = plošně (měřicí režim).
     """
+    wanted = ({_fold(lemma)[:_STEM_MIN] for lemma in around}
+              if around is not None else None)
     nodes = []
     for key, stat in graph.node_stats().items():
         if stat.edges:
@@ -108,7 +116,9 @@ def derivation_links(graph, registry: VerticalRegistry) -> int:
                 nodes.append((key, lemma, set(stat.neighbours)))
     groups: dict = {}
     for entry in nodes:
-        groups.setdefault(entry[1][:_STEM_MIN], []).append(entry)
+        stem = entry[1][:_STEM_MIN]
+        if wanted is None or stem in wanted:
+            groups.setdefault(stem, []).append(entry)
     added = 0
     for group in groups.values():
         for i, (key_a, lemma_a, near_a) in enumerate(group):
@@ -166,8 +176,32 @@ def has_definition(word_key: str, registry: VerticalRegistry) -> bool:
                for src, _dst, _w, origin in registry.links())
 
 
+def _store_definition(store, term: str, text: str, sentences) -> None:
+    """Fixace slovníkové definice na disk (offline-first): blok se
+    PŘIPÍŠE do rostoucího fixovaného korpusu (formát docs/korpus-json),
+    takže lookup přežije restart a glob baselinu ho příště přibere."""
+    import os
+    from pathlib import Path
+    store = Path(store)
+    if store.is_file():
+        data = json.loads(store.read_text(encoding="utf-8"))
+    else:
+        data = {"format_version": 1, "language": "cs",
+                "blocks": [], "questions": []}
+    data["blocks"].append({
+        "topic": f"slovnik {term}", "text": text,
+        "sentences": [getattr(s, "source", None)
+                      or " ".join(t.form for t in s.tokens)
+                      for s in sentences]})
+    tmp = store.with_suffix(store.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2)
+                   + "\n", encoding="utf-8")
+    os.replace(tmp, store)
+
+
 def ensure_definition(word_key: str, corpus: Corpus, graph, parser,
-                      lookup=wikipedia_definition) -> str:
+                      lookup=wikipedia_definition,
+                      store=None) -> str:
     """Zajistí definici slova třístupňově; vrací zdroj, který zabral.
 
     1. „korpus"  — definiční vazba už v registru je (nic se nedělá);
@@ -188,8 +222,11 @@ def ensure_definition(word_key: str, corpus: Corpus, graph, parser,
     if not text:
         return "dialog"
     marker = object()                  # blok definice = vlastní dokument
-    for sentence in parser.parse(text=text).sentences:
+    sentences = parser.parse(text=text).sentences
+    for sentence in sentences:
         field = corpus.add_sentence(sentence, document=marker)
         graph.add_sentence(field, source="slovnik")
         _field_definition_link(field, registry)
+    if store is not None:
+        _store_definition(store, term, text, sentences)
     return "slovnik"

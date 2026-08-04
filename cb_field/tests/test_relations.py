@@ -131,6 +131,61 @@ class TestDerivacniVazby(unittest.TestCase):
                                             "WORD=NOUN:náledí"))
 
 
+class TestCilenaDerivace(unittest.TestCase):
+
+    def test_around_omezi_parovani_na_okoli_otazky(self):
+        # derivace plošně v L stojí přesnost (naměřeno −3,3 b) —
+        # cílená varianta páruje jen kmeny slov otázky/expanze
+        graph = FactGraph()
+        tok = TestDerivacniVazby._tok
+        graph.add_sentence(_Sentence((
+            tok(self, 1, "Rychlost", "rychlost", "NOUN", 3, "nsubj"),
+            tok(self, 2, "limitu", "limit", "NOUN", 1, "nmod"),
+            tok(self, 3, "klesla", "klesnout", "VERB", 0, "root"))))
+        graph.add_sentence(_Sentence((
+            tok(self, 1, "rychlostní", "rychlostní", "ADJ", 2, "amod"),
+            tok(self, 2, "limit", "limit", "NOUN", 0, "root"))))
+        graph.add_sentence(_Sentence((
+            tok(self, 1, "Planeta", "planeta", "NOUN", 2, "nsubj"),
+            tok(self, 2, "obíhá", "obíhat", "VERB", 0, "root"))))
+        graph.add_sentence(_Sentence((
+            tok(self, 1, "Planetka", "planetka", "NOUN", 2, "nsubj"),
+            tok(self, 2, "letěla", "letět", "VERB", 0, "root"))))
+        registry = VerticalRegistry(anchors=False)
+        derivation_links(graph, registry, around=("rychlost",))
+        self.assertIsNotNone(registry.get_link(
+            "WORD=NOUN:rychlost", "WORD=ADJ:rychlostní"))
+        self.assertIsNone(registry.get_link(
+            "WORD=NOUN:planeta", "WORD=NOUN:planetka"))  # mimo okolí
+
+
+class TestFixaceSlovniku(unittest.TestCase):
+
+    def test_slovnikova_definice_se_fixuje_na_disk(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        corpus = Corpus(r=1)
+        corpus.add_sentence(_Sentence(KREST))
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Path(tmp) / "korpus-401.json"
+            ensure_definition("WORD=NOUN:dálnice", corpus, FactGraph(),
+                              _Parser(),
+                              lookup=lambda t: "Dálnice je silnice.",
+                              store=store)
+            data = json.loads(store.read_text(encoding="utf-8"))
+            self.assertEqual(data["format_version"], 1)
+            self.assertEqual(data["blocks"][0]["text"],
+                             "Dálnice je silnice.")
+            # druhé heslo se PŘIPÍŠE, soubor se nepřepisuje
+            ensure_definition("WORD=NOUN:vesmír", corpus, FactGraph(),
+                              _Parser(),
+                              lookup=lambda t: "Dálnice je silnice.",
+                              store=store)
+            data = json.loads(store.read_text(encoding="utf-8"))
+            self.assertEqual(len(data["blocks"]), 2)
+
+
 class _Parser:
     """Atrapa: text rozpadne na zmraženou větu „Dálnice je silnice."."""
 
