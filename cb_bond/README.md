@@ -6,7 +6,7 @@ proč — rozkladem skóre po pojmenovaných členech a vysvícením v grafu.
 
 Zadání celé stavby (deset kroků, zmražené přejímky, páky systému):
 `docs/zadani.md`. Návrhová rozhodnutí a pasti: `docs/`.
-Co se model naučil: `docs/pohled-na-vahy.md`.
+Co se model naučil: `docs/trenink-vah.md`.
 
 ## Stav: krok 2 z deseti (verze 0.1.0)
 
@@ -90,7 +90,7 @@ Přejímka na skutečném korpusu (potřebuje UDPipe a data mimo git):
 Diagnostika učení (nic nemění, jen vypisuje):
 
 ```
-./run-python cb_bond/scripts/pohled-na-vahy.py     # co se model naučil
+./run-python cb_bond/scripts/trenink-vah.py     # co se model naučil
 ```
 
 Porovnají naměřené se zmraženými hodnotami § 6 zadání a skončí

@@ -189,4 +189,4 @@ vstupní vrstvy a pole by tiše přestala aktivovat `CUSTOM=`.
 | co | jak |
 |---|---|
 | přejímka kroku 5 | `./run-python cb_bond/scripts/prejimka-uceni.py` |
-| co se model naučil | `./run-python cb_bond/scripts/pohled-na-vahy.py [kolik]` — návod ke čtení je v `docs/pohled-na-vahy.md` |
+| co se model naučil | `./run-python cb_bond/scripts/trenink-vah.py [kolik]` — návod ke čtení je v `docs/trenink-vah.md` |

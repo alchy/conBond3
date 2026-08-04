@@ -136,9 +136,9 @@ o jedno víc, než kolik jich má být, a příště by se rozešla.
 
 ## Když učení nedává smysl, podívej se na váhy
 
-`./run-python cb_bond/scripts/pohled-na-vahy.py` — vypíše, mezi
+`./run-python cb_bond/scripts/trenink-vah.py` — vypíše, mezi
 kterými vrstvami se učilo a které hrany o tom rozhodly. Návod ke čtení
-je v `pohled-na-vahy.md`; nejkratší verze: **znaménko je důležitější
+je v `trenink-vah.md`; nejkratší verze: **znaménko je důležitější
 než velikost**, `QLEM → ANCHOR` má být mezi prvními třemi, a `WORD=`
 tam nesmí být vůbec.
 
@@ -165,3 +165,36 @@ drží pytle řádků po větách (`_radky_vety`) a maže je s cache.
 
 Po zapamatování: **31 ms na otázku místo 78**, tedy 2,5×. Celý běh
 učení (6 epoch × 85 otázek + validace) spadl pod minutu.
+
+
+## Nejužší místo systému je PŘEDVÝBĚR, ne učení
+
+Naměřeno na 120 tréninkových otázkách (2 912 vět):
+
+| | počet |
+|---|---|
+| lemma odpovědi JE někde v korpusu | 117 / 120 |
+| věta s ním se dostane do top-50 | **37 / 117 (32 %)** |
+| do top-200 | 58 / 117 (50 %) |
+| do top-1000 | 68 / 117 (58 %) |
+
+Data tedy nechybí — chybí je najít. Dokud se správná věta nedostane
+mezi kandidáty, nemá trenér co kontrastovat a otázka se do učení
+nezapočítá vůbec (viz `skorovano`/`preskoceno`).
+
+Změřené varianty řazení předvýběru (věta v top-50 ze 117):
+
+| varianta | zásah |
+|---|---|
+| kosinus celého saturovaného pytle (původní) | 31 |
+| **jen slova, která otázka TVRDÍ** | **37** |
+| pokrytí — nejslabší daná osa | 9 |
+| pokrytí + půl tématu | 37 |
+
+Pokrytí samo je nepoužitelné: u drtivé většiny vět je nula (je to
+propast, ne škála), takže neřadí, jen dělí na dvě hromady. Zavedena
+varianta podle tvrzení — týž princip jako u členů `topic` a `given`.
+
+Širší shortlist pomáhá učení víc než přesnosti: top-200 zdvojnásobí
+počet otázek, ze kterých se dá učit (20 → 38 z 85), a větné čtení
+zvedne o bod (21 → 22/30), ale přesnost@1 se nehne a běh je 3× delší.

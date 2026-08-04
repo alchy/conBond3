@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""Co se model naučil — pohled na váhy v průběhu učení.
+"""Natrénuje váhy a ukáže, co se model naučil.
+
+POZOR, tenhle skript UČÍ — nejen kouká. Jméno to říká schválně: první
+verze se jmenovala „pohled na váhy" a ten vedlejší účinek schovávala.
+Trénuje se ale nad korpusem postaveným v paměti a nic se neukládá,
+takže spuštění je bezpečné a opakovatelné.
 
 Odpovídá na otázku, kterou report se souhrnnými čísly nezodpoví:
 *mezi kterými vrstvami reprezentace se učilo a které konkrétní hrany
 o tom rozhodly.*
 
-    ./run-python cb_bond/scripts/pohled-na-vahy.py            # 10 hran
-    ./run-python cb_bond/scripts/pohled-na-vahy.py 25         # víc
+    ./run-python cb_bond/scripts/trenink-vah.py            # 10 hran
+    ./run-python cb_bond/scripts/trenink-vah.py 25         # víc
 
 Tři pohledy, od hrubého k jemnému:
 

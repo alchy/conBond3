@@ -1,16 +1,20 @@
-# Pohled na váhy — jak zjistit, co se model naučil
+# Trénink vah — a jak zjistit, co se model naučil
 
 Souhrnná čísla epochy (loss, korekcí, hran) řeknou, že se něco dělo.
 Neřeknou **co**. Tenhle nástroj to ukazuje: mezi kterými vrstvami
 reprezentace učení pracovalo a které konkrétní hrany o tom rozhodly.
 
 ```
-./run-python cb_bond/scripts/pohled-na-vahy.py         # 10 hran na pohled
-./run-python cb_bond/scripts/pohled-na-vahy.py 25      # podrobněji
+./run-python cb_bond/scripts/trenink-vah.py         # 10 hran na pohled
+./run-python cb_bond/scripts/trenink-vah.py 25      # podrobněji
 ```
 
+**Skript UČÍ, nejen kouká.** První verze se jmenovala „pohled na váhy"
+a ten vedlejší účinek schovávala — jméno nástroje má říkat, co dělá,
+ne co z něj vypadne. Trénuje se nad korpusem postaveným v paměti a nic
+se neukládá, takže spuštění je bezpečné a opakovatelné.
+
 Potřebuje běžící cb-udpipe a korpusy v `data-persistent` (mimo git).
-Nic nemění — postaví korpus, doučí a vypíše; stav se nikam neukládá.
 
 **Trvá to zhruba minutu** (2 912 vět, 6 epoch po 85 otázkách) a průběh
 se hlásí na stderr, takže je vidět, že to běží:

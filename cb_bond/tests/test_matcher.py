@@ -396,6 +396,21 @@ class TestVysledek(unittest.TestCase):
 
 class TestDvoustupnoveCteni(unittest.TestCase):
 
+    def test_predvyber_radi_podle_toho_co_otazka_TVRDI(self):
+        # Naměřeno na 117 tréninkových otázkách: řazení podle slov, která
+        # otázka tvrdí, dostane do top-50 věty s odpovědí 37×, kdežto
+        # kosinus celého saturovaného pytle jen 31×. Týž princip jako
+        # u členů topic a given — tázací slovo netvrdí nic.
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        matcher = Matcher(corpus, spread_depth=1)
+        otazka = _otazka(corpus)
+
+        skore = matcher.recall_scores(otazka)
+
+        self.assertEqual(len(skore), len(corpus))
+        # věta s Ježíšem a křtem musí být nad větou bez nich
+        self.assertGreater(float(skore[0]), 0.0)
+
     def test_top_k_vybere_jen_tolik_vet_kolik_ma(self):
         corpus = _korpus(KRESTA, SYNAGOGA)
         matcher = Matcher(corpus)

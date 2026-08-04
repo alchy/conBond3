@@ -344,20 +344,36 @@ class Matcher:
 
     # --- dvoustupňové čtení ---------------------------------------------
 
-    def recall(self, question, top_k: int | None = None) -> tuple:
-        """Pozice vět, které stojí za jemné čtení — jeden součin.
+    def recall_scores(self, question) -> np.ndarray:
+        """Skóre předvýběru pro každou větu — jeden maticový součin.
 
-        Kosinová podobnost pytle otázky s maticí větných pytlů. Tohle
-        je celý recall: co se sem nedostane, se po tokenech nečte.
+        Řadí se podle toho, co otázka TVRDÍ (`question_words`), ne podle
+        celého saturovaného pytle. Týž princip jako u členů `topic`
+        a `given`: tázací slovo netvrdí nic, a gramatické osy sdílí
+        skoro každá věta, takže by kosinus měřil podobnost tvaru.
+
+        Naměřeno na 117 tréninkových otázkách (věta s odpovědí v top-50):
+        podle tvrzení 37×, podle celého saturovaného pytle 31×.
         """
         self._priprav()
-        q = self.question_vector(question)
-        if not q.any() or not len(self._bags):
+        q = self._vektor(self.question_words(question), jen_slova=True)
+        if not q.any() or not len(self._word_bags):
+            return np.zeros(len(self.corpus), dtype=DTYPE)
+        delitel = self._word_norms * float(np.linalg.norm(q))
+        return np.divide(self._word_bags @ q,
+                         delitel, out=np.zeros(len(self.corpus), dtype=DTYPE),
+                         where=delitel > 0)
+
+    def recall(self, question, top_k: int | None = None) -> tuple:
+        """Pozice vět, které stojí za jemné čtení.
+
+        Tohle je celý recall: co se sem nedostane, se po tokenech
+        nečte — a je to dnes nejužší místo systému (naměřeno: z otázek,
+        jejichž odpověď v korpusu JE, se do top-50 dostane jen 32 %).
+        """
+        skore = self.recall_scores(question)
+        if not skore.any():
             return tuple(range(min(top_k or self.top_k, len(self.corpus))))
-        skore = self._bags @ q
-        delitel = self._norms * float(np.linalg.norm(q))
-        skore = np.divide(skore, delitel, out=np.zeros_like(skore),
-                          where=delitel > 0)
         k = min(top_k or self.top_k, len(skore))
         nejlepsi = np.argpartition(-skore, k - 1)[:k]
         return tuple(int(i) for i in nejlepsi[np.argsort(-skore[nejlepsi])])
