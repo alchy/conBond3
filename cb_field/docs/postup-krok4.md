@@ -271,3 +271,48 @@ korpusová sada parafrází je stavěná líp. (b) θ zůstal 0,45 (od oka
 z přepočtu) — kam posadit řez a na čem ho kalibrovat (trénovací sadě
 chybí nezodpověditelné otázky) je designové rozhodnutí; před učením
 by řez ~1,8 dělil skoro čistě, po učení ne.
+
+## 15 · Korpusy po refaktoru: Hebb blokuje, mlčení funguje (2026-08-04)
+
+Finální protokol nad komplexními korpusy (oddělené sady: trénink 23
+zodp. + 10 nezodp. parafrází, etalon 40 otázek; zmražené epochy,
+argpartition — epocha ~1 min místo ~20).
+
+**Protokol s Hebbem: NEPŘIJATO.** Baseline s pokrytím 0,43 → po 4b
+(Hebb, 103k hran) 0,17 → po 4c jen 0,20. Hebbův šum zvedá i vstupní
+loss kontrastivní fáze (0,87 vs 0,64 bez něj) a 4c se z trosek na
+tvrdé sadě nezvedne. Kalibrace θ zdegenerovala (trénink 1/23 →
+optimum je mlčet vždy: θ=2,92, etalon 0,07/0,90). Dluh D4 v akci —
+Hebb nad surovými souvýskyty nemá v přejímací cestě co dělat.
+
+**Ablace bez Hebba:** 4c neškodí (etalon 0,43 = baseline) a na
+tréninku se učí (trefy 1 → 6/23, loss 0,64 → 0,45, konec odvoláním
+6. epochy). Mosty jsou ale párové (slovo↔slovo) a mezi otázkami se
+nepřenášejí — generalizace čeká na obecnější osy (sloty/role krok 3,
+typ krok 5), přesně podle stropu pytlů z § dřívějších měření.
+Učení mlčení se nepohnulo (ticho 0/10): reference (medián správných)
+je na tvrdé sadě nízko a krok η=0,01 × ~5 epoch nestačí na vzdálenost
+~1 bodu skóre — na testbedu, kde jsou vzdálenosti menší, funguje.
+
+**Kalibrované θ=2,125 (trénink, bez Hebba): etalon 0,33 / 1,00,
+FALEŠNÁ 0.** První poctivý provozní bod na komplexním textu: systém
+odpovídá na třetinu zodpověditelných a NIKDY falešně; směna 3
+správných odpovědí za 10/10 správných mlčení proti θ od oka
+(0,43/0,00, FALEŠNÁ 5).
+
+| korpusy, etalon 40 otázek | přesnost@1 | NEVÍM-správnost | FALEŠNÁ |
+|---|---|---|---|
+| baseline s pokrytím, θ=0,45 | 0,43 | 0,00 | 5 |
+| po 4b+4c (s Hebbem), θ=0,45 | 0,20 | 0,00 | 3 |
+| po 4c bez Hebba, θ=0,45 | 0,43 | 0,00 | 5 |
+| po 4c bez Hebba, θ=2,125 (kalibr.) | 0,33 | **1,00** | **0** |
+
+**Otevřené (pro J.):**
+1. Vyřadit 4b (Hebb) z přejímací cesty protokolu? (D4: „až nad
+   strukturou“ — dnes prokazatelně blokuje.)
+2. Kalibrace θ na čistě tvrdé trénovací sadě degeneruje k „mlč vždy“
+   (přesnost na tréninku ~0,1). Kalibrační podmnožina potřebuje i
+   případy, které systém umí — trénink mostů tvrdé, kalibrace řezu
+   smíšené?
+3. Učení mlčení na korpusech potřebuje buď víc epoch/větší η pro
+   záporný směr, nebo cíl vázaný na pokrytí (mrtvá osa už je člen).
