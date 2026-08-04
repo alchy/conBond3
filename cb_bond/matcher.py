@@ -24,6 +24,12 @@ o dálnici nemá proč číst po tokenech.
                                není odpověď („Kdo pokřtil Ježíše?"
                                nemá odpovědět „Ježíš")
 
+Slova otázky pro oba poslední členy jsou to, co otázka TVRDÍ — bez
+tázacího slova a bez interpunkce (`question_words`, táž množina jako
+`given_axes`). Kdyby v nich „kdo" zůstalo, téma by odměňovalo věty,
+které samy obsahují „kdo": v Markově evangeliu tedy OTÁZKY, ne
+odpovědi.
+
 Váhy jsou **páky, ne pravidla** (ScoreWeights) — vypnout člen znamená
 dát mu nulu, ne odstranit větev v kódu.
 
@@ -285,6 +291,28 @@ class Matcher:
                        and not klic.startswith("WORD=PUNCT:"))
         return list(dict.fromkeys(osy))
 
+    def question_words(self, question) -> dict:
+        """{slovní osa: váha} toho, co otázka TVRDÍ.
+
+        Táž množina os jako `given_axes`, jen s vahami — jedno pravidlo,
+        ne dvě. Stojí na ní členy `topic` a `given`.
+
+        Proč se tázací slovo vynechává: kdyby v pytli zůstalo, člen
+        `topic` by odměňoval věty, které samy obsahují „kdo" nebo
+        „kde" — tedy OTÁZKY v korpusu, ne odpovědi. Naměřeno na
+        Markově evangeliu: „Kdo pokřtil Ježíše?" vyhrávalo „A kdo ti
+        dal moc, abys to činil?".
+        """
+        slova: dict[str, float] = {}
+        for radek in question.complete:
+            if any(klic.startswith("QLEM=") for klic in radek):
+                continue
+            for klic, vaha in radek.items():
+                if klic.startswith("WORD=") and \
+                        not klic.startswith("WORD=PUNCT:"):
+                    slova[klic] = slova.get(klic, 0.0) + vaha
+        return slova
+
     def coverage(self, question) -> dict:
         """{daná osa: nejlepší pokrytí přes věty korpusu}.
 
@@ -392,7 +420,7 @@ class Matcher:
         self._priprav()
         q = self.question_vector(question)
         q_norma = float(np.linalg.norm(q))
-        q_slova = self._vektor(semantic_bag(question.complete), jen_slova=True)
+        q_slova = self._vektor(self.question_words(question), jen_slova=True)
         pokryti_vet = self.sentence_coverage(question)
 
         kandidati = []
@@ -421,8 +449,10 @@ class Matcher:
         # Okno i střed jsou jednotkové, takže součin s q/‖q‖ JE kosinus
         # a platí identita meet = cos(q̃,okno) + (W_CENTER−1)·cos(q̃,střed).
         combined = okno + (self.weights.center - 1.0) * stred
-        stred_slova = self._vektor(semantic_bag((pole.complete[i],)),
-                                   jen_slova=True)
+        stred_slova = self._vektor(
+            {klic: vaha
+             for klic, vaha in semantic_bag((pole.complete[i],)).items()
+             if not klic.startswith("WORD=PUNCT:")}, jen_slova=True)
 
         cleny = {
             "meet": float(np.dot(q, combined) / q_norma) if q_norma else 0.0,
@@ -461,7 +491,11 @@ class Matcher:
             pytel = semantic_bag(pole.complete)
             bags[i] = saturate(self._vektor(pytel), self._links,
                                self.spread_depth)
-            slova[i] = self._vektor(pytel, jen_slova=True)
+            # Interpunkce ven i na větné straně: tečka je v každé větě
+            # a v žádné otázce, takže by jen nafukovala normu tématu.
+            slova[i] = self._vektor(
+                {klic: vaha for klic, vaha in pytel.items()
+                 if not klic.startswith("WORD=PUNCT:")}, jen_slova=True)
         self._bags = bags
         self._word_bags = slova
         self._norms = np.linalg.norm(bags, axis=1)

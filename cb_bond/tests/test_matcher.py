@@ -104,6 +104,41 @@ class TestSemantickaMaska(unittest.TestCase):
         self.assertAlmostEqual(pytel["WORD=PROPN:Ježíš"], rucne, places=5)
 
 
+class TestSlovaOtazky(unittest.TestCase):
+    """Členy topic a given stojí na tom, co otázka TVRDÍ."""
+
+    def test_slova_otazky_vynechaji_tazaci_slovo(self):
+        # „kde" se ptá, netvrdí — v tématu ani v postihu nemá co dělat.
+        # Bez toho člen `topic` odměňuje věty, které samy obsahují „kdo"
+        # nebo „kde", tedy OTÁZKY v korpusu, ne odpovědi.
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        matcher = Matcher(corpus, spread_depth=1)
+
+        slova = matcher.question_words(_otazka(corpus))
+
+        self.assertNotIn("WORD=ADV:kde", slova)
+        self.assertIn("WORD=PROPN:Ježíš", slova)
+
+    def test_slova_otazky_vynechaji_interpunkci(self):
+        # otazník je v každé otázce a skoro v žádné oznamovací větě
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        matcher = Matcher(corpus, spread_depth=1)
+
+        slova = matcher.question_words(_otazka(corpus))
+
+        self.assertFalse([k for k in slova if k.startswith("WORD=PUNCT:")])
+
+    def test_slova_otazky_jsou_tytez_osy_jako_dane(self):
+        # jedno pravidlo, ne dvě: co je „daná osa" pro pokrytí, je
+        # slovem otázky i pro téma a postih
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        matcher = Matcher(corpus, spread_depth=1)
+        otazka = _otazka(corpus)
+
+        self.assertEqual(set(matcher.question_words(otazka)),
+                         set(matcher.given_axes(otazka)))
+
+
 class TestCleny(unittest.TestCase):
 
     def test_meet_je_soucet_dvou_kosinu_ne_kosinus_souctu(self):

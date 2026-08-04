@@ -52,6 +52,7 @@ Veřejné API modulu. Co tady není, je vnitřek a smí se změnit
 | `question_vector(question)` | pytel CELÉ otázky: součet řádků → maska → saturace |
 | `candidate_vectors(sentence, token)` | `(okno, střed)` — harmonicky vážené, saturované, JEDNOTKOVÉ |
 | `sentence_coverage(question)` | `{věta: pokrytí}` — mohutnost, ne kosinus; člen řadící VĚTY |
+| `question_words(question)` | `{slovní osa: váha}` toho, co otázka TVRDÍ — bez tázacího slova a interpunkce; stojí na tom `topic` a `given` |
 | `semantic_bag(rows)` (funkce modulu) | součet řádků přes semantickou masku |
 
 | objekt | co to je |

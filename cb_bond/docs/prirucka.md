@@ -72,7 +72,7 @@ Ablace ukázala, že to bylo hledání na špatném místě — nosné jsou
 | plné skóre | 14/30 | 11/30 |
 | bez tématu (topic=0) | 12/30 | 11/30 |
 | bez zdůraznění středu (center=1) | 9/30 | 8/30 |
-| bez pokrytí (cover=0) | 7/30 | 4/30 |
+| bez pokrytí (cover=0) | 7/30 | 9/30 |
 | bez postihu daného (given=0) | **0/30** | **0/30** |
 | jen setkání | **0/30** | **0/30** |
 
@@ -113,3 +113,23 @@ Slunce?". Etalon má být od tréninku oddělený (§ 7 zadání), takže je to
 vada dat, ne kódu — přejímka kroku 5 ji hlásí a končí nenulově.
 Naměřených čísel se to zatím nedotýká (obě otázky systém stejně
 netrefí), ale s lepším skórováním by je nadhodnocovalo.
+
+
+## Tázací slovo do tématu a postihu nepatří
+
+Nedůslednost, kterou odhalil rozbor úplně špatných odpovědí: z pokrytí
+jsem interpunkci vyloučil, ale ze slovního pytle otázky (členy `topic`
+a `given`) ne — a s ní tam zůstávalo i tázací slovo.
+
+Důsledek byl naměřitelný: `topic` odměňoval věty, které samy obsahují
+„kdo" nebo „kde" — v Markově evangeliu tedy OTÁZKY, ne odpovědi.
+„Kdo pokřtil Ježíše?" vyhrávalo „A kdo ti dal moc, abys to činil?",
+„Kdo je autorem Války s mloky?" vyhrávalo „Vím, kdo jsi.".
+
+Po opravě (`Matcher.question_words` = táž množina os jako `given_axes`)
+se **přesnost nezměnila** (11/30 před i po) a změnili se tři vítězové
+z osmi špatných, žádný na správného. Ablace ale sedí líp: bez pokrytí
+9/30 proti dřívějším 4/30 (reference 7/30).
+
+Opravuje se to i tak: dvě pravidla pro totéž („co otázka tvrdí") jsou
+o jedno víc, než kolik jich má být, a příště by se rozešla.
