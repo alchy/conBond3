@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cb_field — jak dnes probíhá cesta od otázky k odpovědi</title>
+<style>
+  :root {
+    --papir: #f7f5f0; --inkoust: #16181d; --slaby: #6b7280;
+    --linka: #d9d4c9; --akcent: #7c4a2d; --zeleny: #2f6b4f;
+    --cerveny: #a13d2d; --pole: #e8e3d8;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --papir: #14161a; --inkoust: #e8e6e1; --slaby: #9aa1ab;
+      --linka: #2c3038; --akcent: #d09a72; --zeleny: #6fbf95;
+      --cerveny: #e07a63; --pole: #1c1f25; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--papir); color: var(--inkoust);
+    font: 16px/1.65 ui-serif, Georgia, "Times New Roman", serif; }
+  main { max-width: 62rem; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+  h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15;
+    margin: 0 0 .4rem; letter-spacing: -.01em; }
+  .podtitul { color: var(--slaby); margin: 0 0 3rem; font-size: 1.05rem; }
+  h2 { font-size: 1.25rem; margin: 3.5rem 0 .3rem; letter-spacing: -.005em; }
+  h2 .cislo { font: 600 .75rem/1 var(--mono); color: var(--akcent);
+    display: block; margin-bottom: .5rem; letter-spacing: .12em; }
+  p { margin: .7rem 0; }
+  code, .mono { font-family: var(--mono); font-size: .87em; }
+  .ram { border: 1px solid var(--linka); border-radius: 6px;
+    background: var(--pole); padding: 1rem 1.1rem; margin: 1.2rem 0;
+    overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; padding: .38rem .7rem .38rem 0;
+    border-bottom: 1px solid var(--linka); vertical-align: top; }
+  th { font-weight: 600; font-size: .78rem; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--slaby); }
+  td.c, th.c { text-align: right; font-family: var(--mono);
+    font-size: .85rem; padding-right: 1.1rem; }
+  .vyhra { color: var(--zeleny); font-weight: 600; }
+  .chyba { color: var(--cerveny); }
+  .tok { display: grid; gap: .5rem; margin: 1.5rem 0; }
+  .krok { display: grid; grid-template-columns: 3.2rem 1fr;
+    gap: 1rem; align-items: baseline; padding: .55rem 0;
+    border-bottom: 1px dashed var(--linka); }
+  .krok .n { font: 600 .8rem/1.6 var(--mono); color: var(--akcent); }
+  .krok .co { font-weight: 600; }
+  .krok .jak { color: var(--slaby); font-size: .92rem; }
+  .pozn { border-left: 3px solid var(--akcent); padding: .1rem 0 .1rem 1rem;
+    margin: 1.3rem 0; color: var(--slaby); }
+  .pozn strong { color: var(--inkoust); }
+  .bar { display: inline-block; height: .62rem; background: var(--akcent);
+    border-radius: 2px; vertical-align: middle; opacity: .75; }
+  .bar.ok { background: var(--zeleny); }
+  footer { margin-top: 5rem; padding-top: 1.2rem;
+    border-top: 1px solid var(--linka); color: var(--slaby);
+    font-size: .85rem; }
+  @media (max-width: 40rem) { .krok { grid-template-columns: 2.4rem 1fr; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Od otázky k odpovědi</h1>
+<p class="podtitul">Co se v <code>cb_field</code> stane, když se zeptáte
+„Kde byl pokřtěn Ježíš?“ — stav k 4. 8. 2026, na korpusu 2 912 vět.</p>
+
+<h2><span class="cislo">KROK 1</span>Otázka se rozpadne na vertikály</h2>
+<p>Parser (UDPipe) dá lemma, slovní druh, pád a další značky. Z nich se
+stane sada vážených <strong>vertikál</strong> — dvojic
+<code>atribut=hodnota</code>. Tázací slovo dostane vlastní stranu
+(<code>QLEM</code>, <code>QANCHOR</code>), protože tázací „kde“ je jiné
+slovo než vztažné „kde“.</p>
+
+<div class="ram">
+<table>
+<tr><th>slovo</th><th>vertikály (váha 0,7)</th></tr>
+<tr><td class="mono">Kde</td><td class="mono">QLEM=ADV:kde · QANCHOR=space · QANCHOR=dir:at · WORD=ADV:kde</td></tr>
+<tr><td class="mono">byl</td><td class="mono">ANCHOR=time:past · ANCHOR=quantity:sing · WORD=AUX:být</td></tr>
+<tr><td class="mono">pokřtěn</td><td class="mono">WORD=ADJ:pokřtěný</td></tr>
+<tr><td class="mono">Ježíš</td><td class="mono">ANCHOR=entity · ANCHOR=quantity:sing · WORD=PROPN:Ježíš</td></tr>
+</table>
+</div>
+
+<p>Otázka tedy říká dvě věci zvlášť: <em>co je dáno</em> (Ježíš, pokřtěný)
+a <em>co se hledá</em> (souřadnice <code>space</code>, poloha
+<code>dir:at</code>).</p>
+
+<h2><span class="cislo">KROK 2</span>Korpus se rozpadne na koše</h2>
+<p>Kandidátem je <strong>každý token</strong> korpusu — žádná brána, žádný
+filtr. Kolem každého se postaví koš: slova do vzdálenosti <code>r</code>
+s vahou <code>1/(1+d)</code> a k tomu přítok sousedních vět
+<code>W_CONTEXT/(1+d)</code>, který nepřeteče přes hranici dokumentu.</p>
+
+<div class="ram mono">
+… přišel Ježíš z Nazareta v Galileji a byl v <b>Jordánu</b> pokřtěn od Jana …<br>
+<span style="color:var(--slaby)">koš kolem „Jordánu“ (r=2): &nbsp; byl ½ · v 1 · <b>Jordánu 2</b> · pokřtěn 1 · od ½</span>
+</div>
+
+<p>Sliding window znamená, že tentýž fakt padne do několika košů a liší
+je jen vzdálenost odpovědi od středu — proto profil klesá, ne plochý.
+Měřením vyšlo <strong>r = 2</strong> jako optimum na obou sadách.</p>
+
+<h2><span class="cislo">KROK 3</span>Aktivace se rozšíří a nasytí</h2>
+<p>Pytel se pustí po vazbách registru (<code>v + v·L</code>) a projde
+<code>tanh</code>. Saturace je podstatná: bez ní uzel hierarchie posbírá
+stovky přítoků a přehluší obsah. Takto rozhoduje <em>počet</em> sdílených
+uzlů, ne mohutnost jednoho.</p>
+
+<div class="ram">
+<table>
+<tr><th>rozměr sítě</th><th class="c">testbed</th><th class="c">korpusy</th></tr>
+<tr><td>vertikál (dimenzí)</td><td class="c">494</td><td class="c">6 716</td></tr>
+<tr><td>buněk matice L</td><td class="c">0,24 M</td><td class="c">45,1 M</td></tr>
+<tr><td>nenulových vazeb</td><td class="c">1 054</td><td class="c">869</td></tr>
+<tr><td>hustota</td><td class="c">0,43 %</td><td class="c">0,002 %</td></tr>
+</table>
+</div>
+
+<h2><span class="cislo">KROK 4</span>Skóre je součet pojmenovaných členů</h2>
+<p>Každý člen je kosinus dvou pytlů, tedy −1…+1, a každý se dá přečíst:</p>
+
+<div class="tok">
+  <div class="krok"><span class="n">meet</span><span>
+    <span class="co">setkání v uzlech</span>
+    <span class="jak"> — kolik os otázky a koše se potká</span></span></div>
+  <div class="krok"><span class="n">cover</span><span>
+    <span class="co">podnět: pokrytí otázky</span>
+    <span class="jak"> — nejslabší daná osa; mrtvá osa = nula</span></span></div>
+  <div class="krok"><span class="n">topic</span><span>
+    <span class="co">téma věty</span>
+    <span class="jak"> — obsahový překryv s celou větou</span></span></div>
+  <div class="krok"><span class="n">given</span><span>
+    <span class="co">postih za dané slovo</span>
+    <span class="jak"> — odpověď nemá být to, co otázka sama uvedla</span></span></div>
+  <div class="krok"><span class="n">θ, ε</span><span>
+    <span class="co">jediné dva řezy, až na konci</span>
+    <span class="jak"> — θ pro NEVÍM, ε pro DOTAZ</span></span></div>
+</div>
+
+<h2><span class="cislo">KROK 5</span>Výsledek: pole aktivací</h2>
+<p>Ze 37 296 kandidátů vyjde toto. Odpověď je <em>pole</em> — token,
+skupina slov i věta jsou jen jeho různá rozlišení.</p>
+
+<div class="ram">
+<table>
+<tr><th>kandidát</th><th class="c">skóre</th><th class="c">meet</th>
+    <th class="c">cover</th><th class="c">topic</th><th>věta</th></tr>
+<tr><td class="mono">řekl</td><td class="c">2,209</td><td class="c">1,14</td>
+    <td class="c">0,60</td><td class="c">0,46</td>
+    <td>Ježíš jim řekl: „Kalich, který já piji…“</td></tr>
+<tr><td class="mono">přišel</td><td class="c">2,144</td><td class="c">1,22</td>
+    <td class="c">0,60</td><td class="c">0,32</td>
+    <td>V těch dnech přišel Ježíš z Nazareta…</td></tr>
+<tr><td class="mono vyhra">Jordánu</td><td class="c vyhra">2,088</td>
+    <td class="c">1,16</td><td class="c">0,60</td><td class="c">0,32</td>
+    <td>…a byl v Jordánu pokřtěn od Jana</td></tr>
+<tr><td class="mono">Galileji</td><td class="c">2,068</td><td class="c">1,14</td>
+    <td class="c">0,60</td><td class="c">0,32</td>
+    <td>táž věta</td></tr>
+</table>
+</div>
+
+<p>Správná odpověď je <strong>třetí z 37 tisíc</strong> — pole se rozsvítilo
+dobře. Vyhrálo ale <code>řekl</code> z jiné pasáže, protože má vyšší
+téma (0,46 proti 0,32).</p>
+
+<div class="pozn">
+<strong>Kde to drhne.</strong> <code>cover</code> je 0,60 u všech čtyř —
+pokrytí nerozlišuje, protože nejslabší osa („pokřtěný“) je slabá všude.
+A <code>Jordánu</code> (2,088) stojí prakticky na <code>Galileji</code>
+(2,068), ačkoli jedno je odpověď a druhé kulisa. Obojí je „místo v téže
+větě“ a <em>součet</em> je nerozliší.
+</div>
+
+<h2><span class="cislo">KROK 6</span>Táž aktivace po větách</h2>
+<p>Když se totéž pole přečte po větách (průměrná kladná aktivace, ne
+součet — jinak by měřil počet slov), vyjde správná věta první:</p>
+
+<div class="ram">
+<table>
+<tr><th class="c">akt.</th><th></th><th>věta</th></tr>
+<tr><td class="c vyhra">1,46</td>
+    <td><span class="bar ok" style="width:96px"></span></td>
+    <td>V těch dnech přišel Ježíš… a byl v <b>Jordánu</b> pokřtěn</td></tr>
+<tr><td class="c">1,45</td>
+    <td><span class="bar" style="width:95px"></span></td>
+    <td>Ježíš jim řekl: „Kalich, který já piji…“</td></tr>
+<tr><td class="c">0,93</td>
+    <td><span class="bar" style="width:61px"></span></td>
+    <td>Když byl Jan uvězněn, přišel Ježíš do Galileje</td></tr>
+</table>
+</div>
+
+<p>Úroveň „odpověď je věta“ tedy <strong>funguje</strong>. Do 4. 8. jen
+vypadala rozbitě, protože agregace sčítala a vyhrávala nejdelší věta.</p>
+
+<h2><span class="cislo">KROK 7</span>Logické operace mezi koši</h2>
+<p>Každá otázka si vybere kandidáty sama a operace se dělá nad výsledky:
+<code>AND</code> součinem, <code>OR</code> součtem, <code>NOT</code>
+obráceným znaménkem. Výsledek je zase koš, takže se řetězí —
+<code>AND(kdo, NOT(kdy))</code> je platný výraz.</p>
+
+<h2><span class="cislo">STAV</span>Co funguje a co chybí</h2>
+<div class="ram">
+<table>
+<tr><th>vrstva</th><th>stav</th></tr>
+<tr><td>aktivace metadaty</td>
+    <td class="vyhra">funguje — správná odpověď aktivní ve 33/33</td></tr>
+<tr><td>dosah (r slovo × věta)</td>
+    <td class="vyhra">funguje — kontext snížil „mimo dosah“ 39 → 10</td></tr>
+<tr><td>výběr věty</td>
+    <td class="vyhra">funguje po normalizaci</td></tr>
+<tr><td>výběr uvnitř věty</td>
+    <td class="chyba">nefunguje — Jordán a Galilej se neodliší</td></tr>
+<tr><td>generalizace na typ otázky</td>
+    <td class="chyba">chybí — query basket není postaven</td></tr>
+</table>
+</div>
+
+<div class="pozn">
+<strong>Jediná chybějící mechanika.</strong> Skóre je <em>součet</em>,
+takže dvě slabé shody vydají za jednu silnou a víc informace znamená
+větší rozmělnění. Vybrat umí jen <em>konjunkce</em>: „je to místo“
+<b>a zároveň</b> „stojí u slovesa křtít“. Zvýšení vah nepomáhá —
+změřeno, <code>W_FIT</code> i <code>W_CENTER</code> jen přerovnají
+členy uvnitř téže sumy.
+</div>
+
+<footer>
+cb_field · větev <code>feature/field-templates</code> ·
+chronologie <code>docs/postup-krok4.md</code> § 12–22 ·
+spec dalšího kroku <code>docs/query-basket.md</code>
+</footer>
+
+</main>
+</body>
+</html>
