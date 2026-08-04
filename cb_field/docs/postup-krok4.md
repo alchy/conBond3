@@ -352,3 +352,47 @@ Závěr: r_slovo=2 je optimum na obou sadách (potvrzeno i odhadem J.);
 kontext vět dnes nepomáhá — pytel se rozředí dřív, než přinese fakt.
 Až query basket umí operovat nad koši, má r_věta co obsluhovat
 (odvození přes hranice vět); dnes je to jen širší pytel.
+
+## 17 · Typová konzistence jako falzifikační kritérium (2026-08-04, J.)
+
+> „správně postavenou logikou, pokud se objeví stejný typ otázky, pak
+> musí systém vždy najít dle této metody odpověď; pokud ne, jde
+> o velikost testovací a znalostní báze"
+
+Kritérium jde měřit přímo: otázky se seskupí podle **tázacího podpisu**
+(QLEM + QANCHOR) a uvnitř skupiny musí být výsledek konstantní. Rozptyl
+uvnitř typu je buď díra v metodě, nebo malá báze — a rozdíl mezi tím
+poznáme pitvou konkrétního případu.
+
+Testbed (r=2, 33 zodpověditelných, 6 typů):
+
+| typ | uvnitř typu | |
+|---|---|---|
+| kdy / odkud / kdo / kolik | 7/7 · 5/5 · 5/5 · 1/1 | KONZISTENTNÍ |
+| kde | 9/10 | rozptyl |
+| kam | 4/5 | rozptyl |
+
+**Obě výjimky mají logickou příčinu, ne datovou:**
+
+1. *Kde bydlí Petr?* — správná („Petr bydlí v Liberci", 2,406) prohrála
+   o **0,008** s „Dům, kde bydlí Petr, stojí na kopci". Systém sám
+   vyhlásil DOTAZ, takže se nespletl, jen nerozhodl. Konkurence je
+   VZTAŽNÉ „kde" proti tázacímu — mechanismus QLEM/QANCHOR ho rozlišuje
+   v reprezentaci, ale v pytli obě věty nesou týž obsah a rozdíl se
+   utopí.
+2. *Kam jela Marie?* — vyhrálo „do Prahy" z věty **„Marie nejela do
+   Prahy."** Negace se v párování ztratí: lemma „jet" je pro „jela"
+   i „nejela" totéž a Polarity mezi párovacími vertikálami vůbec není
+   (MATCH_PREFIXES = WORD/LEM/QLEM/ANCHOR/QANCHOR). Systém tedy nemá
+   jak poznat, že věta tvrdí opak.
+
+Druhý případ je přímá objednávka na logické vazby z § 16: **negace
+musí do párování vstoupit jako vážený člen** (Polarity=Neg zápornou
+vahou), ne jako filtr vět. Je to zároveň ukázka, proč J. míří na
+operace mezi koši — NOT není jen doplněk výrazu, je to i vlastnost,
+kterou nese samotný fakt v korpusu.
+
+Závěr k tezi: na testbedu drží. Ze šesti typů jsou čtyři konzistentní
+a oba rozptyly ukazují na chybějící mechaniku (negace, konkurence
+vztažného „kde"), ne na malou bázi — přesně to falzifikační kritérium
+mělo odhalit.
