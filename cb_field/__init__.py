@@ -7,8 +7,11 @@ registr vertikál — základ maticové podoby pole. K tomu kukátko (viewer).
 """
 
 from cb_field.corpus import Corpus
+from cb_field.dialog import Reply, append_context, fact_gaps, reply
 from cb_field.field import FieldBasket, SentenceField
+from cb_field.graph import FactGraph, promote_verticals
 from cb_field.matching import Candidate, MatchResult, match
+from cb_field.promotion import promotion_cycle
 from cb_field.templates import R2_PREFIXES, TemplateBank, default_centers
 from cb_field.registry import VerticalRegistry
 from cb_field.service import (
@@ -32,13 +35,21 @@ from cb_field.viewer import Visualizer, visualize
 
 #: Verze modulu; roste s každou změnou chování. Objektové ukládání košů
 #: zahozeno v 0.1.0 ve prospěch maticové cesty; 0.2.0 otázková strana;
-#: 0.5.0 třída SentenceField jako pracovní úroveň (věta → pole → matice).
-__version__ = "0.9.0"
+#: 0.5.0 třída SentenceField jako pracovní úroveň (věta → pole → matice);
+#: 0.10.0 graf faktů, promoce custom vertikál a dialog (handover 1–4).
+__version__ = "0.10.0"
 
 __all__ = [
     "SentenceField",
     "FieldBasket",
     "Corpus",
+    "FactGraph",
+    "promote_verticals",
+    "promotion_cycle",
+    "Reply",
+    "fact_gaps",
+    "reply",
+    "append_context",
     "match",
     "MatchResult",
     "Candidate",
