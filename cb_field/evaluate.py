@@ -130,11 +130,31 @@ def reach_report(corpus, etalon, parser, top=3) -> dict:
         if correct is None:
             counts["mimo_dosah"] += 1
             continue
+        # Dosah je okno SLOV uvnitř věty PLUS sousední věty téhož
+        # dokumentu do r_sentences — jinak by mezivětná otázka byla
+        # „mimo dosah" z definice a druhé r by nešlo změřit.
         window = range(max(0, correct.center - corpus.r),
                        min(len(correct.sentence.tokens),
                            correct.center + corpus.r + 1))
         in_reach = any(key in given for i in window
                        for key in correct.sentence.complete[i])
+        r_sentences = getattr(corpus, "r_sentences", 0)
+        if not in_reach and r_sentences:
+            documents = getattr(corpus, "documents", [])
+            fields = list(corpus)
+            position = next((i for i, f in enumerate(fields)
+                             if f is correct.sentence), None)
+            for d in range(1, r_sentences + 1):
+                for neighbour in (position - d, position + d):
+                    if position is None or not (0 <= neighbour < len(fields)):
+                        continue
+                    if documents and documents[neighbour] \
+                            is not documents[position]:
+                        continue
+                    if any(key in given
+                           for row in fields[neighbour].complete
+                           for key in row):
+                        in_reach = True
         rank = result.candidates.index(correct) + 1
         if not in_reach:
             counts["mimo_dosah"] += 1
