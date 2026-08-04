@@ -46,11 +46,19 @@ class CorpusBlock:
 
 @dataclass(frozen=True)
 class CorpusFile:
-    """Načtený fixovaný korpus: bloky vět a otázky na jejich indexy."""
+    """Načtený fixovaný korpus: bloky vět a otázky na jejich indexy.
+
+    corpus: jméno souboru s větami, na jehož indexy míří otázky
+    (krok F návrhu — otázky k UŽ fixovanému korpusu). Soubor s
+    odkazem bloky mít nemusí; rozsah indexů se validuje až proti
+    odkazovanému souboru (_validate ho vyhledá vedle sebe a v
+    obvyklých úložištích korpusů).
+    """
 
     path: Path
     blocks: tuple                      # n-tice CorpusBlock
     questions: tuple
+    corpus: str | None = None
 
     @property
     def sentences(self) -> tuple:
@@ -82,6 +90,7 @@ def load_corpus_file(path: Path) -> CorpusFile:
             raise ValueError(f"{path}: blok {b} nemá neprázdné věty")
         blocks.append(CorpusBlock(sentences=tuple(sentences),
                                   text=block.get("text")))
+    reference = data.get("corpus")
     total = sum(len(block.sentences) for block in blocks)
     questions = []
     for q, entry in enumerate(data.get("questions", [])):
@@ -91,7 +100,8 @@ def load_corpus_file(path: Path) -> CorpusFile:
             answerable=bool(entry.get("answerable")))
         if question.answerable:
             if not isinstance(question.sentence, int) \
-                    or not 0 <= question.sentence < total:
+                    or (reference is None
+                        and not 0 <= question.sentence < total):
                 raise ValueError(
                     f"{path}: otázka {q} míří na větu "
                     f"{question.sentence!r}, soubor má {total} vět")
@@ -104,7 +114,7 @@ def load_corpus_file(path: Path) -> CorpusFile:
                 f"buď je zodpověditelná, nebo index nemá co znamenat")
         questions.append(question)
     return CorpusFile(path=path, blocks=tuple(blocks),
-                      questions=tuple(questions))
+                      questions=tuple(questions), corpus=reference)
 
 
 def add_to_corpus(corpus: Corpus, corpus_file: CorpusFile,
@@ -178,6 +188,18 @@ def etalon_entries(corpus_file: CorpusFile,
     return entries
 
 
+def _resolve_reference(path: Path, name: str) -> Path:
+    """Najde odkazovaný soubor s větami: vedle souboru a v obvyklých
+    úložištích korpusů (data-persistent, zmražená testovací data)."""
+    module = Path(__file__).resolve().parent
+    for candidate in (path.parent / name,
+                      module / "data-persistent" / "korpus" / name,
+                      module / "tests" / "data" / "korpus" / name):
+        if candidate.is_file():
+            return candidate
+    raise ValueError(f"{path}: odkazovaný korpus {name!r} nenalezen")
+
+
 def _validate(paths) -> int:
     """Validace datových souborů proti parseru; vrací počet chyb."""
     from cb_udpipe import UdpipeClient
@@ -185,15 +207,25 @@ def _validate(paths) -> int:
     failures = 0
     for path in paths:
         corpus_file = load_corpus_file(path)
+        target = corpus_file
+        if corpus_file.corpus:
+            target = load_corpus_file(
+                _resolve_reference(Path(path), corpus_file.corpus))
         corpus = Corpus(r=1)
         try:
-            positions = add_to_corpus(corpus, corpus_file, parser)
+            positions = add_to_corpus(corpus, target, parser)
         except ValueError as error:
             print(f"!! {error}")
             failures += 1
             continue
         for q, question in enumerate(corpus_file.questions):
             if not question.answerable:
+                continue
+            if not 0 <= question.sentence < len(positions):
+                print(f"!! {path}: otázka {q} míří na větu "
+                      f"{question.sentence}, korpus má "
+                      f"{len(positions)} vět")
+                failures += 1
                 continue
             field = corpus[positions[question.sentence]]
             lemmas = {t.lemma for t in field.tokens}

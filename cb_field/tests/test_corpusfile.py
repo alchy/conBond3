@@ -141,6 +141,32 @@ class TestAddToCorpus(unittest.TestCase):
         self.assertEqual(parser.texts[0], "Věta nula.  Věta jedna.")
         self.assertEqual(parser.texts[1], "Věta dva.")   # bez text: join
 
+    def test_otazkovy_soubor_odkazuje_na_korpus(self):
+        # krok F návrhu: otázky k UŽ fixovanému korpusu — soubor bez
+        # bloků s odkazem "corpus" na jméno souboru s větami; indexy
+        # se validují až proti odkazovanému souboru
+        data = {"format_version": 1, "language": "cs",
+                "corpus": "vety.json", "blocks": [],
+                "questions": [{"text": "Na co?", "sentence": 2,
+                               "answer_lemma": "dva",
+                               "answerable": True}]}
+        with tempfile.TemporaryDirectory() as tmp:
+            _write(tmp, _valid_data(), "vety.json")
+            cf = load_corpus_file(_write(tmp, data, "otazky.json"))
+            self.assertEqual(cf.corpus, "vety.json")
+            self.assertEqual(cf.sentences, ())
+            self.assertEqual(cf.questions[0].sentence, 2)
+
+    def test_otazkovy_soubor_bez_odkazu_hlasi_index(self):
+        # bez corpus-odkazu je otázka nad prázdnými bloky chyba
+        data = {"format_version": 1, "language": "cs", "blocks": [],
+                "questions": [{"text": "Na co?", "sentence": 2,
+                               "answer_lemma": "dva",
+                               "answerable": True}]}
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ValueError):
+                load_corpus_file(_write(tmp, data, "otazky.json"))
+
     def test_jiny_pocet_vet_z_parseru_hlasi_blok(self):
         # blok se parsuje vcelku (jako původní ingest po odstavcích);
         # jiný počet vět než položek by čísla otázek tiše rozjel
