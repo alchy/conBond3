@@ -8,7 +8,8 @@ nic nemění. Odsouhlasené kroky se sem zapisují postupně (J.).
 
 1. **Graf faktů jako vrstva** — uzly a hrany ze závislostí, statistika
    stupně a poměru · *odsouhlaseno 2026-08-04*
-2. Promoce do custom vertikál — limit 328, kritérium poměr, vratná
+2. **Promoce do custom vertikál** — `promote_verticals()`, limit 328,
+   kritérium různých²/hran, vratná · *odsouhlaseno 2026-08-04*
 3. Verze osy a invalidace — ošetření přeobsazeného sloupce
 4. Přeučení po promoci — s odvoláním kola, které uškodí
 5. Detekce mezery a dialog — „nemám rychlost, doplň kontext"
