@@ -23,6 +23,7 @@ konfiguraci (doplní se podle README-MODULES § 16). Používá se importem.
 ```bash
 ./cb-udpipe.py status               # parser vět musí běžet
 ./run-python -m cb_field.viewer     # volitelně: obrazovka pole (127.0.0.1:42301)
+./run-python -m cb_field.graphview  # volitelně: znalostní graf (viewBase2, :8080)
 ./run-python cli                    # konzole — nikdy holé `python`
 ```
 

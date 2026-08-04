@@ -67,16 +67,16 @@ def main() -> None:
 
     parser = UdpipeClient()
     corpus = build_complex_corpus(parser)
-    screen = vb.Screen(title="conBond3 — znalostní graf")
-    window = vb.GraphWindow(screen=screen, dimensions=3)
-    graph = FactGraph(emit=viewbase_emitter(window))
+    # API viewBase2 po revizi J. (2026-08-05): jediné plátno Canvas
+    # + modulové serve(); metody uzlů/hran beze změny.
+    canvas = vb.Canvas(title="conBond3 — znalostní graf", dimensions=3)
+    graph = FactGraph(emit=viewbase_emitter(canvas))
     for field in corpus:
         graph.add_sentence(field)
     stats = graph.stats()
     print(f"graf: {stats['uzlu']} uzlů · {stats['hran']} hran — "
           f"servíruji viewBase2")
-    project = vb.Project(port=8080)
-    project.serve(screen, open_browser=True)
+    vb.serve(canvas, port=8080, open_browser=True)
 
 
 if __name__ == "__main__":

@@ -34,6 +34,7 @@ usadí. Co už platí: čistá doménová logika bez cest a HTTP (`service.py`,
 |---|---|
 | 42300 | rezervováno pro budoucí REST API modulu |
 | 42301 | kukátko na pole (viewer) — `./run-python -m cb_field.viewer` |
+| 8080 | znalostní graf (viewBase2) — `./run-python -m cb_field.graphview` |
 
 Tabulka rozsahů je v README-MODULES § 5 (cb-field má 42300–42399).
 
