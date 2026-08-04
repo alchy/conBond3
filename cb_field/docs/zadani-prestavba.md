@@ -479,6 +479,43 @@ Supervize: trenink-otazky-korpusy.jsonl (120) + otazky-201/202
 (2×60, corpus-reference → answer_position přes offsety); etalon 40
 NIKDY do tréninku.
 
+## Páky systému: limit, k, σ (hyperparametry s křivkami)
+
+Tři ruční konstanty nové vrstvy. Každá řídí JINÝ prostor, žádná
+není pravidlo — všechny se kalibrují křivkou (K7), ne dojmem.
+
+**limit (dnes 328) — prostor JMEN.** Kapacita vstupní vrstvy:
+kolik slov světa smí mít pojmenovaný neuron. Malý limit = silný
+tlak k zobecnění, ale doménová slova vypadnou (naměřeno: na 12k
+korpusu hranice vystoupala na 41,9 a rychlost 33,8 i smět 41,7
+skončily těsně pod — soutěž byla příliš tvrdá). Velký limit = osa
+nasákne konkrétní svět (víc jmen, memorování, blíž neomezené WORD=
+ose, kterou promoce právě nahrazuje). Křivka: přesnost × dosah
+× podíl jmen pro limit ∈ {164, 328, 656}.
+
+**k (hloubka šíření, dnes 2) — prostor OS/VAZEB.** Kolik skoků
+udělá aktivace po vazbách matice L (tanh po každém skoku), než se
+koše porovnají. k=1: jen přímí sousedé — naučená hrana
+(otázka→typ) se NEzřetězí s vazbou faktu (typ→slovo); jednovrstvá
+síť. k=2: jedna mezistanice — hrany se řetězí, proto se hloubka
+skládá s učením nadaditivně (naměřeno: E 0,467). k=3: signál se
+rozmělní mezi příliš mnoho uzlů (naměřeno — nepřidává);
+k→∞ by saturovalo pole k ustálenému stavu, kde svítí všechno,
+tedy nic.
+
+**σ (šířka gaussovského zvonu, dnes 1,5) — prostor POZIC ve větě.**
+Jak daleko od kandidáta se sčítá souhlas sousedních aktivací.
+σ→0: čtení degeneruje na token-argmax — osamělá špička zase vyhrává
+(návrat naměřeného degenerátu „Máš ženu?"). σ velké: zvon se
+rozprostře přes celou větu — z vrcholu se stane průměr a dlouhé
+věty se rozmělní (splyne s prostou větnou aktivací). Mezi tím je
+pásmo, kde shluk poráží špičku (σ=1,5: shluk 0,69 > špička 0,40);
+kalibrovat proti větné metrice (answer_position).
+
+Dohromady: **limit vybírá, KDO smí mít jméno; k určuje, JAK DALEKO
+se význam šíří po vazbách; σ určuje, JAK ŠIROKO se čte souhlas
+v textu.** Tři páky, tři prostory — a tři křivky v K7.
+
 ---
 
 # 5 · Směr nad rámec zkušenosti (S1–S3, schváleno J.)
