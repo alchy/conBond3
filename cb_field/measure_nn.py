@@ -92,22 +92,41 @@ def main() -> None:
     from cb_field.evaluate import build_complex_corpus, load_etalon_korpusy
     from cb_field.learning import train_on_etalon
 
+    from cb_field.corpusfile import etalon_entries, load_corpus_file
     from cb_field.graph import FactGraph as _FactGraph
-    from cb_field.relations import definition_links, derivation_links
+    from cb_field.relations import definition_links
 
     parser = UdpipeClient()
     corpus = build_complex_corpus(parser)
-    # Vztahové vazby (kroky A a E) jsou součást systému dle návrhu —
-    # měří se stav se zapnutými definicemi i derivacemi.
+    # Definice jsou součást systému; derivace se pouštějí CÍLENĚ při
+    # expanzi otázky (plošně v L zavrženy měřením: −3,3 b baseline).
     setup_graph = _FactGraph()
     for field in corpus:
         setup_graph.add_sentence(field)
-    print(f"vztahové vazby: definic {definition_links(corpus, corpus.registry)} "
-          f"· derivací {derivation_links(setup_graph, corpus.registry)}")
+    print(f"vztahové vazby: definic "
+          f"{definition_links(corpus, corpus.registry)} · derivace "
+          f"cíleně při expanzi (plošně zavrženo)")
     etalon = load_etalon_korpusy()
     training = [json.loads(line) for line
                 in TRAINING.read_text(encoding="utf-8").splitlines()
                 if line.strip()]
+    # Rozšířená supervize (krok F): otázkové soubory s corpus-referencí
+    # se přimapují na pozice vět v kombinovaném korpusu (týž glob a
+    # pořadí jako build_complex_corpus) — nesou answer_position.
+    korpus_dir = MODULE_DIR / "data-persistent" / "korpus"
+    offsets = {}
+    position = 0
+    for path in sorted(korpus_dir.glob("korpus-*.json")):
+        reference = load_corpus_file(path)
+        offsets[path.name] = (position, len(reference.sentences))
+        position += len(reference.sentences)
+    for path in sorted((MODULE_DIR / "tests" / "data" / "korpus")
+                       .glob("otazky-*.json")):
+        questions = load_corpus_file(path)
+        start, count = offsets[questions.corpus]
+        training += etalon_entries(
+            questions, positions=tuple(range(start, start + count)))
+    print(f"trénink+validace: {len(training)} otázek")
     registry = corpus.registry
     rows = []
 
@@ -149,6 +168,21 @@ def main() -> None:
     if outcome["prijato"]:
         metrics_e = _measure(corpus, etalon, parser, spread_steps=2)
         report_arm("E hloubka k=2 nad C", metrics_e)
+
+    # F · kalibrace θ na tréninkové sadě (dluh D2) a měření s řezem —
+    # mlčení bez kalibrovaného θ je vždy 0 (Paul Verlaine atraktory)
+    from cb_field.learning import calibrate_theta
+    calibration = calibrate_theta(corpus, training, parser)
+    import cb_field.evaluate as evaluate
+    counts, presnost, mlceni, _d = evaluate.evaluate_corpus(
+        corpus, etalon, parser, theta=calibration["theta"])
+    reach = evaluate.reach_report(corpus, etalon, parser)
+    report_arm("F θ kalibrované", {
+        "presnost": round(presnost, 4), "mlceni": round(mlceni, 4),
+        "dosah_ok": reach["v_dosahu_ok"], "vada": -reach["vada"],
+        "_counts": counts, "_mimo": reach["mimo_dosah"]},
+        f"θ={calibration['theta']} (trénink: přesnost "
+        f"{calibration['presnost']} · mlčení {calibration['mlceni']})")
 
     # Vylosované příklady nad koncovým stavem (J.: každý běh je tiskne)
     examples = sample_examples(corpus, etalon, parser)
