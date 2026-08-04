@@ -14,7 +14,8 @@ Zadání celé stavby (deset kroků, zmražené přejímky, páky systému):
 | 1 | `Corpus` + fixovaný korpus v JSON | hotovo (v cb_field 0.6.0) |
 | 2 | `KnowledgeGraph` — paměť faktů | hotovo |
 | 3 | `Matcher` — párování otázky s korpusem | **částečně**: pokrytí sedí přesně, baseline přesnost ne (0,10 proti 0,3667 — `docs/prirucka.md`) |
-| 4–10 | AnswerField · trénink · promoce · vztahy · dialog · zrcadlo · měření | zbývá |
+| 4 | `AnswerField` — gaussovské čtení pole | hotovo |
+| 5–10 | trénink · promoce · vztahy · dialog · zrcadlo · měření | zbývá |
 
 Vědomě zatím **není** plný modul podle README-MODULES § 2: chybí
 konfigurace se schématem, logování přes cb-logger, `api.py`,
@@ -33,6 +34,8 @@ usadí — stejně jako u cb_field.
 | `ScoreCandidate` | token ve větě se skóre a líným rozkladem po členech |
 | `ScoreWeights` | páky členů skóre (center, cover, topic, given, fit) |
 | `LinkOperator`, `saturate` | šíření po vazbách bez husté matice L |
+| `AnswerField` | čtení pole: `tokens`, `spans`, `sentences`, `gaussian_peaks` |
+| `gaussian_kernel` | normované jádro o poloměru int(3σ) |
 
 ## Závislosti
 
@@ -48,7 +51,7 @@ Na registru cb_fieldu smí cb_bond volat jen `link` / `unlink` /
 ## Testy
 
 ```
-./run-python -m unittest discover -s cb_bond -t .     # 39 testů
+./run-python -m unittest discover -s cb_bond -t .     # 49 testů
 ```
 
 Zmražené rozbory v `tests/vzorky.py` (skutečné výstupy UDPipe
@@ -59,6 +62,7 @@ Přejímka na skutečném korpusu (potřebuje UDPipe a data mimo git):
 ```
 ./run-python cb_bond/scripts/prejimka-graf.py       # krok 2 — sedí
 ./run-python cb_bond/scripts/prejimka-matcher.py    # krok 3 — přesnost ne
+./run-python cb_bond/scripts/prejimka-answer.py     # krok 4 — sedí
 ```
 
 Porovnají naměřené se zmraženými hodnotami § 6 zadání a skončí

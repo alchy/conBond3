@@ -93,3 +93,16 @@ os. Chybějící díl je nejspíš v tom, co zadání nepíše: jak přesně se
 skládá pytel otázky a jak se členy normalizují. Než se to doplní,
 nemá smysl na krok 3 stavět kalibraci θ (krok 10) — měřila by se
 špatná křivka.
+
+## Past konvoluce v gaussovském čtení
+
+`np.convolve(pole, jadro, mode="same")` vrací pole o délce **delšího**
+vstupu. Jádro má při σ=1,5 devět vzorků, takže u věty kratší než devět
+tokenů by výsledek byl delší než věta a `argmax` by vrátil index mimo
+ni — vrchol by ukazoval na slovo, které tam není. Proto se počítá
+`full` a řeže se přesně na délku věty.
+
+Zadání uvádí jádro jako k0 = 0,267 · k1 = 0,213 · k2 = 0,109. Poloměr
+`int(3σ)` = 4 dá 0,267 / 0,213 / **0,1096**; třetí hodnota se tedy
+liší v zaokrouhlení posledního místa. Obě odvozené přejímky sedí
+přesně: shluk 0,693 → 0,69 a špička 0,400 → 0,40.

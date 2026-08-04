@@ -25,6 +25,7 @@ změnit (README-MODULES.md § 3).
 #: (KnowledgeGraph); kroky 1 a 3–10 jsou popsané v docs/zadani.md.
 __version__ = "0.1.0"
 
+from cb_bond.answer import AnswerField, gaussian_kernel  # noqa: E402
 from cb_bond.graph import (  # noqa: E402
     NODE_UPOS,
     KnowledgeGraph,
@@ -40,6 +41,8 @@ from cb_bond.matcher import (  # noqa: E402
 )
 
 __all__ = [
+    "AnswerField",
+    "gaussian_kernel",
     "KnowledgeGraph",
     "NodeStat",
     "NODE_UPOS",

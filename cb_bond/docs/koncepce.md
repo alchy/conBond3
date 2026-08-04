@@ -96,3 +96,24 @@ Tečka odpovědí být nemůže. Není to filtr v datové cestě (princip 2):
 skórování všech ostatních tokenů zůstává bez výjimky, jen se neměří
 skóre u znaku, který nemůže být odpovědí. Bez toho se „." objevovala
 na druhém místě a jen ředila pořadí.
+
+## 10 · Odpověď je pole; token, okno, věta a vrchol jsou jen čtení
+
+Čtyři metody `AnswerField` nejsou čtyři algoritmy — je to týž field
+skóre, přečtený v různé hrubosti. Který je správný, závisí na otázce,
+ne na kódu.
+
+Gaussovské čtení řeší naměřený degenerát: krátká věta se silným
+jediným tokenem („Máš ženu?") vyhrávala, protože průměrová normalizace
+dělí délkou. Zvon to řeší tvarem, ne prahem — shluk 1,0+1,0+1,0 dá
+vrchol 0,69, kdežto osamělá špička 1,5 jen 0,40.
+
+**Naměřená protiváha** na 12 258 větách (40 otázek etalonu): při
+tokenovém čtení je vítězem krátká věta (≤4 tokeny) v 15 případech ze
+40, při gaussovském v **nule**. Zásah lemmatu ve vítězné větě zůstává
+3/30 u obou — Gauss opravuje délkový degenerát, ne skórování; to je
+mez kroku 3 (viz prirucka.md).
+
+Poloměr jádra je `int(3σ)`: za třemi sigmami nese zvon pod 1,2 % hmoty
+a jen by prodlužoval konvoluci. Při σ=1,5 to dá 9 vzorků a hodnoty
+k0 = 0,267 · k1 = 0,213 — přesně ty ze zadání.

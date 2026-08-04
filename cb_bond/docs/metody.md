@@ -61,3 +61,18 @@ Veřejné API modulu. Co tady není, je vnitřek a smí se změnit
 | co | jak |
 |---|---|
 | přejímka kroku 3 | `./run-python cb_bond/scripts/prejimka-matcher.py` |
+
+## AnswerField (answer.py)
+
+| metoda | co dělá / na čem visí |
+|---|---|
+| `AnswerField(result)` | rozloží kandidáty `MatchResult` po větách na pozice tokenů; mezery drží nulu |
+| `tokens()` | nejjemnější čtení — kandidáti, jak přišli ze skórování |
+| `spans(width=2)` | `(věta, počátek, součet)` seřazené sestupně |
+| `sentences()` | `(věta, součet pole)` — BEZ dělení délkou (to je ten degenerát) |
+| `gaussian_peaks(sigma=1.5)` | `(věta, vrchol, index)`; index vždy uvnitř věty i u vět kratších než jádro |
+| `gaussian_kernel(sigma)` | normované jádro o poloměru `int(3σ)` |
+
+| co | jak |
+|---|---|
+| přejímka kroku 4 | `./run-python cb_bond/scripts/prejimka-answer.py` — protiváha krátkých vět při tokenovém × gaussovském čtení |
