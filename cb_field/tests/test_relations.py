@@ -6,8 +6,10 @@ docs/rozsireni-otazky.md. Zmražená data sdílená s test_dialog
 import unittest
 
 from cb_field.corpus import Corpus
+from cb_field.graph import FactGraph
 from cb_field.registry import VerticalRegistry
-from cb_field.relations import DEFINITION_WEIGHT, definition_links
+from cb_field.relations import DEFINITION_WEIGHT, definition_links, \
+    ensure_definition
 from cb_field.tests.test_dialog import DALNICE, OTAZKA_KREST
 from cb_field.tests.test_graph import KREST, _Sentence
 
@@ -75,6 +77,65 @@ class TestDefinicniHrany(unittest.TestCase):
         lit = registry.unvectorize(np.tanh(spread))
         self.assertIn("WORD=NOUN:silnice", lit)
         self.assertGreater(lit["WORD=NOUN:silnice"], 0.3)
+
+
+class _Parser:
+    """Atrapa: text rozpadne na zmraženou větu „Dálnice je silnice."."""
+
+    def parse(self, text):
+        class _Result:
+            sentences = [_Sentence(DALNICE)]
+        return _Result()
+
+
+class TestEnsureDefinition(unittest.TestCase):
+    """Krok B: definici si systém opatří sám, třístupňově — korpus →
+    slovník/Wikipedie (offline-first fixace) → dialog."""
+
+    def _setup(self):
+        corpus = Corpus(r=1)
+        corpus.add_sentence(_Sentence(KREST))
+        return corpus, FactGraph()
+
+    def test_slovnikova_definice_jde_standardni_cestou(self):
+        corpus, graph = self._setup()
+        calls = []
+
+        def lookup(term):
+            calls.append(term)
+            return "Dálnice je silnice."
+
+        before = len(corpus)
+        outcome = ensure_definition("WORD=NOUN:dálnice", corpus, graph,
+                                    _Parser(), lookup=lookup)
+        self.assertEqual(outcome, "slovnik")
+        self.assertEqual(calls, ["dálnice"])
+        self.assertEqual(len(corpus), before + 1)      # věta v korpusu
+        self.assertEqual(corpus.registry.get_link(
+            "WORD=NOUN:dálnice", "WORD=NOUN:silnice"),
+            (DEFINITION_WEIGHT, "definice"))
+        self.assertIn("slovnik", {src for _s, _d, _r, _w, src
+                                  in graph.edges()})    # hrany značené
+
+    def test_existujici_definice_nesaha_na_sit(self):
+        corpus, graph = self._setup()
+        corpus.add_sentence(_Sentence(DALNICE))
+        definition_links(corpus, corpus.registry)
+
+        def lookup(term):
+            raise AssertionError("lookup se nesmí volat")
+
+        outcome = ensure_definition("WORD=NOUN:dálnice", corpus, graph,
+                                    _Parser(), lookup=lookup)
+        self.assertEqual(outcome, "korpus")
+
+    def test_bez_definice_zbyva_dialog(self):
+        corpus, graph = self._setup()
+        before = len(corpus)
+        outcome = ensure_definition("WORD=NOUN:dálnice", corpus, graph,
+                                    _Parser(), lookup=lambda term: None)
+        self.assertEqual(outcome, "dialog")
+        self.assertEqual(len(corpus), before)          # nic se nevložilo
 
 
 if __name__ == "__main__":
