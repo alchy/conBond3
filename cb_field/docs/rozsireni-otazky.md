@@ -180,8 +180,57 @@ korpusu klesají monotónně —
   cyklu, proto k odsouhlasení). Cyklus hlásí počet výměn slotů;
   přejímka: klesající křivka výměn (naměřený trend 38 % → 16 %
   pokračuje) a žádné přeučení bez změny osy.
+- **H · Vysvícení grafu + posílení lemmaty** — kandidátní věty
+  rozsvítí uzly, lemata otázky znásobí váhu rozsvícených (§ 7).
+  Přejímka: na otázce o křtu zjasní Jordán nad Galilejí; na dálnici
+  věta F nad fyzikálními rozptylovači; měří se větnou přesností
+  s protiváhami.
+- **I · Znalostní graf ve viewBase2** — projekce FactGraph
+  (uzly/hrany/zdroje) + živé delty rozsvícení a posílení. Přejímka:
+  graf celého korpusu se zobrazí, dotaz ho rozsvítí a člověk
+  u obrazovky pozná odpovědní oblast bez čtení kódu (duch kroku 6
+  handoveru).
 
-## 7 · Myšlenkový experiment (dálnice, reálné věty a čísla)
+## 7 · Cesta odpovědi: vysvícení znalostního grafu a posílení lemmaty
+
+Po identifikaci mnoha vět (včetně NZ i přesahů do odvozených témat —
+silnice tam MUSÍ být, je odvozená) vzniká **tabulka kandidátních
+vět**. Vedle ní stojí **znalostní graf všech textů** — uzly jsou
+základní tvary z lemmatizace, BEZ slov, která už nesou vertikály:
+„Šel na pivo se psem" je v grafu jako šel ↔ pivo ↔ pes (na, se jsou
+LEM= vertikály). Cesta odpovědi:
+
+    meta vztahy → match → kandidátní věty → VYSVÍCENÍ grafu
+    → lemata otázky → POSÍLENÍ už vysvícených uzlů
+
+1. NN vzor (meta) vybere kandidátní věty — mnoho.
+2. Slova kandidátních vět **rozsvítí** uzly grafu (váha = větná
+   aktivace; rozsvícených je mnoho).
+3. Z otázky se vezmou **konkrétní lemata** a **znásobí váhu** už
+   rozsvícených uzlů — multiplikativní krok: meta zajistí ZÁCHYT
+   (recall), lemata PŘESNOST. Správná odpověď se projeví jako
+   nejjasnější oblast. Invariant učení neporušen — lemata působí
+   při čtení/párování, ne v tréninku.
+4. Oblast se čte gaussovsky (krok D) — odpovědní věta = zvon přes
+   souhlasně rozsvícené uzly.
+
+**Vizualizace: viewBase2** (github.com/alchy/viewBase2 — ověřeno:
+objektové API `add_node`/`add_edge` s metadaty, WebSocket delty za
+běhu, živá stylizace barvy/velikosti beze ztráty pozice, 2D/3D
+force layout, highlight sousedů). FactGraph se promítne 1:1 (uzel =
+UPOS:lemma, hrana = deprel + váha + zdroj text/dialog/slovnik).
+
+**Pravidlo (J.): cokoli se děje v rámci grafu, se VŽDY projeví
+v jeho vizualizaci.** Vizualizace není ladicí pohled, ale živé
+zrcadlo: každá mutace grafu — věta při ingestu, dialogová a
+slovníková hrana, vysvícení kandidáty, posílení lemmaty, případný
+odchod uzlů promocí — emituje deltu do viewBase2. Když vizualizace
+neběží, systém se nezastaví (vzor kukátka: operace proběhne, delta
+se zahodí s upozorněním) — ale žádná cesta v kódu nesmí graf měnit
+mimo emitor delt. Kukátko :42301 zůstává pohledem na pole/koše;
+graf žije ve viewBase2.
+
+## 7b · Myšlenkový experiment (dálnice, reálné věty a čísla)
 
 Věty: **Q** „Kolik se smí jezdit po dálnici?" (uživatel) · **F**
 „Nejvyšší povolená rychlost na dálnici v Česku je sto třicet
@@ -229,5 +278,10 @@ vozidla…" (naměřený lookup) · **R** věty o rychlosti z fyziky
 1. `W_EXPAND` a pokles váhy po skocích v grafu.
 2. Pořadí zapínání: doporučuji A → B (jen párování) → D → C → E → F,
    každý krok s vlastní přejímkou a možností vrátit.
-3. Dělení rozpočtu 328 slova × typy vztahů (trvá z handoveru).
+3. Dělení rozpočtu 328 slova × typy vztahů (trvá z handoveru);
+   experiment § 7b přidává důvod: hranice plave se žánrem korpusu.
 4. Kdy smí lookup na síť (jen interaktivně? i při dávkovém běhu?).
+5. Opouštějí faktový graf i slova promovaná do CUSTOM slotů (jako
+   ho opouštějí slova nesená LEM= vertikálami)? Pak by promoce
+   hýbala i grafem — čistší dělba (vertikály = obecné, graf = svět),
+   ale graf by se s každou promocí přestavoval.
