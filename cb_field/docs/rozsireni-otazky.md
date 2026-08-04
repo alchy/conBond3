@@ -143,9 +143,20 @@ korpusu klesají monotónně —
   definic, okolí uzlu 1–2 skoky, `W_EXPAND`). Přejímka: na etalonu
   vzroste `sentence_hit`/dosah, přesnost ani NEVÍM neklesnou; příklad
   z § 3 projde end-to-end.
-- **C · Trénink nad rozšířeným košem** — expanze před stavbou
-  učicího pytle; validace 30 % rozhoduje. Přejímka: validační
-  `sentence_hit` po učení s expanzí ≥ bez ní.
+- **C · Trénink nad rozšířeným košem** — učicí vztah je definován
+  takto (J. 2026-08-04): do učení vstupuje **koš ROZŠÍŘENÉ otázky**
+  (meta složené z více basketů — otázka + definice + okolí grafu),
+  správná odpověď už v korpusu existuje jako **meta věty nebo vět,
+  které fitují** (větná granularita, ne tokenové okno — dnešní
+  kontrast oken se zdůrazněným středem se tím mění a musí se
+  přeměřit). NN učení vytváří **vztah otázka(meta) → odpověď(meta)**
+  za předpokladu **poziční nezávislosti dat v rámci pytle otázky**
+  — pytel je množina, pořadí slov otázky nehraje roli (robustnost
+  vůči parafrázi); pozice zůstává jen v tom, KTERÁ věta fituje,
+  ne kde v ní. Kontrast: fitující věta (věty) proti nejlepší
+  nefitující. Validace 30 % rozhoduje. Přejímka: validační
+  `sentence_hit` po učení s expanzí ≥ bez ní; větný kontrast
+  nesmí shodit tokenové čtení pod dnešek (obě čísla vedle sebe).
 - **D · Gaussovský výstup** — čtení pole jádrem N(centrum, σ) vedle
   1/(1+d); σ kalibrovat. Přejímka: větná přesnost ≥ dnešní větné
   čtení; obě čísla vedle sebe.
