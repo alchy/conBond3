@@ -26,7 +26,10 @@ def viewbase_emitter(graph_window):
         if op == "node":
             graph_window.ensure_node(delta["id"], label=delta["id"])
         elif op == "edge":
-            graph_window.ensure_edge(delta["src"], delta["dst"])
+            # smyčku (rok a rok, conj) viewBase2 nenakreslí — graf ji
+            # drží dál, jen se do vizualizace nepřekládá
+            if delta["src"] != delta["dst"]:
+                graph_window.ensure_edge(delta["src"], delta["dst"])
         elif op == "style":
             graph_window.update_node(delta["id"], glow=delta["glow"])
 
