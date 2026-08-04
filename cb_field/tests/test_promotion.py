@@ -187,6 +187,42 @@ class TestPromocniCyklus(unittest.TestCase):
                                   retrain=lambda c: None)
         self.assertTrue(outcome["prijato"])
 
+    def test_prijaty_cyklus_zapise_mosty_word_custom(self):
+        # zapojení custom os: aktivace WORD=x stéká šířením po mostu
+        # do CUSTOM=x — bez mostu je promovaný sloupec mrtvý
+        corpus, graph = self._setup()
+        measures = iter([{"presnost": 0.5}, {"presnost": 0.6}])
+        promotion_cycle(corpus, graph,
+                        measure=lambda c: next(measures),
+                        retrain=lambda c: None)
+        link = corpus.registry.get_link("WORD=VERB:přijít",
+                                        "CUSTOM=VERB:přijít")
+        self.assertEqual(link, (1.0, "promoce"))
+
+    def test_odvolany_cyklus_mosty_uklidi(self):
+        corpus, graph = self._setup()
+        measures = iter([{"presnost": 0.5}, {"presnost": 0.4}])
+        promotion_cycle(corpus, graph,
+                        measure=lambda c: next(measures),
+                        retrain=lambda c: None)
+        self.assertIsNone(corpus.registry.get_link(
+            "WORD=VERB:přijít", "CUSTOM=VERB:přijít"))
+
+    def test_vertikala_vypadla_z_limitu_ztraci_i_most(self):
+        corpus, graph = self._setup()
+        measures = iter([{"presnost": 0.5}, {"presnost": 0.6},
+                         {"presnost": 0.6}, {"presnost": 0.6}])
+        promotion_cycle(corpus, graph,
+                        measure=lambda c: next(measures),
+                        retrain=lambda c: None)
+        # druhý cyklus nad prázdným grafem: cílový stav bez uzlů
+        promotion_cycle(corpus, FactGraph(),
+                        measure=lambda c: next(measures),
+                        retrain=lambda c: None)
+        self.assertNotIn("CUSTOM=VERB:přijít", corpus.registry)
+        self.assertIsNone(corpus.registry.get_link(
+            "WORD=VERB:přijít", "CUSTOM=VERB:přijít"))
+
 
 if __name__ == "__main__":
     unittest.main()

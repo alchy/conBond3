@@ -43,7 +43,7 @@ def _rebuild(scores: dict, source: dict, theta: float,
             cover_score=original.cover_score, fit_score=original.fit_score,
             topic_score=original.topic_score,
             given_score=original.given_score,
-            top_nodes=original.top_nodes))
+            decomposition=original.decomposition))   # rozklad zůstává líný
     candidates.sort(key=lambda c: -c.score)
     if not candidates or candidates[0].score < theta:
         return MatchResult(outcome="nevim", candidates=candidates)

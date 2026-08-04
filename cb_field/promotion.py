@@ -30,6 +30,14 @@ from cb_field.corpus import Corpus
 from cb_field.graph import PROMOTION_LIMIT, FactGraph, promote_verticals
 from cb_field.registry import CUSTOM_PREFIX
 
+#: Váha mostu WORD=x → CUSTOM=x. Most je zapojení promované osy:
+#: aktivace slova po něm stéká šířením do custom sloupce, takže osu
+#: vidí párování i budoucí učení — bez mostu je sloupec mrtvý (nic ho
+#: neemituje). Identita (1,0) schválně: most je struktura, ne naučená
+#: váha; zapisuje se celý cílový stav při každém cyklu a odvolání
+#: cyklu ho vrací se vším ostatním.
+BRIDGE_WEIGHT = 1.0
+
 
 def promotion_cycle(corpus: Corpus, graph: FactGraph,
                     measure: Callable[[Corpus], dict],
@@ -47,9 +55,12 @@ def promotion_cycle(corpus: Corpus, graph: FactGraph,
     registry = corpus.registry
     before = measure(corpus)
     snapshot = registry.snapshot()
-    target = tuple(CUSTOM_PREFIX + node
-                   for node in promote_verticals(graph, limit))
-    changes = registry.set_custom_axes(target)
+    promoted = promote_verticals(graph, limit)
+    changes = registry.set_custom_axes(
+        tuple(CUSTOM_PREFIX + node for node in promoted))
+    for node in promoted:
+        registry.link(f"WORD={node}", CUSTOM_PREFIX + node,
+                      BRIDGE_WEIGHT, source="promoce")
     retrain(corpus)
     after = measure(corpus)
     worse = any(after[key] < before[key]

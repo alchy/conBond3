@@ -113,5 +113,44 @@ class TestPropojeni(unittest.TestCase):
                             for k in konce))
 
 
+class TestHloubkaSireni(unittest.TestCase):
+    """k kroků šíření s tanh mezi kroky — hloubka jako parametr (NN)."""
+
+    def _retez(self):
+        import numpy as np
+        links = np.zeros((3, 3), dtype=np.float32)
+        links[0, 1] = 1.0              # 0 → 1 → 2, dva skoky
+        links[1, 2] = 1.0
+        return np.array([0.7, 0.0, 0.0], dtype=np.float32), links
+
+    def test_jeden_krok_odpovida_dnesnimu(self):
+        import numpy as np
+        from cb_field.matching import saturate
+        v, links = self._retez()
+        one = saturate(v, links, steps=1)
+        np.testing.assert_allclose(one, np.tanh(v + v @ links),
+                                   rtol=1e-6)
+        self.assertEqual(float(one[2]), 0.0)   # druhý soused mimo dosah
+
+    def test_druhy_krok_dosahne_na_druheho_souseda(self):
+        import numpy as np
+        from cb_field.matching import saturate
+        v, links = self._retez()
+        two = saturate(v, links, steps=2)
+        self.assertGreater(float(two[2]), 0.0)
+        self.assertLessEqual(float(np.max(np.abs(two))), 1.0)  # P-B
+
+    def test_match_s_hloubkou_dva_prestavi_pytle(self):
+        corpus = _scena()
+        otazka = SentenceField((KAM, SEL2, PES2, OTAZNIK), r=1,
+                               registry=corpus.registry,
+                               source="Kam šel pes?")
+        r1 = match(otazka, corpus)
+        r2 = match(otazka, corpus, spread_steps=2)
+        self.assertEqual(len(r1.candidates), len(r2.candidates))
+        # cache pytlů nese hloubku — pojistka proti vakuu: klíč ji má
+        self.assertEqual(corpus._fact_cache[0][-1], 2)
+
+
 if __name__ == "__main__":
     unittest.main()

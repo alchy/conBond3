@@ -102,6 +102,28 @@ W_CENTER = 2.0
 #: ale nikdy nule (žádný strop, jen váha).
 W_CONTEXT = 0.5
 
+#: Hloubka šíření: kolikrát se zopakuje krok v + v·L, s tanh po KAŽDÉM
+#: kroku (P-B). 1 = dnešní chování (jednovrstvé). Druhý krok dosáhne
+#: přes mezistanici (slovo → typ → kotva otázky) — de facto druhá
+#: vrstva sítě nad touž maticí L; jestli pomáhá, rozhoduje měření,
+#: ne dojem (experiment NN, J. 2026-08-04).
+SPREAD_STEPS = 1
+
+
+def saturate(vector, links, steps: int = SPREAD_STEPS):
+    """k kroků šíření po vazbách se saturací mezi kroky.
+
+    Každý krok: v ← tanh(v + v·L). Řídce přes nosnou množinu (po
+    Hebbovi mají pytle tisíce os a plný součin stál epochu učení).
+    """
+    out = np.asarray(vector, dtype=np.float32)
+    for _ in range(steps):
+        nz = np.nonzero(out)[0]
+        spread = out if not len(nz) else out + out[nz] @ links[nz]
+        out = np.tanh(spread)
+    return out
+
+
 #: Vertikály vstupující do párování. Strukturní tvar (UPOS/DEPREL/feats)
 #: patří šablonám; v součinech pytlů by přehlušil obsah i kotvy
 #: (naměřeno v baseline 4a). Výjimkou je Polarity: negace je LOGICKÁ
@@ -113,6 +135,41 @@ W_CONTEXT = 0.5
 #: (typ „kdy" spadl 7/7 → 1/7); osa sama dá bez učení 0,97 a s ním 1,00.
 MATCH_PREFIXES = ("WORD=", "LEM=", "QLEM=", "ANCHOR=", "QANCHOR=",
                   "Polarity=")
+
+
+class ScoreDecomposition:
+    """Rozklad skóre po uzlech — počítá se LÍNĚ, při prvním čtení.
+
+    P-D platí dál (odpověď bez rozkladu se nevydává — rozklad tu je),
+    jen se neplatí předem za všech ~58 000 kandidátů: argpartition,
+    argsort a jména vertikál stály ~60 % času match() (profil na M4,
+    2026-08-04) a četl je vždy jen vítěz.
+    """
+
+    __slots__ = ("_registry", "_idx", "_vals", "_limit", "_resolved")
+
+    def __init__(self, registry, idx, vals, limit):
+        self._registry = registry
+        self._idx = idx
+        self._vals = vals
+        self._limit = limit
+        self._resolved = None
+
+    def resolve(self) -> tuple:
+        if self._resolved is None:
+            # top-K bez plného řazení: po Hebbovi mají rozšířené pytle
+            # tisíce os a argsort × 58k kandidátů stál hodiny
+            magnitude = -np.abs(self._vals)
+            if len(self._vals) > self._limit:
+                part = np.argpartition(magnitude, self._limit)[:self._limit]
+            else:
+                part = np.arange(len(self._vals))
+            order = part[np.argsort(magnitude[part])]
+            self._resolved = tuple(
+                (self._registry.key(int(self._idx[i])),
+                 round(float(self._vals[i]), 6))
+                for i in order if self._vals[i] != 0)
+        return self._resolved
 
 
 @dataclass
@@ -127,7 +184,12 @@ class Candidate:
     fit_score: float           # sedí střed do neznámé — odpověď
     topic_score: float         # bonus tématu (celé větě)
     given_score: float         # postih za dané slovo
-    top_nodes: tuple           # rozklad: (vertikála, příspěvek)
+    decomposition: ScoreDecomposition
+
+    @property
+    def top_nodes(self) -> tuple:
+        """Rozklad: (vertikála, příspěvek) — líný, viz ScoreDecomposition."""
+        return self.decomposition.resolve()
 
     @property
     def token(self):
@@ -146,12 +208,31 @@ class MatchResult:
         return self.candidates[0] if self.candidates else None
 
 
-def _semantic_indices(registry, vector_len):
-    mask = np.zeros(vector_len, dtype=np.float32)
-    for i, key in enumerate(registry.keys()[:vector_len]):
-        if key.startswith(MATCH_PREFIXES):
-            mask[i] = 1.0
+def _mask(registry, vector_len, prefixes, exclude=()):
+    """Maska sloupců podle prefixů, s cache na registru.
+
+    Stavba masky iteruje všechny klíče (na korpusu ~27k × 3 masky na
+    otázku — naměřeno na M4); klíč cache je (prefixy, šířka, verze
+    osy) — růst registru dá novou šířku, přeobsazení novou verzi.
+    """
+    cache = getattr(registry, "_mask_cache", None)
+    if cache is None:
+        cache = registry._mask_cache = {}
+    key = (prefixes, exclude, vector_len, registry.axis_version)
+    mask = cache.get(key)
+    if mask is None:
+        mask = np.zeros(vector_len, dtype=np.float32)
+        for i, vertical in enumerate(registry.keys()[:vector_len]):
+            if vertical.startswith(prefixes) \
+                    and not (exclude and vertical.startswith(exclude)):
+                mask[i] = 1.0
+        mask.setflags(write=False)     # sdílená cache se nemutuje
+        cache[key] = mask
     return mask
+
+
+def _semantic_indices(registry, vector_len):
+    return _mask(registry, vector_len, MATCH_PREFIXES)
 
 
 def _anchor_indices(registry, vector_len):
@@ -161,22 +242,14 @@ def _anchor_indices(registry, vector_len):
     takže obě strany se potkávají v týchž sloupcích; maskou se z pytle
     vybere právě ta část, která nese SOUŘADNICI, ne obsah.
     """
-    mask = np.zeros(vector_len, dtype=np.float32)
-    for i, key in enumerate(registry.keys()[:vector_len]):
-        if key.startswith("ANCHOR="):
-            mask[i] = 1.0
-    return mask
+    return _mask(registry, vector_len, ("ANCHOR=",))
 
 
 def _word_block(registry, vector_len):
-    mask = np.zeros(vector_len, dtype=np.float32)
-    for i, key in enumerate(registry.keys()[:vector_len]):
-        if key.startswith("WORD=") and not key.startswith("WORD=PUNCT"):
-            mask[i] = 1.0
-    return mask
+    return _mask(registry, vector_len, ("WORD=",), exclude=("WORD=PUNCT",))
 
 
-def _fact_bags(corpus):
+def _fact_bags(corpus, steps: int = SPREAD_STEPS):
     """Rozšířené a saturované pytle všech kandidátů — jednou na stav vazeb.
 
     Pytle faktů na otázce nezávisejí; počítají se při první otázce a pak
@@ -193,7 +266,7 @@ def _fact_bags(corpus):
     """
     key = (len(corpus), corpus.registry.link_version,
            corpus.registry.axis_version,
-           corpus.r, getattr(corpus, "r_sentences", 0))
+           corpus.r, getattr(corpus, "r_sentences", 0), steps)
     cached = getattr(corpus, "_fact_cache", None)
     if cached is not None and cached[0] == key:
         return cached[1]
@@ -201,11 +274,11 @@ def _fact_bags(corpus):
     # přestavba všech pytlů po každé změně nesla celou cenu epochy.
     # Epocha běží nad pytli zmraženými při svém začátku (obnova jednou
     # na epochu); otázková strana šíří po ČERSTVÝCH vazbách vždy.
-    # Zmražení přežívá jen změny VAZEB — přeobsazení osy (axis_version)
-    # mění význam sloupců a pytle z jiné osy se použít nesmějí.
+    # Zmražení přežívá jen změny VAZEB (link_version) — jiná osa,
+    # jiné r i jiná hloubka šíření pytle z cache diskvalifikují.
     if cached is not None and getattr(corpus, "_fact_cache_freeze",
                                       False) and cached[0][0] == key[0] \
-            and cached[0][2] == key[2]:
+            and cached[0][2:] == key[2:]:
         return cached[1]
 
     matrices = [s.matrix(Representation.COMPLETE) for s in corpus]
@@ -247,10 +320,9 @@ def _fact_bags(corpus):
                         * sentence_bags[neighbour]
 
         def saturated_unit(bag):
-            """tanh(spread(pytel)) dělený svou normou — jednotkový pytel."""
-            nz = np.nonzero(bag)[0]
-            spread = bag if not len(nz) else bag + bag[nz] @ links[nz]
-            out = np.tanh(spread)            # tanh po kroku šíření (P-B)
+            """Saturované šíření (k kroků, P-B) dělené normou —
+            jednotkový pytel."""
+            out = saturate(bag, links, steps)
             norm = float(np.linalg.norm(out))
             return out / norm if norm else out
 
@@ -258,10 +330,7 @@ def _fact_bags(corpus):
         # chybí" — dřív než se postaví synonymní vazba, sáhne se po
         # širším okně; co větě chybí, může nést soused).
         sentence_bag = np.sum(rows, axis=0) + context
-        nz = np.nonzero(sentence_bag)[0]
-        sentence_spread = sentence_bag if not len(nz) \
-            else sentence_bag + sentence_bag[nz] @ links[nz]
-        sentence_sat = np.tanh(sentence_spread)   # pro pokrytí otázky
+        sentence_sat = saturate(sentence_bag, links, steps)
         sat_idx = np.nonzero(sentence_sat)[0]
 
         widx = np.nonzero(sentence_words)[0]
@@ -305,8 +374,8 @@ def match(question: SentenceField, corpus: Corpus,
           theta: float = THETA, epsilon: float = EPSILON,
           w_topic: float = W_TOPIC, w_given: float = W_GIVEN,
           w_cover: float = W_COVER, w_fit: float = W_FIT,
-          top_nodes: int = 4, top_candidates: int | None = None
-          ) -> MatchResult:
+          top_nodes: int = 4, top_candidates: int | None = None,
+          spread_steps: int = SPREAD_STEPS) -> MatchResult:
     """Propojí otázku s korpusem — čistě váhami, bez filtrů.
 
     Výstup: MatchResult s kandidáty seřazenými podle skóre; každý nese
@@ -315,7 +384,7 @@ def match(question: SentenceField, corpus: Corpus,
     """
     registry = corpus.registry
     question_matrix = question.matrix(Representation.COMPLETE)
-    fact_sentences = _fact_bags(corpus)
+    fact_sentences = _fact_bags(corpus, spread_steps)
 
     n = len(registry)
     links = registry.link_matrix()
@@ -326,9 +395,7 @@ def match(question: SentenceField, corpus: Corpus,
     summed = question_matrix.sum(axis=0)
     q_raw[:len(summed)] = summed
     q_raw *= semantic
-    qnz = np.nonzero(q_raw)[0]
-    q_spread = q_raw if not len(qnz) else q_raw + q_raw[qnz] @ links[qnz]
-    q_sat = np.tanh(q_spread)              # tanh po kroku šíření (P-B)
+    q_sat = saturate(q_raw, links, spread_steps)   # tanh po kroku (P-B)
     q_norm = float(np.linalg.norm(q_sat))
     q_words = q_raw * words
     q_words_norm = float(np.linalg.norm(q_words))
@@ -378,24 +445,13 @@ def match(question: SentenceField, corpus: Corpus,
             fit = float(w_fit * (q_anchor[aidx] @ avals)
                         / a_denominator) if a_denominator else 0.0
             score = meet + cover + topic + given + fit
-            # top-K bez plného řazení: po Hebbovi mají rozšířené pytle
-            # tisíce os a argsort × 58k kandidátů stál hodiny (naměřeno
-            # samplem); argpartition je O(n)
-            magnitude = -np.abs(contributions)
-            if len(contributions) > top_nodes:
-                part = np.argpartition(magnitude, top_nodes)[:top_nodes]
-            else:
-                part = np.arange(len(contributions))
-            order = part[np.argsort(magnitude[part])]
             candidates.append(Candidate(
                 sentence=sentence, center=center, score=score,
                 meet_score=round(meet, 6), cover_score=round(cover, 6),
                 fit_score=round(fit, 6),
                 topic_score=round(topic, 6), given_score=round(given, 6),
-                top_nodes=tuple(
-                    (registry.key(int(idx[i])),
-                     round(float(contributions[i]), 6))
-                    for i in order if contributions[i] != 0)))
+                decomposition=ScoreDecomposition(
+                    registry, idx, contributions, top_nodes)))
 
     candidates.sort(key=lambda c: -c.score)
     if top_candidates is not None:      # jen zkrácení výpisu, ne řez
