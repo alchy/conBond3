@@ -110,3 +110,76 @@ opakované hrany do týchž míst, tedy **konkrétní svět** (`Karel`,
 `Ježíš`, `Bohumil`). `Ježíš` má nejvíc výskytů (106) a přesto poměr
 0,54 — frekvence ani rozmanitost samy vlastní jména neodfiltrují,
 poměr ano.
+
+---
+
+## Krok 2 · Promoce do custom vertikál
+
+**Co vzniká.** Funkce `promote_verticals()` — vezme statistiku
+z `FactGraph` a vrátí, které uzly se mají stát **custom vertikálami**.
+Žije vedle grafu; registr jen dostává hotový cílový stav osy k zapsání.
+
+**Kritérium: `skóre = různých² / hran`** (efektivní počet různých
+sousedů). Odměňuje rozmanitost i obecnost zároveň — uzel musí mít
+mnoho sousedů A ZÁROVEŇ se neopakovat do týchž míst.
+
+**Limit 328** platí na custom vertikály; osy z UDPipe stojí vedle
+a nesoutěží. Co je už zastoupené, se nepromuje: kandidát, který
+nerozliší dvě místa se stejným UDPipe popisem, místo nedostane.
+
+**Vratnost.** Promoce není zápis navždy. Při přepočtu se pořadí sestaví
+znovu a kdo vypadne z 328, uvolní sloupec. Funkce proto vrací **celý
+cílový stav osy**, ne přírůstek — porovnává se stav proti stavu.
+
+**Co záměrně nedělá.** Nesahá na cache ani na indexy (krok 3)
+a nespouští přeučení (krok 4). Do té doby se testuje na čerstvém
+registru, kde přeobsazení nehrozí.
+
+### Zavržená varianta (naměřeno, ne odhadnuto)
+
+Nejdřív jsem navrhl skóre `poměr × n/(n+1)`, tedy poměr různých
+sousedů k hranám s tlumením za málo dokladů. **Simulace ho vyvrátila:**
+tlumení saturuje už při dvaceti hranách, takže nahoru vyplavaly uzly
+s poměrem 1,00 a dvaceti hranami (`muset`, `lékař`, `mnohý`,
+`organismus`), zatímco nejsilnější uzly grafu vypadly úplně —
+`rok`, `mít`, `moci` se do 328 nevešly. Vlastní jména sice padala
+správně, ale to samo nestačí.
+
+### Příklad na reálných datech (korpus 2 912 vět)
+
+Prvních dvanáct podle `různých² / hran`:
+
+| # | uzel | různých | hran | skóre |
+|---|---|---|---|---|
+| 1 | rok | 162 | 191 | 137,4 |
+| 2 | mít | 185 | 260 | 131,6 |
+| 3 | říci | 177 | 308 | 101,7 |
+| 4 | moci | 119 | 147 | 96,3 |
+| 5 | jít | 129 | 174 | 95,6 |
+| 6 | přijít | 124 | 168 | 91,5 |
+| 7 | stát | 85 | 93 | 77,7 |
+| 8 | část | 88 | 100 | 77,4 |
+| 9 | život | 90 | 110 | 73,6 |
+| 10 | vyjít | 82 | 97 | 69,3 |
+
+Hranice 328. místa je na skóre **12,1** (uzel `hodnota`), tedy
+s rezervou nad šumem.
+
+Kam padla vlastní jména: `Praha` 19., `Karel` 35., `Ježíš` 45.,
+`Bohumil` 52., **`Hrabal` až 332.** — mimo limit. V celých 328 místech
+je jmen jen **18 (5 %)**, zbytek jsou nositelé tvaru.
+
+### Přejímací kritérium
+
+- prvních 328 obsahuje `rok`, `mít`, `moci`, `stát`, `začít`, `dílo`;
+- `Hrabal` se do limitu nevejde; podíl vlastních jmen v limitu ≤ 10 %;
+- dvojí zavolání nad týmž korpusem dá **identický** seznam (promoce je
+  deterministická);
+- funkce vrací cílový stav, takže odebrání uzlu z korpusu ho z osy
+  po přepočtu odstraní.
+
+### Otevřené k rozhodnutí
+
+Dělení rozpočtu mezi **slova** a **typy vztahů**. V jedné soutěži slova
+typy přehlasují počtem, ačkoli typ je cennější (platí pro celý druh
+otázek). Buď pevné dělení (např. 200/128), nebo násobek pro typy.
