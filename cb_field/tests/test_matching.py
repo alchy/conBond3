@@ -99,10 +99,14 @@ class TestPropojeni(unittest.TestCase):
         naucene = [(s, d, w) for s, d, w, zdroj
                    in corpus.registry.links() if zdroj == "etalon"]
         self.assertTrue(naucene, "učení nepostavilo žádnou hranu")
-        # žádná naučená hrana nesmí vést ze slova ani do slova
-        slovni = [(s, d) for s, d, _w in naucene
-                  if s.startswith("WORD=") or d.startswith("WORD=")]
-        self.assertEqual(slovni, [], f"učení postavilo synonyma: {slovni}")
+        # slovo se smí povýšit na TYP (WORD→ANCHOR), ale synonymní
+        # hrana slovo↔slovo musí být řádově slabší (útlum, ne zákaz)
+        synonyma = [abs(w) for s, d, w in naucene
+                    if s.startswith("WORD=") and d.startswith("WORD=")]
+        typove = [abs(w) for s, d, w in naucene
+                  if s.startswith("WORD=") and d.startswith("ANCHOR=")]
+        if synonyma and typove:
+            self.assertLess(max(synonyma), max(typove))
         # a poptávaná souřadnice otázky musí být mezi konci vazeb
         konce = {s for s, _d, _w in naucene} | {d for _s, d, _w in naucene}
         self.assertTrue(any(k.startswith(("QANCHOR=", "QLEM=", "ANCHOR="))

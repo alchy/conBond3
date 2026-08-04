@@ -20,7 +20,7 @@ class TestHebb(unittest.TestCase):
                 ((BEZELA, KOCKA, TECKA), "Běžela kočka.")):
             corpus.fields.append(SentenceField(
                 tokens, r=1, registry=corpus.registry, source=source))
-        stats = hebb(corpus, min_count=2)
+        stats = hebb(corpus)
         self.assertGreater(stats["hran"], 0)
         # pes a dir:to se souaktivují v obou větách → hrana hebb
         edge = corpus.registry.get_link("WORD=NOUN:pes", "ANCHOR=dir:to")

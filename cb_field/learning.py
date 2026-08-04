@@ -45,7 +45,6 @@ ETA_HEBB = 0.5
 #: (η_sgd 0,15 × scale ~0,03) → η = 0,01. S η = 0,15 Adam divergoval:
 #: loss 0,40 → 0,53, trefy 16 → 8 (naměřeno 2026-08-04).
 ETA_CONTRAST = 0.01
-MIN_COOCCURRENCE = 2
 #: Strop epoch je jen pojistka — trénink končí konvergencí: korekcí=0
 #: (marže všude splněna), nebo odvoláním epochy, která zhoršila loss.
 MAX_EPOCHS = 10
@@ -72,12 +71,22 @@ ADAM_EPS = 1e-8
 #: synonymy — ideálně pracujeme na vzorech jen s metadaty a teprve poté
 #: můžeme povýšit ty, kde sedí vlastní lemma."*
 #:
-#: Učit hrany mezi WORD= znamená stavět synonyma pár po páru; naměřeno
-#: (§ 15), že se mezi otázkami NEPŘENÁŠEJÍ — trénink 1 → 6/23 a etalon
-#: beze změny. Metadatový vzor je typový, takže naučené platí pro každou
-#: další otázku téhož druhu. Slova se proto z učicího pytle vypouštějí;
-#: v párování zůstávají (adresují podnět), jen se na nich neučí.
-LEARN_PREFIXES = tuple(p for p in MATCH_PREFIXES if p != "WORD=")
+#: Tlumená je hrana WORD→WORD (synonymum pár po páru; naměřeno § 15,
+#: že se mezi otázkami nepřenáší). Hrana WORD→metadata zakázaná NENÍ —
+#: to je právě to „povýšení, kde sedí vlastní lemma": slovo se váže na
+#: TYP („řeka → místo"), a typ už platí pro celý druh otázek. Vyhodit
+#: slova z učení úplně byl můj přehmat: pak se vazba řeka→místo nemohla
+#: naučit vůbec a musel ji dodávat zvláštní mechanismus.
+LEARN_PREFIXES = MATCH_PREFIXES
+
+#: Útlum synonymní hrany (slovo↔slovo). NENÍ to zákaz ani filtr —
+#: J.: „žádné filtry, musíme učit nn, ne dělat if-then konstrukce."
+#: Dvojice slovo↔slovo se tedy učí dál, jen desetkrát pomaleji než
+#: hrana slovo→typ: gradient tudy teče, takže učení o signál nepřijde,
+#: ale cesta nejmenšího odporu vede k metadatovému vzoru, který
+#: generalizuje. Kdo se chce učit synonyma, musí pro ně mít desetkrát
+#: víc dokladů — a to je váha, ne brána.
+SYNONYM_DAMPING = 0.1
 
 
 def _semantic_bag(sentence, rows, center=None, prefixes=None) -> dict:
@@ -99,8 +108,7 @@ def _semantic_bag(sentence, rows, center=None, prefixes=None) -> dict:
     return bag
 
 
-def hebb(corpus, eta: float = ETA_HEBB,
-         min_count: int = MIN_COOCCURRENCE) -> dict:
+def hebb(corpus, eta: float = ETA_HEBB) -> dict:
     """4b: Hebbovské koeficienty ze souaktivací — „co se aktivuje spolu,
     to se propojí".
 
@@ -131,14 +139,13 @@ def hebb(corpus, eta: float = ETA_HEBB,
 
     added = 0
     for (a, b), n_ab in pair_count.items():
-        if n_ab < min_count:
-            continue
         pmi = math.log(total * n_ab / (count[a] * count[b]))
         denominator = -math.log(n_ab / total)
         npmi = pmi / denominator if denominator > 0 else 0.0
-        if npmi <= 0:
-            continue
-        weight = max(-1.0, min(1.0, eta * npmi))
+        # Bez prahu a bez zahození záporných: málo dokladů = slabší
+        # váha (n/(n+1)), záporné NPMI = záporná hrana. Týž útlum jako
+        # u typů — filtr nahrazený vahou (J.: „žádné filtry").
+        weight = max(-1.0, min(1.0, eta * npmi * n_ab / (n_ab + 1)))
         for src, dst in ((a, b), (b, a)):
             if registry.get_link(src, dst) is None:
                 added += 1
@@ -146,14 +153,7 @@ def hebb(corpus, eta: float = ETA_HEBB,
     return {"vet": total, "paru": len(pair_count), "hran": added}
 
 
-#: Práh doložení pro typovou hranu: kolikrát nejmíň musí slovo stát
-#: v koši s kotvou, aby se typ naučil. Není to filtr obsahu — je to
-#: mez důvěryhodnosti doložení (jeden výskyt není vzor).
-MIN_TYPE_EVIDENCE = 2
-
-
-def learn_types(corpus, eta: float = 0.5,
-                min_evidence: int = MIN_TYPE_EVIDENCE) -> dict:
+def learn_types(corpus, eta: float = 0.5) -> dict:
     """Typ obecného jména z jeho okolí: „řeka je místo" (J. 2026-08-04).
 
     Řetěz, který J. ukázal: *kde → místo ← řeka*. Uzel „místo"
@@ -197,17 +197,19 @@ def learn_types(corpus, eta: float = 0.5,
 
     added = 0
     for (word, anchor), n in pair.items():
-        if n < min_evidence:
-            continue
         expected = word_count[word] * anchor_count[anchor] / max(total, 1)
         if expected <= 0:
-            continue
+            continue                  # dvojice se v korpusu nepotkala
         pmi = math.log(n / expected)
         denominator = -math.log(n / max(total, 1))
         npmi = pmi / denominator if denominator > 0 else 0.0
-        if npmi <= 0:
-            continue
-        weight = max(-1.0, min(1.0, eta * npmi))
+        # Žádný práh doložení a žádné zahození záporné vazby (J. se
+        # ptal na filtry — oba tu byly a oba byly moje):
+        #   · málo dokladů = slabší váha, ne vyloučení (n/(n+1));
+        #   · záporné NPMI = záporná hrana, ne ticho — „tohle slovo
+        #     k té kotvě NEPATŘÍ" je stejně platný doklad jako opak
+        #     a učení o něj nesmí přijít.
+        weight = max(-1.0, min(1.0, eta * npmi * n / (n + 1)))
         if registry.get_link(word, anchor) is None:
             added += 1
         registry.link(word, anchor, weight, source="hebb")
@@ -271,6 +273,8 @@ def contrastive_step(registry, question_bag: dict, correct_bag: dict,
                 continue
             old = existing[0] if existing else 0.0
             gradient = float(gradients[row, col])
+            if q_key.startswith("WORD=") and a_key.startswith("WORD="):
+                gradient *= SYNONYM_DAMPING      # útlum, ne zákaz
             m, v, t = state.get((q_key, a_key), (0.0, 0.0, 0))
             t += 1
             m = BETA1 * m + (1 - BETA1) * gradient
