@@ -85,9 +85,10 @@ def semantic_bag(rows) -> dict:
 class ScoreWeights:
     """Váhy členů skóre — páky ke kalibraci, ne pravidla.
 
-    `fit` je připraven pro krok 5 (naučený člen); dnes je vypnutý
-    nulou, což je jeho jediný správný výchozí stav: nenaučená váha
-    nesmí mlčky ovlivňovat baseline.
+    `fit` je připraven pro krok 5 (naučený člen) a `spectral` nese
+    latentní podobnost (§ 5/S2). Oba jsou vypnuté nulou, což je jejich
+    jediný správný výchozí stav: nespočítaný ani nenaučený člen nesmí
+    mlčky ovlivňovat baseline.
     """
 
     center: float = 2.0
@@ -95,6 +96,7 @@ class ScoreWeights:
     topic: float = 1.0
     given: float = -3.0
     fit: float = 0.0
+    spectral: float = 0.0
 
 
 class LinkOperator:
@@ -249,13 +251,18 @@ class Matcher:
     def __init__(self, corpus, *, spread_depth: int = 2,
                  weights: ScoreWeights = ScoreWeights(),
                  theta: float = 0.0, epsilon: float = 0.0,
-                 top_k: int = 50) -> None:
+                 top_k: int = 50, spectral_k: int = 0) -> None:
         self.corpus = corpus
         self.spread_depth = spread_depth
         self.weights = weights
         self.theta = theta
         self.epsilon = epsilon
         self.top_k = top_k
+        #: Kolik latentních os má spektrální člen. Nula = nepočítá se
+        #: vůbec; SVD nad 12 tisíci větami není zadarmo a nikdo za něj
+        #: nemá platit, dokud si o něj neřekne váhou.
+        self.spectral_k = spectral_k
+        self.spectral = None
         self._cache_klic = None
         self._links = None
         self._bags = None          # saturované pytle vět (řídce)
@@ -450,17 +457,24 @@ class Matcher:
         q_norma = float(np.linalg.norm(q))
         q_slova = self._vektor(self.question_words(question), jen_slova=True)
         pokryti_vet = self.sentence_coverage(question)
+        spektralni = (self.spectral.scores(
+            saturate(self._vektor(semantic_bag(question.complete)),
+                     self._links, self.spread_depth))
+            if self.spectral is not None else None)
 
         kandidati = []
         for pozice in self.recall(question):
             pole = self.corpus[pozice]
             tema = _cos(q_slova, self._word_bags[pozice])
             cover = pokryti_vet.get(pozice, 0.0)
+            spektrum = float(spektralni[pozice]) \
+                if spektralni is not None else 0.0
             for i in range(len(pole.tokens)):
                 if pole.tokens[i].upos in NEKANDIDATI:
                     continue
                 kandidati.append(self._kandidat(
-                    q, q_norma, q_slova, pozice, i, pole, cover, tema))
+                    q, q_norma, q_slova, pozice, i, pole, cover, tema,
+                    spektrum))
 
         kandidati.sort(key=lambda k: -k.score)
         return MatchResult(kandidati, self._vychodisko(kandidati), question)
@@ -468,7 +482,7 @@ class Matcher:
     # --- vnitřek --------------------------------------------------------
 
     def _kandidat(self, q, q_norma, q_slova, pozice, i, pole, cover,
-                  tema) -> ScoreCandidate:
+                  tema, spektrum=0.0) -> ScoreCandidate:
         # Obě strany se šíří stejně: otázka nese QANCHOR=, věta ANCHOR=,
         # a společnou souřadnici mají až o krok dál (ANCHOR=space). Šířit
         # jen otázku by znamenalo měřit setkání v místě, kam druhá strana
@@ -488,6 +502,11 @@ class Matcher:
             "topic": self.weights.topic * tema,
             "given": self.weights.given * _cos(q_slova, stred_slova),
             "fit": self.weights.fit * 0.0,
+            # Latentní podobnost je VĚTNÁ jako pokrytí — patří větě, ne
+            # tokenu, takže řadí věty. A je to jedno přiznané číslo,
+            # ne rozprostřený šum: to je celý důvod, proč smí být
+            # v systému, který stojí na pojmenovaných osách.
+            "spectral": self.weights.spectral * spektrum,
         }
         return ScoreCandidate(pozice, i, pole.tokens[i].lemma,
                               float(sum(cleny.values())), cleny)
@@ -529,6 +548,9 @@ class Matcher:
                  if not klic.startswith("WORD=PUNCT:")}, jen_slova=True)
         self._bags = bags
         self._word_bags = slova
+        if self.spectral_k:
+            from cb_bond.spectral import SpectralMember
+            self.spectral = SpectralMember().fit(bags, k=self.spectral_k)
         self._radky = {}
         self._norms = np.linalg.norm(bags, axis=1)
         self._word_norms = np.linalg.norm(slova, axis=1)

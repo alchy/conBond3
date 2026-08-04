@@ -21,6 +21,7 @@ Co se model naučil: `docs/trenink-vah.md`.
 | 6 | `PromotionCycle` — výměna vstupní vrstvy | hotovo (rollback bit po bitu sedí) |
 | 9 | `GraphMirror` — zrcadlo do viewBase2 | hotovo (proti skutečnému oknu) |
 | 5 | `ContrastiveTrainer` — učení | hotovo (věta v top-3: 20 → 21/30) |
+| S2 | `SpectralMember` — spektrální člen | hotovo (věta v top-3: 21 → 22/30) |
 | 10 | měřicí protokol | zbývá |
 
 Vědomě zatím **není** plný modul podle README-MODULES § 2: chybí
@@ -51,6 +52,7 @@ usadí — stejně jako u cb_field.
 | `PromotionCycle`, `CycleOutcome` | promoční cyklus: selekt → přegenerování → učení → měření → přijmout/vrátit |
 | `GraphMirror` | delty grafu → okno viewBase2; `emit`, `mirror`, `refresh`, `illuminate` |
 | `ContrastiveTrainer`, `ValidationSplit`, `TrainingReport` | kontrastivní učení nad metadaty; validace řídí konec |
+| `SpectralMember`, `truncated_svd` | latentní podobnost jako vážený člen (§ 5/S2); vypnutý nulou |
 | `learning_bag`, `sentence_hit`, `LEARN_PREFIXES` | učicí pytel (bez WORD=) a větné měřítko úspěchu |
 
 ## Závislosti
@@ -68,7 +70,7 @@ Na registru cb_fieldu smí cb_bond volat jen `link` / `unlink` /
 ## Testy
 
 ```
-./run-python -m unittest discover -s cb_bond -t .     # 118 testů
+./run-python -m unittest discover -s cb_bond -t .     # 146 testů
 ```
 
 Zmražené rozbory v `tests/vzorky.py` (skutečné výstupy UDPipe
@@ -85,6 +87,7 @@ Přejímka na skutečném korpusu (potřebuje UDPipe a data mimo git):
 ./run-python cb_bond/scripts/prejimka-promoce.py    # krok 6 — sedí
 ./run-python cb_bond/scripts/prejimka-zrcadlo.py    # krok 9 — sedí
 ./run-python cb_bond/scripts/prejimka-uceni.py      # krok 5 — hlásí vadu DAT
+./run-python cb_bond/scripts/prejimka-spektrum.py   # § 5/S2 — sedí
 ```
 
 Diagnostika učení (nic nemění, jen vypisuje):

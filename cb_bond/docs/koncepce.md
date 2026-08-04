@@ -280,3 +280,48 @@ Naměřeno proti skutečnému oknu: Jordán dostane `glow` 1,67, Galilej
 1,20 — tytéž hodnoty, které vypočítá `illuminate`, doputují až do
 metadat uzlu, a s nimi i čitelné `sousede = "ADJ:pokřtěný (obl)"`
 a `stupen = 1`.
+
+## 18 · Spektrální člen: spojité zobecnění vedle pojmenované osy
+
+S2 ze zadání. Zaceluje mezeru, kterou pytel neumí přejít: slova, která
+spolu nikdy nestojí ve větě, a přesto patří k sobě. Spektrum je spojí
+přes SDÍLENÝ KONTEXT.
+
+Ověřeno na vzorku ze zadání (4 věty × 5 os) — singulární hodnoty
+2,885 · 1,681 · 0,922 · 0, cos(smět, povolený) surově 0,00, při k=1
+1,00, při k=2 zpátky 0,00. A na 2 912 větách: *Newton × Einstein*
+surově 0,00 → spektrálně 0,51, ačkoli spolu nikdy nestojí ve větě.
+
+**Proč jen vážený člen.** V latentním prostoru není nic přesně nula —
+naměřeno: otázka o dálnici má surově přesnou nulu u 1 971 z 2 912 vět,
+latentně u nuly. Na té přesné nule ale stojí detekce mezery (§ 14),
+takže latentní osy nesmějí osu nahradit. Přidávají jedno přiznané
+číslo do rozkladu, nic víc.
+
+**k je páka s dvojím oknem.** Naměřeno na 2 912 větách:
+
+| dvojice | k=5 | k=20 | k=50 | k=200 |
+|---|---|---|---|---|
+| Newton × Einstein | +0,98 | +0,86 | +0,92 | +0,51 |
+| z × od (obě „from") | +0,72 | +0,77 | −0,27 | −0,32 |
+| od × do (OPAČNÉ) | +0,61 | −0,07 | −0,02 | −0,00 |
+
+Obsahová slova snesou velké k; gramatické rozdíly žijí kolem k=20
+a při k=5 se slijí i protiklady. Na etalonu vyšel výsledek stejně pro
+k ∈ {20, 50, 200} a W ∈ {0,5; 1; 2} — člen je zatím slabý proti
+ostatním, takže na jeho nastavení nezáleží tolik jako na tom, že vůbec
+je.
+
+**Co doopravdy zvedl.** Zadání předpovídalo třídu *smět ↔ povolený*
+(dálnice), ale ta se na biblicko-fyzikálním korpusu změřit nedá —
+*dálnice* v něm není. Naměřený zisk je jinde: otázka „Kde se narodil
+Karel Čapek?" (typ *most: elipsa podmětu*), kde věta s odpovědí
+podmět neopakuje. Spektrální člen tam přispěl 0,864, druhý nejvíc po
+`meet`, a dostal správnou větu do top-3.
+
+**Zamítnuta náhodná inicializace vah.** Naměřeno: náhodné váhy ±0,20
+na učených hranách zvednou přesnost z 11/30 na 12–14/30 (pět semínek
+z pěti lepších než nula). Je to ale chudá aproximace téhož —
+náhodná projekce místo spektra — a stojí to průhlednost, rozdíl mezi
+naučenou nulou a chybějící vazbou, a rozptyl stejně velký jako zisk.
+S2 dělá totéž řízeně a deterministicky.

@@ -329,6 +329,57 @@ class TestMatch(unittest.TestCase):
         self.assertEqual(nejlepsi.decomposition()["topic"], 0.0)
 
 
+class TestSpektralniClen(unittest.TestCase):
+
+    def test_vypnuty_clen_skore_NEMENI(self):
+        # W_SPECTRAL = 0 musí dát bit po bitu dnešek
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        bez = Matcher(corpus, spread_depth=1)
+        se_clenem = Matcher(corpus, spread_depth=1, spectral_k=2,
+                            weights=ScoreWeights(spectral=0.0))
+
+        a = bez.match(_otazka(corpus)).candidates[0]
+        b = se_clenem.match(_otazka(corpus)).candidates[0]
+
+        self.assertEqual(a.key, b.key)
+        self.assertAlmostEqual(a.score, b.score, places=6)
+        self.assertEqual(b.decomposition()["spectral"], 0.0)
+
+    def test_zapnuty_clen_se_objevi_v_rozkladu(self):
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        matcher = Matcher(corpus, spread_depth=1, spectral_k=2,
+                          weights=ScoreWeights(spectral=1.0))
+
+        rozklad = matcher.match(_otazka(corpus)).candidates[0].decomposition()
+
+        self.assertIn("spectral", rozklad)
+        self.assertNotEqual(rozklad["spectral"], 0.0)
+        self.assertAlmostEqual(
+            sum(rozklad.values()),
+            matcher.match(_otazka(corpus)).candidates[0].score, places=5)
+
+    def test_clen_je_VETNY_stejne_jako_pokryti(self):
+        # latentní podobnost patří větě, ne tokenu — řadí věty
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        matcher = Matcher(corpus, spread_depth=1, spectral_k=2,
+                          weights=ScoreWeights(spectral=1.0))
+
+        podle_vety = {}
+        for kandidat in matcher.match(_otazka(corpus)).candidates:
+            podle_vety.setdefault(kandidat.sentence, set()).add(
+                round(kandidat.decomposition()["spectral"], 6))
+
+        for veta, hodnoty in podle_vety.items():
+            self.assertEqual(len(hodnoty), 1, f"věta {veta} má člen různý")
+
+    def test_bez_spectral_k_se_spektrum_nepocita(self):
+        # drahé se nepočítá, dokud si o to nikdo neřekne
+        corpus = _korpus(KRESTA, SYNAGOGA)
+        matcher = Matcher(corpus, spread_depth=1)
+
+        self.assertIsNone(matcher.spectral)
+
+
 class TestVysledek(unittest.TestCase):
 
     def test_theta_rozhoduje_o_mlceni(self):

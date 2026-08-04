@@ -190,3 +190,22 @@ vstupní vrstvy a pole by tiše přestala aktivovat `CUSTOM=`.
 |---|---|
 | přejímka kroku 5 | `./run-python cb_bond/scripts/prejimka-uceni.py` |
 | co se model naučil | `./run-python cb_bond/scripts/trenink-vah.py [kolik]` — návod ke čtení je v `docs/trenink-vah.md` |
+
+## SpectralMember (spectral.py)
+
+| jméno | co dělá / na čem visí |
+|---|---|
+| `truncated_svd(M, k, seed=328, iters=4)` | randomizované truncated SVD, čisté numpy, deterministické; vrací `(U_k, Σ_k, V_k)` |
+| `SpectralMember.fit(matrix, k=250)` | spočítá latentní prostor z matice věty × osy |
+| `.score(question_bag, sentence_id)` | `cos(q·V_kᵀ, věta·V_kᵀ)`; **bez fitu 0,0** |
+| `.scores(question_bag)` | proti všem větám jedním součinem |
+| `.k`, `.axes` | kolik latentních os a nad kolika osami se fitovalo |
+| `ScoreWeights.spectral` | váha členu; **0,0 = vypnuto** a dnešek bit po bitu |
+| `Matcher(..., spectral_k=0)` | kolik latentních os; 0 = spektrum se vůbec nepočítá |
+
+Kratší pytel se doplní nulami, delší je **hlasitá chyba** — vznikl nad
+novější osou a sloupce navíc by se tiše zahodily.
+
+| co | jak |
+|---|---|
+| přejímka § 5/S2 | `./run-python cb_bond/scripts/prejimka-spektrum.py` |
