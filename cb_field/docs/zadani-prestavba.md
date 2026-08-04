@@ -184,6 +184,9 @@ páky, ne pravidla):
         for _ in range(steps): v = tanh(v + v·L)   # tanh po KAŽDÉM kroku
 
     class Matcher:
+        # ARCHITEKTURA: dvoustupňové čtení (§ 5/S1) — recall po
+        # VĚTÁCH jedním součinem, precision po tokenech jen v top-K;
+        # spektrální člen (§ 5/S2) jako vážená páka
         def __init__(corpus, *, spread_depth=2,
                      weights=ScoreWeights(), theta, epsilon)
         def given_axes(question) -> list     # WORD= řádků bez QLEM=
@@ -440,7 +443,142 @@ NIKDY do tréninku.
 
 ---
 
-## 5 · Zmražené přejímky (souhrn — nová stavba je musí zopakovat)
+# 5 · Směr nad rámec zkušenosti (S1–S3, schváleno J.)
+
+Tři strukturální návrhy, které zadání mění dopředu, ne zpětně.
+Vývojář se s technikami nemusel setkat — proto u každého metakód
+A úplný příklad na textu s vypočtenými čísly. Žádný z nich
+NENAHRAZUJE promoci (pojmenovaná, diskrétní komprese dimenze je
+páteř systému); všechny jsou vážené členy nebo reprezentace pod
+kapotou. Bez sklearn — algoritmy jsou malé a auditovatelné
+(numpy, případně scipy.sparse jako vědomá výjimka).
+
+## S1 · Dvoustupňové čtení: nejdřív věty, pak tokeny
+
+**Proč.** Cíl je vybrat kandidátní VĚTY, ale match() dnes skóruje
+každý token korpusu (58 000 kandidátů, pythonní smyčka). Recall po
+větách je jeden maticový součin; jemné čtení se pak platí jen za
+top-K vět.
+
+**Metakód:**
+
+    class SentenceIndex:
+        """Matice větných pytlů S (věty × osy, řídká, saturovaná
+        šířením k) — přestavuje se s (růst, link_version,
+        axis_version, k)."""
+        def recall(self, question_bag, top_k=50) -> list[int]:
+            scores = normalize(S) @ normalize(q)     # JEDEN součin
+            return argsort(scores)[-top_k:]
+
+    class Matcher:
+        def match(self, question):
+            shortlist = self.index.recall(bag(question), top_k=50)
+            return self.score_tokens(question, shortlist)  # dnešní
+                                                           # členy skóre,
+                                                           # jen v top-K
+
+**Příklad na textu.** Otázka „Kolik se smí jezdit po dálnici?",
+mini korpus tří vět:
+
+    s1: „Nejvyšší povolená rychlost na dálnici je sto třicet."
+    s2: „Mojžíš vyvedl lid z Egypta."
+    s3: „Kamion smí jezdit nižší rychlostí."
+
+    q·Sᵀ (kosinově):  s1 0,61 · s2 0,03 · s3 0,54
+    top-2 = {s1, s3}  →  tokenové/gaussovské čtení UŽ JEN v nich;
+    s2 (58k takových) se jemně nečte vůbec
+
+Trénink z toho dostane zadarmo těžší soupeře: rival se bere
+z top-K, ne odkudkoli. **Přejímka:** shodná přesnost s dnešním
+plným čtením při K=50 (etalon), běh match() ≥ 10× rychlejší.
+
+## S2 · Spektrální člen (truncated SVD ≈ LSA)
+
+**Proč.** Nejtvrdší nezacelená mezera je třída *smět ↔ povolený*:
+jiná slova, žádný kmen, žádná definice. Spektrum matice věty×osy
+slova spojí přes SDÍLENÝ KONTEXT — je to lineární autoenkodér,
+tedy legitimní vrstva NN v uzavřené formuli. Latentní osy ale
+nemají jména, proto POUZE jako vážený člen skóre (rozklad zůstává
+čitelný, latentní příspěvek je jedno přiznané číslo).
+
+**Metakód** (randomizované truncated SVD, čisté numpy,
+deterministické — žádný sklearn):
+
+    def truncated_svd(M, k, seed=328, iters=4):
+        rng = np.random.default_rng(seed)
+        Q = M @ rng.standard_normal((M.shape[1], k + 8))
+        for _ in range(iters):                  # power iterace
+            Q, _ = np.linalg.qr(M @ (M.T @ Q))
+        B = Q.T @ M                             # malá (k+8) × osy
+        Ub, s, Vt = np.linalg.svd(B, full_matrices=False)
+        return (Q @ Ub)[:, :k], s[:k], Vt[:k]   # U_k, Σ_k, V_k
+
+    class SpectralMember:
+        """Přepočítává se v promočním cyklu (tam, kde už se mění
+        osa). Do skóre: W_SPECTRAL · cos(q·V_kᵀ, věta·V_kᵀ)."""
+        def fit(self, sentence_matrix, k=250)
+        def score(self, question_bag, sentence_id) -> float
+
+**Příklad na textu — spočteno.** Osy [smět, povolený, rychlost,
+dálnice, jezdit], čtyři věty:
+
+    s1: Na dálnici je povolená rychlost sto třicet.  [0,1,1,1,0]
+    s2: Po dálnici se smí jezdit rychlostí 130.      [1,0,1,1,1]
+    s3: Nejvyšší povolená rychlost platí v obci.     [0,1,1,0,0]
+    s4: Kamion smí jezdit nižší rychlostí.           [1,0,1,0,1]
+
+    surový cos(sloupec smět, sloupec povolený) = 0,00
+        — nikdy nestojí v téže větě, pytel je NIKDY nespojí
+
+    SVD: singulární hodnoty [2,89 · 1,68 · 0,92 · 0]
+    k=1 (jen hlavní téma):  cos(smět, povolený) = 1,00
+        — obě osy se slijí přes sdílený kontext (rychlost, jezdit,
+          dálnice): PŘESNĚ most, který hledáme
+    k=2:                    cos(smět, povolený) ≈ 0,00
+        — druhá komponenta nese právě kontrast smět×povolený,
+          zobecnění zmizí
+
+    POUČENÍ: k je PÁKA mezi zobecněním (malé k slévá) a rozlišením
+    (velké k drží kontrasty). Na reálném korpusu (12 258 × ~27 000)
+    leží provozní k mezi tím (~200–300) a KALIBRUJE SE MĚŘENÍM,
+    ne dojmem — jako každá páka v systému.
+
+**Přejímka:** třída otázek smět↔povolený (dálnice) zvedne
+`sentence_hit`; přesnost, mlčení ani dosah na etalonu neklesnou;
+člen vypnutelný nezavoláním (W_SPECTRAL=0 = dnešek).
+
+## S3 · Řídká reprezentace a hustý podprostor
+
+**Proč.** Matice vazeb L je dnes hustá n×n: při n = 27 000 je to
+27 000² × 4 B ≈ **2,9 GB**, a roste kvadraticky s korpusem —
+přitom nese jen ~30 000 nenulových vazeb. Zeď, do které narazíme.
+
+**Metakód a počty:**
+
+    # (a) řídká L — CSR (scipy.sparse jako vědomá výjimka § 19):
+    #     tři pole: data / indices / indptr
+    L = csr_matrix((weights, (rows, cols)), shape=(n, n))
+    spread = v + v @ L                 # řídký matvec
+    # paměť: 30 000 vazeb × 12 B ≈ 0,4 MB   (proti 2,9 GB — 7000×)
+
+    # (b) hustě jen v PEVNÉM podprostoru (elegantnější, v duchu
+    #     promoce): osy UDPipe + 328 custom ≈ 1 500 dimenzí
+    L_core = np.zeros((1500, 1500))    # 9 MB — učení a NN žijí TADY
+    # plný prostor (WORD= roste se světem) zůstává řídký;
+    # pevná vstupní vrstva NN je doslova i paměťová komprese
+
+**Příklad na textu.** Definiční vazba z „Gravitace je síla…":
+
+    dense: L[idx(WORD=gravitace), idx(WORD=síla)] = 0.7
+           → celá matice v paměti kvůli jednomu číslu
+    CSR:   data=[0.7] · indices=[idx(síla)] · řádek gravitace
+           → tři čísla; spread(gravitace) čte jen tenhle řádek
+
+**Přejímka:** bitově shodná čísla evaluate s dnešní hustou cestou
+(reprezentace nesmí měnit výsledky); paměť L ≤ 10 MB při 12 258
+větách; škálovací test 5× korpus bez OOM.
+
+## 6 · Zmražené přejímky (souhrn — nová stavba je musí zopakovat)
 
 | co | hodnota |
 |---|---|
@@ -459,7 +597,7 @@ Zavržené (nezkoušet znovu): šíření učicích pytlů maticí · WORD=
 v učení · plošné derivace · kmen 3–4 znaky · promoce poměr×n/(n+1)
 · práh detekce mezery.
 
-## 6 · Data k převzetí a definice hotového
+## 7 · Data k převzetí a definice hotového
 
 Data: data-persistent/korpus/101–107, 201, 202, 301–326 (mimo git,
 fetch + ZDROJ.md); tests/data/korpus/001–003 + otazky-201/202;
