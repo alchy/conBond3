@@ -31,6 +31,7 @@ from cb_bond.graph import (  # noqa: E402
     KnowledgeGraph,
     NodeStat,
 )
+from cb_bond.relations import RelationMiner, kmen  # noqa: E402
 from cb_bond.matcher import (  # noqa: E402
     LinkOperator,
     MatchResult,
@@ -54,5 +55,7 @@ __all__ = [
     "LinkOperator",
     "saturate",
     "semantic_bag",
+    "RelationMiner",
+    "kmen",
     "__version__",
 ]

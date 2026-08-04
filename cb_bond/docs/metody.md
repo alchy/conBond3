@@ -81,3 +81,30 @@ Veřejné API modulu. Co tady není, je vnitřek a smí se změnit
 | co | jak |
 |---|---|
 | přejímka kroku 4 | `./run-python cb_bond/scripts/prejimka-answer.py` — protiváha krátkých vět při tokenovém × gaussovském čtení |
+
+## RelationMiner (relations.py)
+
+| metoda | co dělá / na čem visí |
+|---|---|
+| `mine_definitions(corpus, registry)` | kopulární vzor (root NOUN/PROPN v nominativu + nsubj + cop) → vazba 0,7; vrací počet NOVÝCH |
+| `mine_derivations(graph, registry, around=None)` | kmenové páry: váha `0,7·(síla/2 + překryv/2)`; **bez `around` těží plošně**, což je naměřeně horší |
+| `definitions` / `derivations` | vytěžené vazby i se zdrojem (`definition` / `derivation`) |
+| `kmen(a, b)` (funkce modulu) | společný začátek po složení diakritiky |
+| `bez_diakritiky(text)` | text malými písmeny bez diakritiky |
+
+| konstanta | hodnota | proč |
+|---|---|---|
+| `DEFINIENS_UPOS` | NOUN, PROPN | vlastní jméno smí být definiens (91 vs 94 vazeb) |
+| `DEFINITION_WEIGHT` | 0,7 | silný, ale ne totožnostní vztah |
+| `MIN_STEM` / `MIN_STEM_SHARE` | 5 znaků / 75 % | pod tím spojuje náhodné shody (naléhavý × náledí) |
+
+| co | jak |
+|---|---|
+| přejímka kroku 7 | `./run-python cb_bond/scripts/prejimka-vztahy.py` |
+
+## VerticalRegistry — co k tomu přibylo v cb_field
+
+| metoda | proč |
+|---|---|
+| `get_link(src, dst)` | váha vazby, nebo **None** — nula je platná váha (naučená bezvýznamnost), „vazba tu není" je jiná skutečnost |
+| `unlink(src, dst)` | odstraní vztah, klíče nechá (osa je append-only); potřebuje promoce při uvolnění slotu |

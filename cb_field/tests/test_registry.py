@@ -55,6 +55,31 @@ PES = Token(id=2, form="pes", lemma="pes", upos="NOUN",
             head=1, deprel="nsubj", deps=None, misc=None)
 
 
+class TestCteniAMazaniVazeb(unittest.TestCase):
+
+    def test_get_link_vrati_vahu_a_u_nezname_dvojice_None(self):
+        reg = VerticalRegistry(anchors=False)
+        reg.link("A", "B", 0.7)
+
+        self.assertAlmostEqual(reg.get_link("A", "B"), 0.7, places=6)
+        self.assertIsNone(reg.get_link("B", "A"))   # vazba je směrová
+        self.assertIsNone(reg.get_link("A", "C"))
+
+    def test_unlink_vazbu_odstrani_ale_klice_nechá(self):
+        reg = VerticalRegistry(anchors=False)
+        reg.link("A", "B", 0.7)
+
+        self.assertTrue(reg.unlink("A", "B"))
+        self.assertIsNone(reg.get_link("A", "B"))
+        self.assertIn("A", reg)          # osa je append-only (princip 3)
+        self.assertIn("B", reg)
+
+    def test_unlink_neexistujici_vazby_je_False_ne_vyjimka(self):
+        reg = VerticalRegistry(anchors=False)
+
+        self.assertFalse(reg.unlink("A", "B"))
+
+
 class TestAppendOnly(unittest.TestCase):
 
     def test_add_prideluje_indexy_a_je_idempotentni(self):

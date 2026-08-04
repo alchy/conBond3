@@ -15,7 +15,8 @@ Zadání celé stavby (deset kroků, zmražené přejímky, páky systému):
 | 2 | `KnowledgeGraph` — paměť faktů | hotovo |
 | 3 | `Matcher` — párování otázky s korpusem (vč. skórování 3b) | **částečně**: pokrytí, mrtvá osa a obě nuly ablace sedí; přesnost 10/30 proti 14/30 (`docs/prirucka.md`) |
 | 4 | `AnswerField` — gaussovské čtení pole | hotovo |
-| 5–10 | trénink · promoce · vztahy · dialog · zrcadlo · měření | zbývá |
+| 7 | `RelationMiner` — definice a derivace | hotovo (94 vazeb sedí) |
+| 5, 6, 8–10 | trénink · promoce · dialog · zrcadlo · měření | zbývá |
 
 Vědomě zatím **není** plný modul podle README-MODULES § 2: chybí
 konfigurace se schématem, logování přes cb-logger, `api.py`,
@@ -37,6 +38,8 @@ usadí — stejně jako u cb_field.
 | `semantic_bag` | součet řádků přes semantickou masku (strukturní osy vypadnou) |
 | `AnswerField` | čtení pole: `tokens`, `spans`, `sentences`, `gaussian_peaks` |
 | `gaussian_kernel` | normované jádro o poloměru int(3σ) |
+| `RelationMiner` | těžba vztahů: `mine_definitions`, `mine_derivations` |
+| `kmen` | společný kmen dvou lemmat po složení diakritiky |
 
 ## Závislosti
 
@@ -52,7 +55,7 @@ Na registru cb_fieldu smí cb_bond volat jen `link` / `unlink` /
 ## Testy
 
 ```
-./run-python -m unittest discover -s cb_bond -t .     # 56 testů
+./run-python -m unittest discover -s cb_bond -t .     # 71 testů
 ```
 
 Zmražené rozbory v `tests/vzorky.py` (skutečné výstupy UDPipe
@@ -64,6 +67,7 @@ Přejímka na skutečném korpusu (potřebuje UDPipe a data mimo git):
 ./run-python cb_bond/scripts/prejimka-graf.py       # krok 2 — sedí
 ./run-python cb_bond/scripts/prejimka-matcher.py    # krok 3 — vč. ablace členů
 ./run-python cb_bond/scripts/prejimka-answer.py     # krok 4 — sedí
+./run-python cb_bond/scripts/prejimka-vztahy.py     # krok 7 — sedí
 ```
 
 Porovnají naměřené se zmraženými hodnotami § 6 zadání a skončí

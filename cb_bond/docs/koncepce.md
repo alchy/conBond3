@@ -157,3 +157,37 @@ a `given` řadí tokeny uvnitř věty. Dvě různé práce, dva různé členy.
 **Nosný je postih, ne setkání.** Naměřeno ablací: bez `given` je
 přesnost 0/30 a samotné setkání také 0/30. Bez postihu za střed,
 jehož slovo otázka sama uvádí, vyhrává vždycky ozvěna otázky.
+
+## 12 · Definice se pozná pádem rootu, ne kopulí
+
+„Gravitace **je** síla" a „Muž **byl** ve vězení" mají tutéž kopuli.
+Rozdíl nese PÁD rootu: nominativ říká, CO věc je, lokativ říká, KDE
+byla. Kdo vzor postaví na přítomnosti kopule, nasype si do osy vazby
+typu muž→vězení a šíření je pak roznese po celém korpusu.
+
+**Definiens smí být i vlastní jméno.** „Jméno té hvězdy je Pelyněk."
+je definice jako každá jiná. Naměřeno: bez PROPN v rootu dá korpus
+91 vazeb místo zmražených 94, a ty tři chybějící jsou právě
+jméno→Pelyněk, pán→Kristus, život→Kristus.
+
+**Vazba na sebe sama se nezakládá.** „Trpasličí galaxie je malá
+galaxie." má definiční tvar, ale obě strany nesou totéž lemma —
+vazba by byla smyčka v ose a šíření by aktivaci zesilovalo samo ze
+sebe. Je to táž úvaha jako u smyček v grafu (§ 4), jen o patro výš.
+
+Mimochodem, i ta druhá varianta by dala 94: kdyby se smyčky
+připustily a PROPN ne. Rozhodl obsah, ne shoda čísla — smyčky
+(galaxie→galaxie, motor→motor) nenesou informaci, kdežto
+jméno→Pelyněk ano.
+
+## 13 · Derivace nikdy plošně
+
+*rychlost* a *rychlostní* pytel nespojí (jsou to různá lemmata), kmen
+ano. Ale kmen spojí i *naléhavý* s *náledí*, když se nehlídá délka —
+proto ≥5 znaků po složení diakritiky A ZÁROVEŇ ≥75 % kratšího lemmatu.
+Diakritika se skládá pryč, protože *kámen* a *kamení* jsou totéž slovo.
+
+Plošné nasazení dalo 11 268 vazeb a stálo baseline 3,3 bodu: vazby
+mezi vším, co si je náhodou podobné, jsou šum. Proto `around=` —
+těží se jen kolem slov otázky a její expanze. Naměřeno pro
+{dálnice, kámen, rychlost}: 10 vazeb místo tisíců.

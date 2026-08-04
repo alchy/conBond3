@@ -115,6 +115,24 @@ class VerticalRegistry:
         self.add(dst)
         self._links[(src, dst)] = weight
 
+    def get_link(self, src: str, dst: str):
+        """Váha vazby, nebo None, když mezi klíči žádná nevede.
+
+        None, ne nula: nula je platná váha (vazba, která se naučila, že
+        nemá vliv), kdežto „vazba tu není" je jiná skutečnost. Kdo je
+        slije, nepozná naučenou nulu od nenaučeného místa.
+        """
+        return self._links.get((src, dst))
+
+    def unlink(self, src: str, dst: str) -> bool:
+        """Odstraní vazbu; vrátí, jestli tam nějaká byla.
+
+        Klíče zůstávají — osa je append-only (princip 3). Maže se jen
+        vztah, což potřebuje promoce: uzel, který vypadne z limitu,
+        uvolní slot i s hranami.
+        """
+        return self._links.pop((src, dst), None) is not None
+
     def links(self) -> tuple:
         """Všechny vazby jako trojice (od, do, váha)."""
         return tuple((s, d, w) for (s, d), w in self._links.items())

@@ -253,3 +253,128 @@ SYNAGOGA = Veta(
               xpos="Z:-------------", feats=None,
               head=2, deprel="punct", deps=None, misc=None),
     ))
+
+#: „Muž byl ve vězení." — kopula s rootem v LOKÁLU. Definice to NENÍ:
+#: říká, kde muž byl, ne co muž je. Rozdíl nese pád rootu.
+VEZENI = Veta(
+    "Muž byl ve vězení.",
+    (
+        Token(id=1, form="Muž", lemma="muž", upos="NOUN",
+              xpos="NNMS1-----A----",
+              feats={"Animacy": "Anim", "Case": "Nom", "Gender": "Masc",
+                     "Number": "Sing"},
+              head=4, deprel="nsubj", deps=None, misc=None),
+        Token(id=2, form="byl", lemma="být", upos="AUX",
+              xpos="VpYS----R-AAI--",
+              feats={"Aspect": "Imp", "Gender": "Masc", "Number": "Sing",
+                     "Polarity": "Pos", "Tense": "Past", "VerbForm": "Part",
+                     "Voice": "Act"},
+              head=4, deprel="cop", deps=None, misc=None),
+        Token(id=3, form="ve", lemma="v", upos="ADP",
+              xpos="RV--6----------",
+              feats={"AdpType": "Voc", "Case": "Loc"},
+              head=4, deprel="case", deps=None, misc=None),
+        Token(id=4, form="vězení", lemma="vězení", upos="NOUN",
+              xpos="NNNS6-----A----",
+              feats={"Case": "Loc", "Gender": "Neut", "Number": "Sing"},
+              head=0, deprel="root", deps=None, misc=None),
+        Token(id=5, form=".", lemma=".", upos="PUNCT",
+              xpos="Z:-------------", feats=None,
+              head=4, deprel="punct", deps=None, misc=None),
+    ))
+
+#: „Elektromotor je stroj." — čistá definiční kopula, druhý doklad
+#: vzoru (root NOUN v nominativu + nsubj + cop).
+ELEKTROMOTOR = Veta(
+    "Elektromotor je stroj.",
+    (
+        Token(id=1, form="Elektromotor", lemma="elektromotor", upos="NOUN",
+              xpos="NNIS1-----A----",
+              feats={"Animacy": "Inan", "Case": "Nom", "Gender": "Masc",
+                     "Number": "Sing"},
+              head=3, deprel="nsubj", deps=None, misc=None),
+        Token(id=2, form="je", lemma="být", upos="AUX",
+              xpos="VB-S---3P-AAI--",
+              feats={"Aspect": "Imp", "Mood": "Ind", "Number": "Sing",
+                     "Person": "3", "Polarity": "Pos", "Tense": "Pres",
+                     "VerbForm": "Fin", "Voice": "Act"},
+              head=3, deprel="cop", deps=None, misc=None),
+        Token(id=3, form="stroj", lemma="stroj", upos="NOUN",
+              xpos="NNIS1-----A----",
+              feats={"Animacy": "Inan", "Case": "Nom", "Gender": "Masc",
+                     "Number": "Sing"},
+              head=0, deprel="root", deps=None, misc=None),
+        Token(id=4, form=".", lemma=".", upos="PUNCT",
+              xpos="Z:-------------", feats=None,
+              head=3, deprel="punct", deps=None, misc=None),
+    ))
+
+#: „Jméno té hvězdy je Pelyněk." — definiens je VLASTNÍ jméno.
+#: Kdo připustí jen NOUN v rootu, o tuhle třídu definic přijde
+#: (naměřeno: 91 vazeb místo 94 na 12 258 větách).
+PELYNEK = Veta(
+    "Jméno té hvězdy je Pelyněk.",
+    (
+        Token(id=1, form="Jméno", lemma="jméno", upos="NOUN",
+              xpos="NNNS1-----A----",
+              feats={"Case": "Nom", "Gender": "Neut", "Number": "Sing"},
+              head=5, deprel="nsubj", deps=None, misc=None),
+        Token(id=2, form="té", lemma="ten", upos="DET",
+              xpos="PDFS2----------",
+              feats={"Case": "Gen", "Gender": "Fem", "Number": "Sing",
+                     "PronType": "Dem"},
+              head=3, deprel="det", deps=None, misc=None),
+        Token(id=3, form="hvězdy", lemma="hvězda", upos="NOUN",
+              xpos="NNFS2-----A----",
+              feats={"Case": "Gen", "Gender": "Fem", "Number": "Sing"},
+              head=1, deprel="nmod", deps=None, misc=None),
+        Token(id=4, form="je", lemma="být", upos="AUX",
+              xpos="VB-S---3P-AAI--",
+              feats={"Aspect": "Imp", "Mood": "Ind", "Number": "Sing",
+                     "Person": "3", "Polarity": "Pos", "Tense": "Pres",
+                     "VerbForm": "Fin", "Voice": "Act"},
+              head=5, deprel="cop", deps=None, misc=None),
+        Token(id=5, form="Pelyněk", lemma="Pelyněk", upos="PROPN",
+              xpos="NNMS1-----A----",
+              feats={"Animacy": "Anim", "Case": "Nom", "Gender": "Masc",
+                     "NameType": "Giv", "Number": "Sing"},
+              head=0, deprel="root", deps=None, misc=None),
+        Token(id=6, form=".", lemma=".", upos="PUNCT",
+              xpos="Z:-------------", feats=None,
+              head=5, deprel="punct", deps=None, misc=None),
+    ))
+
+#: „Trpasličí galaxie je malá galaxie." — definiční tvar, ale obě
+#: strany mají TÉŽ lemma. Vazba by byla smyčka v ose (šíření by
+#: aktivaci jen zesílilo samo ze sebe), takže se nezakládá.
+GALAXIE = Veta(
+    "Trpasličí galaxie je malá galaxie.",
+    (
+        Token(id=1, form="Trpasličí", lemma="trpasličí", upos="ADJ",
+              xpos="AAFS1----1A----",
+              feats={"Case": "Nom", "Degree": "Pos", "Gender": "Fem",
+                     "Number": "Sing", "Polarity": "Pos"},
+              head=2, deprel="amod", deps=None, misc=None),
+        Token(id=2, form="galaxie", lemma="galaxie", upos="NOUN",
+              xpos="NNFS1-----A----",
+              feats={"Case": "Nom", "Gender": "Fem", "Number": "Sing"},
+              head=5, deprel="nsubj", deps=None, misc=None),
+        Token(id=3, form="je", lemma="být", upos="AUX",
+              xpos="VB-S---3P-AAI--",
+              feats={"Aspect": "Imp", "Mood": "Ind", "Number": "Sing",
+                     "Person": "3", "Polarity": "Pos", "Tense": "Pres",
+                     "VerbForm": "Fin", "Voice": "Act"},
+              head=5, deprel="cop", deps=None, misc=None),
+        Token(id=4, form="malá", lemma="malý", upos="ADJ",
+              xpos="AAFS1----1A----",
+              feats={"Case": "Nom", "Degree": "Pos", "Gender": "Fem",
+                     "Number": "Sing", "Polarity": "Pos"},
+              head=5, deprel="amod", deps=None, misc=None),
+        Token(id=5, form="galaxie", lemma="galaxie", upos="NOUN",
+              xpos="NNFS1-----A----",
+              feats={"Case": "Nom", "Gender": "Fem", "Number": "Sing"},
+              head=0, deprel="root", deps=None, misc=None),
+        Token(id=6, form=".", lemma=".", upos="PUNCT",
+              xpos="Z:-------------", feats=None,
+              head=5, deprel="punct", deps=None, misc=None),
+    ))
