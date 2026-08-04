@@ -32,15 +32,20 @@ REPORT = MODULE_DIR / "docs" / "mereni-propojeni.md"
 REPORT_KORPUSY = MODULE_DIR / "docs" / "mereni-propojeni-korpusy.md"
 
 
-def build_complex_corpus(parser, r: int = 1):
+def build_complex_corpus(parser, r: int = 1, r_sentences: int = 0):
     """Korpus komplexních textů (zákon/fyzika/spisovatelé) — viz
-    measure_corpora; potřebuje pořízené soubory (fetch-korpusy.sh)."""
+    measure_corpora; potřebuje pořízené soubory (fetch-korpusy.sh).
+
+    Souvislý text: věty jednoho souboru jsou si sousedy, takže do koše
+    smí přitéct kontext (r_sentences).
+    """
     from cb_field.measure_corpora import DOMAINS, build, ingest
     sentences = []
     for names in DOMAINS.values():
-        parsed, _errors, _digests = ingest(parser, names)
-        sentences.extend(parsed)
-    corpus, _skipped = build(sentences, r=r)
+        for name in names:
+            parsed, _errors, _digests = ingest(parser, (name,))
+            sentences.extend((name, s) for s in parsed)
+    corpus, _skipped = build(sentences, r=r, r_sentences=r_sentences)
     return corpus
 
 
@@ -50,9 +55,14 @@ def load_etalon_korpusy() -> list:
             if line.strip()]
 
 
-def build_corpus(parser, r: int = 1) -> Corpus:
-    """Korpus ze zmraženého testbedu (jedna věta na řádek)."""
-    corpus = Corpus(r=r)
+def build_corpus(parser, r: int = 1, r_sentences: int = 0) -> Corpus:
+    """Korpus ze zmraženého testbedu (jedna věta na řádek).
+
+    Věty testbedu jsou navzájem nezávislé, takže každá je vlastní
+    dokument — sousedství na řádcích není souvislost a r_sentences tu
+    nemá co přitéct (na rozdíl od korpusů souvislého textu).
+    """
+    corpus = Corpus(r=r, r_sentences=r_sentences)
     for line in TESTBED.read_text(encoding="utf-8").splitlines():
         if line.strip():
             corpus.add_text(line.strip(), parser)

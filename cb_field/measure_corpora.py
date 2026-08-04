@@ -55,13 +55,19 @@ def ingest(parser, names):
     return sentences, errors, digests
 
 
-def build(sentences, r=1):
-    """Postaví korpus; přeskočené věty počítá s důvodem (žádná tichá díra)."""
-    corpus = Corpus(r=r)
+def build(sentences, r=1, r_sentences=0):
+    """Postaví korpus; přeskočené věty počítá s důvodem (žádná tichá díra).
+
+    sentences: věty, nebo dvojice (dokument, věta) — druhý tvar drží
+    hranice textů pro r_sentences (kontext nepřetéká mezi soubory).
+    """
+    corpus = Corpus(r=r, r_sentences=r_sentences)
     skipped = Counter()
-    for sentence in sentences:
+    for item in sentences:
+        document, sentence = item if isinstance(item, tuple) \
+            else (None, item)
         try:
-            corpus.add_sentence(sentence)
+            corpus.add_sentence(sentence, document=document)
         except ValueError as error:
             reason = "sloty feats" if "slotů" in str(error) else "ValueError"
             skipped[reason] += 1

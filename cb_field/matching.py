@@ -77,6 +77,20 @@ W_COVER = 1.0
 #: identita vzoru střed maskuje, extrakce odpovědi ho zdůrazňuje.
 W_CENTER = 2.0
 
+#: Profil koše ve slovech: příspěvek řádku na vzdálenost d od středu
+#: klesá jako 1/(1+d) — týž harmonický pokles jako u vět. Sliding
+#: window dává tentýž fakt několika košům a liší je jen vzdálenost
+#: odpovědi od středu (J. 2026-08-04); plochý profil je nerozlišil
+#: a větší r pak škodilo (naměřeno: r=3 zhoršilo 0,94 → 0,91).
+#: Vzdálenější slovo váží míň, ale nikdy nule — žádný strop, jen váha.
+
+#: Přítok sousední VĚTY do koše na vzdálenost d vět: W_CONTEXT/(1+d).
+#: Druhé r (r pro větu, zadání J. 2026-08-04) — souvislost nekončí
+#: tečkou; co větu předchází a co po ní následuje, do koše patří,
+#: jen slaběji. Pokles je harmonický: vzdálenější věta váží míň,
+#: ale nikdy nule (žádný strop, jen váha).
+W_CONTEXT = 0.5
+
 #: Vertikály vstupující do párování. Strukturní tvar (UPOS/DEPREL/feats)
 #: patří šablonám; v součinech pytlů by přehlušil obsah i kotvy
 #: (naměřeno v baseline 4a).
@@ -144,7 +158,8 @@ def _fact_bags(corpus):
     jednotkový pytel okna s přičteným jednotkovým středem (viz komentář
     u zdůraznění) a slova středu s normou pro kosinové členy skóre.
     """
-    key = (len(corpus), corpus.registry.link_version)
+    key = (len(corpus), corpus.registry.link_version,
+           corpus.r, getattr(corpus, "r_sentences", 0))
     cached = getattr(corpus, "_fact_cache", None)
     if cached is not None and cached[0] == key:
         return cached[1]
@@ -164,14 +179,34 @@ def _fact_bags(corpus):
     words = _word_block(registry, n)
     r = corpus.r
 
-    sentences = []
+    # Kontextové pytle vět (druhé r): surový pytel celé věty, ať ho
+    # sousedé mohou přitéct do koše. Počítá se jednou na větu.
+    r_sentences = getattr(corpus, "r_sentences", 0)
+    documents = getattr(corpus, "documents", [None] * len(corpus))
+    sentence_bags = []
     for sentence, matrix in zip(corpus, matrices):
+        bag = np.zeros(n, dtype=np.float32)
+        summed = matrix.sum(axis=0)
+        bag[:len(summed)] = summed
+        sentence_bags.append(bag * semantic)
+
+    sentences = []
+    for position, (sentence, matrix) in enumerate(zip(corpus, matrices)):
         rows = []
         for i in range(len(sentence.tokens)):
             row = np.zeros(n, dtype=np.float32)
             row[:matrix.shape[1]] = matrix[i]
             rows.append(row * semantic)
         sentence_words = np.sum(rows, axis=0) * words
+
+        # Přítok sousedních vět téhož dokumentu, W_CONTEXT/(1+d)
+        context = np.zeros(n, dtype=np.float32)
+        for d in range(1, r_sentences + 1):
+            for neighbour in (position - d, position + d):
+                if 0 <= neighbour < len(sentence_bags) \
+                        and documents[neighbour] is documents[position]:
+                    context += (W_CONTEXT / (1 + d)) \
+                        * sentence_bags[neighbour]
 
         def saturated_unit(bag):
             """tanh(spread(pytel)) dělený svou normou — jednotkový pytel."""
@@ -181,7 +216,10 @@ def _fact_bags(corpus):
             norm = float(np.linalg.norm(out))
             return out / norm if norm else out
 
-        sentence_bag = np.sum(rows, axis=0)
+        # Pokrytí otázky se hledá i v kontextu (zadání J.: „tam, kde
+        # chybí" — dřív než se postaví synonymní vazba, sáhne se po
+        # širším okně; co větě chybí, může nést soused).
+        sentence_bag = np.sum(rows, axis=0) + context
         nz = np.nonzero(sentence_bag)[0]
         sentence_spread = sentence_bag if not len(nz) \
             else sentence_bag + sentence_bag[nz] @ links[nz]
@@ -191,8 +229,12 @@ def _fact_bags(corpus):
         widx = np.nonzero(sentence_words)[0]
         centers = []
         for center in range(len(rows)):
-            window = saturated_unit(
-                np.sum(rows[max(0, center - r):center + r + 1], axis=0))
+            window_bag = context.copy()
+            for offset in range(-r, r + 1):
+                j = center + offset
+                if 0 <= j < len(rows):
+                    window_bag += rows[j] / (1 + abs(offset))
+            window = saturated_unit(window_bag)
             # Zdůraznění středu je vlastní kosinový člen: ×W_CENTER na
             # surovém pytli by pod kosinem střed s bohatou morfologií
             # trestalo — norma roste o všechno, co střed nese, čitatel
