@@ -220,6 +220,7 @@ def train_on_etalon(corpus, etalon_entries, parser,
     previous_loss = None
     answerable = [e for e in etalon_entries if e["zodpoveditelna"]]
     silent = [e for e in etalon_entries if not e["zodpoveditelna"]]
+    from cb_field.matching import _fact_bags
     for epoch in range(max_epochs):
         snapshot = {(s, d): (w, src)
                     for s, d, w, src in corpus.registry.links()}
@@ -229,6 +230,11 @@ def train_on_etalon(corpus, etalon_entries, parser,
         seen = 0
         correct_scores = []            # reference pro učení mlčení
         edges_before = stats["hran"]
+        # Epocha běží nad pytli faktů zmraženými při jejím začátku
+        # (targets); vazby se učí online a otázková strana je šíří
+        # čerstvé. Bez zmražení stála přestavba pytlů celou epochu.
+        _fact_bags(corpus)
+        corpus._fact_cache_freeze = True
         for entry in answerable:
             question = SentenceField.from_text(
                 entry["otazka"], parser, r=corpus.r,
@@ -312,6 +318,7 @@ def train_on_etalon(corpus, etalon_entries, parser,
                     corpus.registry, q_bag, {}, winner_bag, eta,
                     state=adam_state)
                 corrections += 1
+        corpus._fact_cache_freeze = False
 
         stats["epoch"] = epoch + 1
         stats["kroku"] += corrections

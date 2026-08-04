@@ -148,6 +148,13 @@ def _fact_bags(corpus):
     cached = getattr(corpus, "_fact_cache", None)
     if cached is not None and cached[0] == key:
         return cached[1]
+    # Zmražení (učicí epocha): učení mění vazby po každé otázce a plná
+    # přestavba všech pytlů po každé změně nesla celou cenu epochy.
+    # Epocha běží nad pytli zmraženými při svém začátku (obnova jednou
+    # na epochu); otázková strana šíří po ČERSTVÝCH vazbách vždy.
+    if cached is not None and getattr(corpus, "_fact_cache_freeze",
+                                      False) and cached[0][0] == key[0]:
+        return cached[1]
 
     matrices = [s.matrix(Representation.COMPLETE) for s in corpus]
     registry = corpus.registry           # růst registru je dokončen
