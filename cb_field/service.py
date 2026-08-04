@@ -255,6 +255,39 @@ def seed_anchor_links(registry) -> None:
         for ref in refs:
             registry.link(f"ANCHOR={dim}:{ref}", f"ANCHOR={dim}", 1.0)
             registry.link(f"QANCHOR={dim}:{ref}", f"ANCHOR={dim}", 1.0)
+            # A na SHODNOU souřadnici. Bez téhle vazby se všechny směry
+            # scházejí až u společného rodiče, takže „odkud" se potká
+            # s „do Galileje" úplně stejně jako s „z Nazareta" —
+            # hierarchie by je našla, ale nerozlišila.
+            registry.link(f"QANCHOR={dim}:{ref}", f"ANCHOR={dim}:{ref}", 1.0)
+
+#: Prostorová souřadnice předložky: (lemma, pád) → souřadnice.
+#:
+#: Konečná tabulka zavřených slov — „text dodá strukturu, konečná tabulka
+#: dodá význam". Bez ní nese jméno jen nerozlišené ANCHOR=space, takže
+#: „přišel Z Nazareta" a „přišel DO Galileje" jsou pro otázku „Odkud?"
+#: k nerozeznání (naměřeno: obě věty v top-2, rozdíl 0,08).
+#:
+#: O souřadnici rozhoduje PÁD, ne jen lemma: „na stůl" (akuzativ) je cíl,
+#: „na stole" (lokál) poloha. Co v tabulce není, mlčí — hádat se nemá.
+ADPOSITION_ANCHORS = {
+    ("z", "Gen"): "space:from", ("ze", "Gen"): "space:from",
+    ("od", "Gen"): "space:from", ("zpod", "Gen"): "space:from",
+    ("zpoza", "Gen"): "space:from",
+    ("do", "Gen"): "space:to", ("k", "Dat"): "space:to",
+    ("ke", "Dat"): "space:to", ("ku", "Dat"): "space:to",
+    ("na", "Acc"): "space:to", ("nad", "Acc"): "space:to",
+    ("pod", "Acc"): "space:to", ("před", "Acc"): "space:to",
+    ("za", "Acc"): "space:to", ("mezi", "Acc"): "space:to",
+    ("v", "Loc"): "space:loc", ("ve", "Loc"): "space:loc",
+    ("na", "Loc"): "space:loc", ("u", "Gen"): "space:loc",
+    ("při", "Loc"): "space:loc", ("nad", "Ins"): "space:loc",
+    ("pod", "Ins"): "space:loc", ("před", "Ins"): "space:loc",
+    ("za", "Ins"): "space:loc", ("mezi", "Ins"): "space:loc",
+    ("přes", "Acc"): "space:through", ("po", "Loc"): "space:through",
+    ("kolem", "Gen"): "space:through", ("okolo", "Gen"): "space:through",
+    ("podél", "Gen"): "space:through",
+}
 
 #: Slovní druhy, jejichž Number je výrok o množství. Shoda na ADJ/DET je
 #: jen echo jména — kotvu nedostane, aby se množství nepočítalo dvakrát.
@@ -376,6 +409,17 @@ def activations(row: dict, question: bool = False) -> dict:
             acts["ANCHOR=space"] = slot.weight
         elif slot.value in ("Giv", "Sur"):
             acts["ANCHOR=entity"] = slot.weight
+
+    # Předložka nese prostorovou souřadnici — směr, který jméno samo
+    # nezná. Rozhoduje dvojice (lemma, pád); viz ADPOSITION_ANCHORS.
+    if upos == "ADP" and lemma is not None:
+        pady = [s.value for s in row["feats"].get("Case", ())
+                if s.value is not None]
+        for pad in pady:
+            souradnice = ADPOSITION_ANCHORS.get((lemma.value, pad))
+            if souradnice:
+                acts[f"ANCHOR={souradnice}"] = lemma.weight
+                break
 
     # Tázací/vztažná a ukazovací slova: strana otázky (QANCHOR) jen
     # v tázací větě u slov s Int; jinak strana odpovědi. Záporná

@@ -43,24 +43,31 @@ kotev je jazyk systému, ne parametr.
 30 % otázek se odloží (deterministický vrstvený los, semínko 328).
 Validace se měří i PŘED učením, aby měla první epocha s čím porovnávat
 — jinak by prošla, i kdyby zhoršila všechno, a právě ta bývá nejdivočejší.
-Epocha, která zlepšila trénink a zhoršila validaci, se **odvolá** —
-vazby se vrátí bit po bitu. Bez toho by se učení upsalo tréninku
-a zobecnění by nikdo nehlídal.
+Epocha, která zlepšila trénink a ZNATELNĚ zhoršila validaci, se
+**odvolá** — vazby se vrátí bit po bitu. Bez toho by se učení upsalo
+tréninku a zobecnění by nikdo nehlídal.
+
+„Znatelně" je tam schválně: odvolávat při jakémkoli růstu znamená
+odvolávat i šum v poslední cifře. Naměřeno — epocha srazila trénink
+0,1144 → 0,0950 a validaci zhoršila o 0,00006; bez tolerance se
+odvolala a systém se nenaučil nic. Mez je relativní (1 %), aby
+nezávisela na měřítku lossu.
 
 ## lr je páka s křivkou, ne konstanta
 
 Naměřeno na 2 912 větách a 120 otázkách supervize (validace 30 %):
 
-    lr      epoch  ponecháno  přesnost  věta v top3  validační loss
-    0,05      1        0        11/30      20/30     0,163  ← odvolána
-    0,01      1        0        11/30      20/30     0,140  ← odvolána
-    0,003     6        6        11/30      21/30     0,119 → 0,1193
-    0,001     6        6        11/30      20/30     0,132
+    lr       ponecháno epoch  naučených hran  z toho prostorových
+    0,003        4            388                  82
+    0,001        6            386                  81
+    0,0005       6            373                  78
+    0,0002       6            373                  78
 
-Nad 0,01 první epocha zhorší validaci a odvolá se — učení tedy neběží
-vůbec, jen se ukáže, že by škodilo. Provozní bod je **0,003**: epochy
-se ponechávají, validační loss klesne a hned se ustálí (marže je pak
-u většiny otázek splněna, takže korekce ustanou samy).
+Provozní bod je **0,001**: ponechá se celý rozpočet epoch. Naučené
+hrany mají správná znaménka — `QLEM=ADV:odkud → ANCHOR=space:from`
++0,011, `QLEM=ADV:kde → ANCHOR=space:loc` +0,006, `QLEM=ADV:kam →
+ANCHOR=space:loc` −0,006. Magnitudy jsou zatím malé, takže se metrika
+nehne, ale směr sedí.
 
 ## Zavržené cesty (nezkoušet znovu)
 
@@ -157,8 +164,8 @@ class ContrastiveTrainer:
     """Učí vazby registru kontrastem fitující věty proti soupeřící."""
 
     def __init__(self, corpus, matcher, parser, *, split=None,
-                 lr: float = 0.003, margin: float = 0.2,
-                 sigma: float = 1.5) -> None:
+                 lr: float = 0.001, margin: float = 0.2,
+                 sigma: float = 1.5, tolerance: float = 0.01) -> None:
         self.corpus = corpus
         self.matcher = matcher
         self.parser = parser
@@ -166,6 +173,11 @@ class ContrastiveTrainer:
         self.lr = lr
         self.margin = margin
         self.sigma = sigma
+        #: O kolik smí validační loss stoupnout, než se epocha odvolá.
+        #: Bez tolerance odvolává i šum v poslední cifře: naměřeno,
+        #: epocha srazila trénink 0,114 → 0,095 a validaci zhoršila
+        #: o 0,00006 — a odvolala se, takže se systém neučil vůbec.
+        self.tolerance = tolerance
         self.report = TrainingReport()
         self._adam: dict = {}
 
@@ -184,7 +196,7 @@ class ContrastiveTrainer:
             snap = self.corpus.registry.snapshot()
             statistika = self._epocha(trenink)
             valid = self._validacni_loss(validace)
-            odvolat = valid > predchozi_valid
+            odvolat = valid > predchozi_valid * (1.0 + self.tolerance)
             if odvolat:
                 self.corpus.registry.restore(snap)
             else:
@@ -257,6 +269,11 @@ class ContrastiveTrainer:
         zmen = 0
         for q_osa, q_vaha in q_bag.items():
             for s_osa, s_vaha in rozdil.items():
+                if q_osa == s_osa:
+                    # Osa sama na sebe: šíření by aktivaci jen zesílilo
+                    # samu ze sebe a vztah to nenese. Táž úvaha jako
+                    # u smyček v grafu, jen o patro výš.
+                    continue
                 if _je_axiom(q_osa, s_osa):
                     continue     # hierarchie kotev je jazyk, ne parametr
                 gradient = q_vaha * s_vaha

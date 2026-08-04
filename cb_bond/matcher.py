@@ -479,8 +479,11 @@ class Matcher:
 
     def _priprav(self) -> None:
         """Postaví pytle vět; přestaví je, když se korpus nebo osa hnuly."""
+        # Klíč nese link_version, ne počet vazeb: učení mění VÁHY
+        # existujících hran, takže počet zůstane a pytle by zastaraly.
         klic = (len(self.corpus), len(self.corpus.registry),
-                len(self.corpus.registry.links()), self.spread_depth)
+                self.corpus.registry.link_version,
+                self.corpus.registry.axis_version, self.spread_depth)
         if klic == self._cache_klic:
             return
         self._links = LinkOperator(self.corpus.registry)

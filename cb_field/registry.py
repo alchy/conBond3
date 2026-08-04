@@ -52,6 +52,10 @@ class VerticalRegistry:
         #: výměně slotů. Nese ji cache matic i soubor — čtení s cizí verzí
         #: je hlasitá chyba, ne tichá záměna významu.
         self._axis_version = 0
+        #: Verze VAZEB — roste při každé změně, i když se počet vazeb
+        #: nemění. Bez ní by cache klíčovaná počtem vracela zastaralé
+        #: pytle: učení mění VÁHY existujících hran, ne jejich počet.
+        self._link_version = 0
         for key in keys:
             self.add(key)
         # Hierarchie kotev je součást jazyka systému, ne volitelný doplněk —
@@ -68,6 +72,11 @@ class VerticalRegistry:
     def axis_version(self) -> int:
         """Verze obsazení custom slotů; roste jen při skutečné výměně."""
         return self._axis_version
+
+    @property
+    def link_version(self) -> int:
+        """Verze vazeb; roste při každé změně váhy, přidání i smazání."""
+        return self._link_version
 
     @property
     def custom_axes(self) -> tuple:
@@ -104,6 +113,7 @@ class VerticalRegistry:
             for src, dst in [dvojice for dvojice in self._links
                              if osa in dvojice]:
                 del self._links[(src, dst)]
+                self._link_version += 1
                 hran += 1
         for klic in pridano:
             self.add(f"CUSTOM={klic}")
@@ -131,6 +141,9 @@ class VerticalRegistry:
         self._links = dict(snapshot["links"])
         self._custom = tuple(snapshot["custom"])
         self._axis_version = int(snapshot["axis_version"])
+        # Verze roste i při návratu: stav se sice vrací, ale cache
+        # postavená nad mezistavem je pořád neplatná.
+        self._link_version += 1
 
     # --- osa x ----------------------------------------------------------
 
@@ -194,6 +207,7 @@ class VerticalRegistry:
         self.add(src)
         self.add(dst)
         self._links[(src, dst)] = weight
+        self._link_version += 1
 
     def get_link(self, src: str, dst: str):
         """Váha vazby, nebo None, když mezi klíči žádná nevede.
@@ -211,7 +225,10 @@ class VerticalRegistry:
         vztah, což potřebuje promoce: uzel, který vypadne z limitu,
         uvolní slot i s hranami.
         """
-        return self._links.pop((src, dst), None) is not None
+        smazano = self._links.pop((src, dst), None) is not None
+        if smazano:
+            self._link_version += 1
+        return smazano
 
     def links(self) -> tuple:
         """Všechny vazby jako trojice (od, do, váha)."""

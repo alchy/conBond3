@@ -76,6 +76,60 @@ class TestSouborV2(unittest.TestCase):
             self.assertEqual(zpet.keys(), reg.keys())
 
 
+class TestPredlozkyKotvi(unittest.TestCase):
+    """Předložka nese SMĚR — bez ní je „z Nazareta" totéž co „do Galileje"."""
+
+    def _kotvy(self, lemma, case, upos="ADP"):
+        from cb_field.service import activations, expand_token
+        token = Token(id=1, form=lemma, lemma=lemma, upos=upos,
+                      xpos="RR--2----------",
+                      feats={"AdpType": "Prep", "Case": case},
+                      head=2, deprel="case", deps=None, misc=None)
+        return {k: v for k, v in activations(expand_token(token)).items()
+                if k.startswith("ANCHOR=")}
+
+    def test_z_s_genitivem_kotvi_zdroj(self):
+        self.assertIn("ANCHOR=space:from", self._kotvy("z", "Gen"))
+        self.assertIn("ANCHOR=space:from", self._kotvy("od", "Gen"))
+
+    def test_do_s_genitivem_kotvi_cil(self):
+        self.assertIn("ANCHOR=space:to", self._kotvy("do", "Gen"))
+        self.assertIn("ANCHOR=space:to", self._kotvy("k", "Dat"))
+
+    def test_v_s_lokalem_kotvi_polohu(self):
+        self.assertIn("ANCHOR=space:loc", self._kotvy("v", "Loc"))
+
+    def test_o_pádu_rozhoduje_PÁD_ne_jen_lemma(self):
+        # „na stůl" (akuzativ) je cíl, „na stole" (lokál) je poloha —
+        # táž předložka, jiný pád, jiná souřadnice
+        self.assertIn("ANCHOR=space:to", self._kotvy("na", "Acc"))
+        self.assertIn("ANCHOR=space:loc", self._kotvy("na", "Loc"))
+
+    def test_predlozka_mimo_tabulku_nekotvi(self):
+        # konečná tabulka: co v ní není, mlčí — nehádá se
+        self.assertEqual(self._kotvy("podle", "Gen"), {})
+
+    def test_kotva_je_jen_u_predlozky(self):
+        # totéž lemma jako sloveso by kotvu dostat nemělo
+        self.assertEqual(self._kotvy("z", "Gen", upos="NOUN"), {})
+
+
+class TestShodnaSouradnice(unittest.TestCase):
+
+    def test_otazka_a_odpoved_se_potkaji_i_na_SHODNE_souradnici(self):
+        # bez toho se „odkud" potká s „do Galileje" úplně stejně jako
+        # s „z Nazareta" — obojí až u společného rodiče ANCHOR=space
+        reg = VerticalRegistry()
+
+        self.assertEqual(
+            reg.get_link("QANCHOR=space:from", "ANCHOR=space:from"), 1.0)
+        self.assertEqual(
+            reg.get_link("QANCHOR=space:from", "ANCHOR=space"), 1.0)
+        # a k CIZÍ souřadnici vazba nevede
+        self.assertIsNone(
+            reg.get_link("QANCHOR=space:from", "ANCHOR=space:to"))
+
+
 class TestCustomSloty(unittest.TestCase):
     """Pojmenované neurony vstupní vrstvy — obsazení, verze, vratnost."""
 
@@ -121,6 +175,48 @@ class TestCustomSloty(unittest.TestCase):
 
         self.assertTrue(reg.is_custom("NOUN:rok"))
         self.assertFalse(reg.is_custom("PROPN:Hrabal"))
+
+
+class TestVerzeVazeb(unittest.TestCase):
+    """link_version — cache musí poznat i změnu VÁHY, ne jen počtu."""
+
+    def test_nova_vazba_verzi_zvedne(self):
+        reg = VerticalRegistry(anchors=False)
+        pred = reg.link_version
+
+        reg.link("A", "B", 0.5)
+
+        self.assertGreater(reg.link_version, pred)
+
+    def test_ZMENA_VAHY_verzi_taky_zvedne(self):
+        # tohle je ta past: počet vazeb se nemění, ale pole ano.
+        # Cache klíčovaná počtem by dál vracela zastaralé pytle.
+        reg = VerticalRegistry(anchors=False)
+        reg.link("A", "B", 0.5)
+        pred = reg.link_version
+
+        reg.link("A", "B", -0.9)
+
+        self.assertGreater(reg.link_version, pred)
+
+    def test_unlink_verzi_zvedne(self):
+        reg = VerticalRegistry(anchors=False)
+        reg.link("A", "B", 0.5)
+        pred = reg.link_version
+
+        reg.unlink("A", "B")
+
+        self.assertGreater(reg.link_version, pred)
+
+    def test_restore_verzi_zvedne(self):
+        reg = VerticalRegistry(anchors=False)
+        snap = reg.snapshot()
+        reg.link("A", "B", 0.5)
+        pred = reg.link_version
+
+        reg.restore(snap)
+
+        self.assertGreater(reg.link_version, pred)
 
 
 class TestSnapshot(unittest.TestCase):

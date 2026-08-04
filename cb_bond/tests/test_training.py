@@ -160,6 +160,18 @@ class TestKrokUceni(unittest.TestCase):
         self.assertTrue(any(src.startswith(("QLEM=", "QANCHOR="))
                             for src, _, _ in nove))
 
+    def test_vazba_osy_na_sebe_samu_nevznikne(self):
+        # Naměřeno: učení zakládalo LEM=ADP:v → LEM=ADP:v. Taková hrana
+        # při šíření jen zesiluje aktivaci samu ze sebe a žádný vztah
+        # nenese — táž úvaha jako u smyček v grafu, o patro výš.
+        corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE)
+        trener = _trener(corpus, margin=9.0, lr=0.5)
+
+        trener.train([ZAZNAM], max_epochs=3)
+
+        smycky = [(s, d) for s, d, _ in corpus.registry.links() if s == d]
+        self.assertEqual(smycky, [])
+
     def test_axiomy_se_uchrani(self):
         corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE)
         axiomy = {(s, d): w for s, d, w in corpus.registry.links()
@@ -186,11 +198,24 @@ class TestKrokUceni(unittest.TestCase):
 
 class TestOdvolaniEpochy(unittest.TestCase):
 
+    def test_sum_v_posledni_cifre_epochu_NEODVOLA(self):
+        # Naměřeno: epocha srazila trénink 0,114 → 0,095 a validaci
+        # zhoršila o 0,00006. Odvolat kvůli šesti stotisícinám znamená
+        # neučit se vůbec — odvolání má hlídat ZHORŠENÍ, ne poslední bit.
+        corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE, VEZENI)
+        trener = _trener(corpus, margin=9.0, lr=0.5)
+        hodnoty = iter([0.11444, 0.11450, 0.11450])
+        trener._validacni_loss = lambda entries: next(hodnoty)
+
+        zprava = trener.train([ZAZNAM], max_epochs=2)
+
+        self.assertFalse(zprava.epochs[0]["odvolano"])
+
     def test_horsi_validace_epochu_ODVOLA(self):
         corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE, VEZENI)
         trener = _trener(corpus, margin=9.0, lr=0.5)
         # validační loss uměle roste s každým měřením → epocha se vrátí
-        pocitadlo = iter([0.1, 0.05, 0.4, 0.9])
+        pocitadlo = iter([0.1, 0.05, 0.4, 0.9])   # 0,05 → 0,4 je 8×
         trener._validacni_loss = lambda entries: next(pocitadlo)
 
         zprava = trener.train([ZAZNAM], max_epochs=3)
