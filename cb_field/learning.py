@@ -75,14 +75,36 @@ def split_etalon(entries, share: float = VALIDATION_SHARE,
 
 def sentence_hit(result, expected_lemma, top: int = 3) -> bool:
     """Úspěch posílení (J. 2026-08-04): VALIDNÍ VĚTA je mezi kandidáty
-    — v top větách podle větné aktivace leží token s očekávaným
-    lemmatem. Cíl je vybrat kandidátní věty s odpovědí; token je jen
-    jemnější čtení téhož pole."""
-    from cb_field.query import sentence_activation
-    for sentence, _activation, _cands in sentence_activation(result)[:top]:
+    — v top větách podle gaussovského vrcholu (krok D, táž aplikace
+    vzoru jako na výstupu) leží token s očekávaným lemmatem. Cíl je
+    vybrat kandidátní věty s odpovědí; token je jemnější čtení."""
+    from cb_field.query import gaussian_peaks
+    for sentence, _peak, _center in gaussian_peaks(result)[:top]:
         if any(t.lemma == expected_lemma for t in sentence.tokens):
             return True
     return False
+
+
+def _sentence_contrast(result, corpus, expected, position=None):
+    """(fitující věta+vrchol, soupeř+vrchol) podle gaussovského čtení.
+
+    Krok C (J.): učicí vztah je otázka(meta) → VĚTA(meta). Fitující =
+    nejvýš položená věta s očekávaným lemmatem (answer_position má
+    přednost, když ho etalon nese); soupeř = nejvýš položená
+    nefitující. Pozice zůstává jen v tom, KTERÁ věta fituje.
+    """
+    from cb_field.query import gaussian_peaks
+    correct = rival = None
+    for sentence, peak, _center in gaussian_peaks(result):
+        fits = (corpus[position] is sentence) if position is not None \
+            else any(t.lemma == expected for t in sentence.tokens)
+        if fits and correct is None:
+            correct = (sentence, peak)
+        elif not fits and rival is None:
+            rival = (sentence, peak)
+        if correct is not None and rival is not None:
+            break
+    return correct, rival
 
 
 #: Relativní marže (krok 3 refaktoru, J. 2026-08-03): o kolik má správná
@@ -382,39 +404,31 @@ def train_on_etalon(corpus, etalon_entries, parser,
             seen += 1
             if sentence_hit(result, expected):
                 train_hits += 1        # úspěch posílení: věta v kandidátech
-            correct = next((c for c in result.candidates
-                            if c.token.lemma == expected), None)
-            if correct is not None:
-                correct_scores.append(correct.score)
-            # Soupeř pro kontrast je nejlepší ŠPATNÝ kandidát — když
-            # vítězí správná s malým odstupem (DOTAZ), je to druhý
-            # v pořadí; kontrast proti vítězi by byl správná proti sobě
-            # (prázdný rozdíl, žádné učení).
-            rival = next((c for c in result.candidates
-                          if c.token.lemma != expected), None)
             if winner.token.lemma == expected \
                     and result.outcome == "odpoved":
-                correct_now += 1
+                correct_now += 1             # tokenové čtení (vedle, § B5)
+            # Krok C: kontrast VĚT, ne oken — hinge s relativní marží
+            # na gaussovských vrcholech. Splněná marže = nulový loss
+            # a žádný krok; „korekcí 0" je skutečná konvergence.
+            correct, rival = _sentence_contrast(
+                result, corpus, expected, entry.get("answer_position"))
+            if correct is not None:
+                correct_scores.append(correct[1])
             if correct is None or rival is None:
                 continue                     # NEPOKRYTÁ — učení nepatří
-            # Hinge s relativní marží: učí se KAŽDÉ porušení marže —
-            # i správná výhra s tenkým odstupem (DOTAZ i odpoved těsně
-            # nad ε). Splněná marže znamená nulový loss a žádný krok;
-            # tím je „korekcí 0" skutečná konvergence, ne artefakt.
-            margin = MARGIN_RATIO * abs(rival.score)
-            loss = max(0.0, margin + rival.score - correct.score)
+            margin = MARGIN_RATIO * abs(rival[1])
+            loss = max(0.0, margin + rival[1] - correct[1])
             loss_sum += loss
             if loss == 0.0:
                 continue                     # marže splněna
+            # Pytle CELÝCH vět bez zdůrazněného středu — poziční
+            # nezávislost dat v pytli (J.): pozice zůstává jen v tom,
+            # KTERÁ věta fituje, ne kde v ní odpověď leží.
             q_bag = _semantic_bag(question, range(len(question.tokens)))
             correct_bag = _semantic_bag(
-                correct.sentence,
-                _window_rows(correct.sentence, correct.center, corpus.r),
-                center=correct.center)
+                correct[0], range(len(correct[0].tokens)))
             wrong_bag = _semantic_bag(
-                rival.sentence,
-                _window_rows(rival.sentence, rival.center, corpus.r),
-                center=rival.center)
+                rival[0], range(len(rival[0].tokens)))
             stats["hran"] += contrastive_step(
                 corpus.registry, q_bag, correct_bag, wrong_bag, eta,
                 state=adam_state)
@@ -434,12 +448,14 @@ def train_on_etalon(corpus, etalon_entries, parser,
                     entry["otazka"], parser, r=corpus.r,
                     registry=corpus.registry)
                 result = match(question, corpus)
-                winner = result.best
-                if winner is None:
+                from cb_field.query import gaussian_peaks
+                ranked = gaussian_peaks(result)
+                if not ranked:
                     continue
+                top_sentence, top_peak, _center = ranked[0]
                 quiet_seen += 1
                 margin = MARGIN_RATIO * abs(reference)
-                loss = max(0.0, margin + winner.score - reference)
+                loss = max(0.0, margin + top_peak - reference)
                 loss_sum += loss
                 if loss == 0.0:
                     quiet_now += 1
@@ -447,10 +463,7 @@ def train_on_etalon(corpus, etalon_entries, parser,
                 q_bag = _semantic_bag(question,
                                       range(len(question.tokens)))
                 winner_bag = _semantic_bag(
-                    winner.sentence,
-                    _window_rows(winner.sentence, winner.center,
-                                 corpus.r),
-                    center=winner.center)
+                    top_sentence, range(len(top_sentence.tokens)))
                 stats["hran"] += contrastive_step(
                     corpus.registry, q_bag, {}, winner_bag, eta,
                     state=adam_state)
@@ -471,22 +484,24 @@ def train_on_etalon(corpus, etalon_entries, parser,
                 valid_answerable += 1
                 if sentence_hit(result, expected):
                     valid_hits += 1
-                correct = next((c for c in result.candidates
-                                if c.token.lemma == expected), None)
-                rival = next((c for c in result.candidates
-                              if c.token.lemma != expected), None)
+                correct, rival = _sentence_contrast(
+                    result, corpus, expected,
+                    entry.get("answer_position"))
                 if correct is None or rival is None:
                     continue
                 valid_seen += 1
-                margin = MARGIN_RATIO * abs(rival.score)
+                margin = MARGIN_RATIO * abs(rival[1])
                 valid_loss_sum += max(0.0,
-                                      margin + rival.score - correct.score)
-            elif reference is not None and result.best is not None:
+                                      margin + rival[1] - correct[1])
+            elif reference is not None:
+                from cb_field.query import gaussian_peaks
+                ranked = gaussian_peaks(result)
+                if not ranked:
+                    continue
                 valid_seen += 1
                 margin = MARGIN_RATIO * abs(reference)
                 valid_loss_sum += max(0.0,
-                                      margin + result.best.score
-                                      - reference)
+                                      margin + ranked[0][1] - reference)
         corpus._fact_cache_freeze = False
 
         stats["epoch"] = epoch + 1

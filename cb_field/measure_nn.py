@@ -92,8 +92,18 @@ def main() -> None:
     from cb_field.evaluate import build_complex_corpus, load_etalon_korpusy
     from cb_field.learning import train_on_etalon
 
+    from cb_field.graph import FactGraph as _FactGraph
+    from cb_field.relations import definition_links, derivation_links
+
     parser = UdpipeClient()
     corpus = build_complex_corpus(parser)
+    # Vztahové vazby (kroky A a E) jsou součást systému dle návrhu —
+    # měří se stav se zapnutými definicemi i derivacemi.
+    setup_graph = _FactGraph()
+    for field in corpus:
+        setup_graph.add_sentence(field)
+    print(f"vztahové vazby: definic {definition_links(corpus, corpus.registry)} "
+          f"· derivací {derivation_links(setup_graph, corpus.registry)}")
     etalon = load_etalon_korpusy()
     training = [json.loads(line) for line
                 in TRAINING.read_text(encoding="utf-8").splitlines()

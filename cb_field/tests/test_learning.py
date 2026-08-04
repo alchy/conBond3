@@ -110,6 +110,32 @@ class TestCustomOsyVUceni(unittest.TestCase):
         self.assertEqual(edge[1], "etalon")
 
 
+class TestVetnyKontrast(unittest.TestCase):
+    """Krok C: učicí vztah je otázka(meta) → VĚTA(meta) — kontrast
+    fitující věty proti nejlepší nefitující, pytle celých vět bez
+    zdůrazněného středu (poziční nezávislost)."""
+
+    def test_bez_soupericí_vety_se_neuci(self):
+        from cb_field.learning import train_on_etalon
+        from cb_field.tests.test_matching import _scena
+
+        class _P:
+            def parse(self, text):
+                from cb_field.tests.test_matching import (KAM, BEZELA2,
+                                                          KOCKA2, OTAZNIK)
+                class _R:
+                    sentences = [type("_S", (), {
+                        "tokens": (KAM, BEZELA2, KOCKA2, OTAZNIK),
+                        "source": "Kam běžela kočka?"})()]
+                return _R()
+
+        corpus = _scena()              # jediná věta — soupeř není
+        stats = train_on_etalon(corpus, [{"otazka": "Kam běžela kočka?",
+                                          "odpoved_lemma": "les",
+                                          "zodpoveditelna": True}], _P())
+        self.assertEqual(stats["kroku"], 0)
+
+
 class TestValidacniSada(unittest.TestCase):
     """Zobecnění (J. 2026-08-04): 30 % otázek se při učení nepoužije
     a měří se na nich loss; rozdělení je deterministické (semínko)

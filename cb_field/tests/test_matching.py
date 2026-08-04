@@ -3,7 +3,8 @@
 import unittest
 
 from cb_field import Corpus, SentenceField, match
-from cb_field.tests.test_templates import DO, LESA, PES, SEL, TECKA
+from cb_field.tests.test_templates import (BEZELA, DO, KOCKA, LESA, PES,
+                                           SEL, TECKA)
 from cb_udpipe import Token
 
 KAM = Token(id=1, form="Kam", lemma="kam", upos="ADV",
@@ -84,6 +85,11 @@ class TestPropojeni(unittest.TestCase):
         """
         from cb_field.learning import train_on_etalon
         corpus = _scena()
+        # větný kontrast (krok C) potřebuje soupeřící VĚTU — fitující
+        # (s lesem) se učí proti nejlepší nefitující (s kočkou)
+        corpus.fields.append(SentenceField(
+            (BEZELA, KOCKA, TECKA), r=1, registry=corpus.registry,
+            source="Běžela kočka."))
 
         class _Parser:                     # atrapa: vrací zmraženou otázku
             def parse(self, text):
