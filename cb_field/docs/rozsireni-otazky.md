@@ -101,6 +101,7 @@ korpusu klesají monotónně —
 | plné šíření učicích pytlů škodí | NAMĚŘENO (zavrženo) |
 | validační loss chrání zobecnění | NAMĚŘENO (kouřový test) |
 | osa se s růstem faktů stabilizuje (přeučování řídne) | NAMĚŘENO (výměny 38 % → 16 % na přírůstek) |
+| hranice promoce plave se žánrovou skladbou korpusu | NAMĚŘENO (12,1 → 41,9 po NZ; rychlost 33,8 a smět 41,7 těsně pod) |
 | definice pokrývají potřebná slova | SONDA (218 lemmat; pokrytí vůči otázkám nezměřeno) |
 | okolí uzlu = použitelné rozšíření koše | SONDA (dálnice); vliv na dosah NEZMĚŘEN |
 | custom osy zlepšují samy o sobě | NEPOTVRZENO (C−B = 0) — hypotéza: projeví se až s expanzí a věnovaným učením |
@@ -180,7 +181,50 @@ korpusu klesají monotónně —
   přejímka: klesající křivka výměn (naměřený trend 38 % → 16 %
   pokračuje) a žádné přeučení bez změny osy.
 
-## 7 · Otevřená rozhodnutí (J.)
+## 7 · Myšlenkový experiment (dálnice, reálné věty a čísla)
+
+Věty: **Q** „Kolik se smí jezdit po dálnici?" (uživatel) · **F**
+„Nejvyšší povolená rychlost na dálnici v Česku je sto třicet
+kilometrů za hodinu." (korpus-001, s otázkou-parafrází a indexem) ·
+**D** „Dálnice … je rychlostní komunikace pro motorová silniční
+vozidla…" (naměřený lookup) · **R** věty o rychlosti z fyziky
+(rozptylovače se stejnou kotvou quantity).
+
+1. **Pytel Q** je pozičně nezávislý a nic tím neztrácí: roli nese
+   pád („po dálnici" Case=Loc), ne pořadí — flektivnost češtiny
+   dělá z poziční nezávislosti bezpečný předpoklad.
+2. **Expanze**: dálnice je v korpusu chudá (2 hrany, skóre 2,0);
+   definice D přidá komunikace/vozidlo/silniční/rychlostní → koš Q
+   se rozšíří o oblast, kterou nese F. POZOR: most definice→fakt
+   vede přes derivaci *rychlostní–rychlost* — bez kroku E (kmen ×
+   sousedství) se oblast s F nepotká plnou vahou.
+3. **Kritický nález — hranice promoce plave se žánrem korpusu:**
+   na 12 258 větách vystoupala na **41,9** (z 12,1 na 2 912) a
+   `rychlost` (33,8) i `smět` (41,7) skončily TĚSNĚ POD — biblická
+   záplava vytlačila doprava-specifické osy. Expanze dálnici zvedne
+   z 2,0 jen o ~5 sousedů, na promoci nedosáhne. Důsledek: promoce
+   je globální soutěž řízená skladbou korpusu → argument pro
+   vyvážení domén při růstu, pro dělení rozpočtu 328, nebo pro
+   promoci váženou po doménách (otevřené rozhodnutí).
+4. **Trénink**: metadatový rozdíl F − R je téměř prázdný — obě věty
+   nesou quantity. Učení tedy generalizuje **TYP** (kolik → quantity,
+   to už je axiom; naučit se dá jemnější typová struktura), ale
+   **SPECIFIKUM** (dálnice vs. světlo) nesou jen párování slovy
+   (cover: F dálnici má, R ne) a CUSTOM osy. Experiment tak
+   potvrzuje dělbu: učení = tvar, párování + promoce = svět —
+   a ukazuje, že bez promoce doménových slov zůstane učení na
+   typové úrovni.
+5. **Gaussovské čtení**: F dostává souhlasné příspěvky z více os
+   (quantity + dálnice + expandovaná oblast) → zvon přes celou
+   větu; R jen úzký vrchol na quantity. Integrál zvonu přes větu
+   zvýhodní F — přesně mechanismus „vypíchnutí oblasti", který
+   jednotlivý silný token nepřebije.
+6. **Parafráze**: korpusová otázka „Kolik kilometrů za hodinu činí
+   nejvyšší povolená rychlost na dálnici v Česku?" sdílí s Q
+   metadatový vzor při jiných slovech — přesně případ, který má
+   validační sada (30 %) ukázat jako přenos.
+
+## 8 · Otevřená rozhodnutí (J.)
 
 1. `W_EXPAND` a pokles váhy po skocích v grafu.
 2. Pořadí zapínání: doporučuji A → B (jen párování) → D → C → E → F,
