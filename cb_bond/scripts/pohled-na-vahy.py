@@ -74,7 +74,10 @@ def _hlasic(kazda: int = 10):
             stav = "ODVOLÁNA" if zprava["odvolano"] else "ponechána"
             print(f"{navrat}  epocha {zprava['epocha']} {stav:10} "
                   f"loss {zprava['loss']:.4f} · valid "
-                  f"{zprava['loss_valid']:.4f} · hran {zprava['hran']:5}"
+                  f"{zprava['loss_valid']:.4f} · učeno z "
+                  f"{zprava['skorovano']}/"
+                  f"{zprava['skorovano'] + zprava['preskoceno']}"
+                  f" · hran {zprava['hran']:5}"
                   f"{' ' * 12}", file=sys.stderr, flush=True)
 
     return hlas
@@ -126,6 +129,8 @@ def main(argv=None) -> int:
         stav = "ODVOLÁNA" if epocha["odvolano"] else "ponechána"
         print(f"\nepocha {i} [{stav}]  loss {epocha['loss']:.4f} "
               f"· valid {epocha['loss_valid']:.4f} "
+              f"· učeno z {epocha['skorovano']}/"
+              f"{epocha['skorovano'] + epocha['preskoceno']} otázek "
               f"· korekcí {epocha['korekci']} · hran {epocha['hran']}")
         for src, dst, stara, nova in epocha["zmeny"][:kolik]:
             print(f"     {src:26} → {dst:24} "

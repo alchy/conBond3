@@ -21,7 +21,7 @@ stavím korpus z 7 souborů…
 učím: 85 otázek (+35 odložených na validaci)
   výchozí validační loss 0.1144
   epocha 1:  40/85 ·     4 s · V kterých vojenských objektech se narodi
-  epocha 1 ponechána  loss 0.0949 · valid 0.1146 · hran   664
+  epocha 1 ponechána  loss 0.4248 · valid 0.3343 · učeno z 19/85 · hran 664
 ```
 
 V terminálu se postup přepisuje na jednom řádku; při přesměrování do
@@ -62,7 +62,7 @@ třemi chybí, učení jde vedle.
 ### 2 · Po epochách — i ta odvolaná
 
 ```
-epocha 1 [ponechána]  loss 0.0949 · valid 0.1146 · korekcí 15 · hran 664
+epocha 1 [ponechána]  loss 0.4248 · valid 0.3343 · učeno z 19/85 · hran 664
      Polarity=Pos      → ANCHOR=time:past   +0.0000 → +0.0089  (+0.0089)
      LEM=ADP:v         → ANCHOR=space:loc   +0.0000 → -0.0038  (-0.0038)
 ```
@@ -115,6 +115,15 @@ slovo se do učení dostane jedině jako `CUSTOM=` po promoci.
 **Osa sama na sebe** (`LEM=ADP:v → LEM=ADP:v`) při šíření jen zesiluje
 aktivaci samu ze sebe a vztah nenese. Učení ji nezakládá; kdyby se ve
 výpisu objevila, je něco rozbité.
+
+**„Učeno z 19/85" je nejdůležitější číslo na řádku.** Říká, kolik
+otázek šlo vůbec skórovat — u zbylých 66 se v shortlistu nenašla věta
+s odpovědí, takže není co kontrastovat. Nízký loss při nízkém
+„učeno z" neznamená, že systém umí; znamená, že se nemá z čeho učit,
+a to je úkol pro recall, ne pro trenéra.
+
+(Loss se proto dělí SKÓROVANÝMI. Dokud se dělil všemi, vycházel
+0,0949 místo 0,4248 — vypadal 4,5× lépe, než jaká byla skutečnost.)
 
 **Když je hran nula**, učení se nekonalo — buď se všechny epochy
 odvolaly (validace), nebo byla marže splněná (konvergence). Pohled na

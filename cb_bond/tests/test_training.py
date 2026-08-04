@@ -237,6 +237,40 @@ class TestOdvolaniEpochy(unittest.TestCase):
                          pred)
 
 
+class TestPoctivostLossu(unittest.TestCase):
+    """Loss se nesmí ředit otázkami, které nešly ani zkusit."""
+
+    def test_epocha_hlasi_kolik_otazek_PRESKOCILA(self):
+        # Naměřeno: z 85 tréninkových otázek jich 66 nemá fitující větu.
+        # Když se loss dělí všemi, vyjde 0,0949 místo 0,4248 — číslo
+        # vypadá 4,5× lépe, než jaká je skutečnost.
+        corpus = _korpus(KRESTA)          # jediná věta → není soupeř
+        trener = _trener(corpus)
+
+        zprava = trener.train([ZAZNAM], max_epochs=1)
+
+        self.assertEqual(zprava.epochs[0]["preskoceno"], 1)
+        self.assertEqual(zprava.epochs[0]["skorovano"], 0)
+
+    def test_loss_se_deli_SKOROVANYMI_ne_vsemi(self):
+        corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE)
+        trener = _trener(corpus, margin=9.0)
+
+        # jedna skórovatelná otázka + dvě, které skórovat nejdou
+        zaznamy = [ZAZNAM,
+                   {"otazka": OTAZKA_KREST.source,
+                    "odpoved_lemma": "nesmysl", "zodpoveditelna": True},
+                   {"otazka": OTAZKA_KREST.source,
+                    "odpoved_lemma": "nesmysl2", "zodpoveditelna": True}]
+        zprava = trener.train(zaznamy, max_epochs=1)
+
+        epocha = zprava.epochs[0]
+        self.assertEqual(epocha["skorovano"], 1)
+        self.assertEqual(epocha["preskoceno"], 2)
+        # loss patří k té JEDNÉ otázce, ne k průměru přes tři
+        self.assertGreater(epocha["loss"], 0.3)
+
+
 class TestPohledNaVahy(unittest.TestCase):
     """Co se model naučil — v průběhu, ne až na konci."""
 

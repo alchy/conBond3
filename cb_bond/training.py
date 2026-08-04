@@ -24,6 +24,21 @@ Pytle jsou CELÉ věty bez zdůrazněného středu — **poziční nezávislost*
 pozice zůstává jen v tom, KTERÁ věta fituje, ne kde v ní odpověď leží.
 Roli nese pád, čeština si to může dovolit.
 
+## Loss se dělí SKÓROVANÝMI otázkami
+
+Otázka, u které se v shortlistu nenajde věta s odpovědí, se učit nedá:
+není co kontrastovat. Kdyby přispěla nulou do průměru, tvářila by se
+jako vyřešená — a je to přesně naopak.
+
+Naměřeno na 85 tréninkových otázkách: 66 z nich (78 %) nemá fitující
+větu, 4 mají splněnou marži a jen 15 se opravdu učí. Loss dělený všemi
+vychází **0,0949**, dělený skórovanými **0,4248** — číslo vypadalo
+4,5× lépe, než jaká byla skutečnost.
+
+Report proto hlásí `skorovano` a `preskoceno` vedle lossu. Vysoké
+`preskoceno` neznamená, že se systém naučil; znamená, že se nemá
+z čeho učit — a to je úkol pro recall, ne pro trenéra.
+
 ## Hinge s relativní marží
 
     marže = margin · |vrchol soupeře|
@@ -227,7 +242,7 @@ class ContrastiveTrainer:
         # Váhy na začátku epochy — proti nim se pak čte, CO se naučilo.
         pred = {(src, dst): vaha
                 for src, dst, vaha in self.corpus.registry.links()}
-        loss_celkem = korekci = hran = 0
+        loss_celkem = korekci = hran = skorovano = 0
         vrcholy_spravnych = []
         for poradi, zaznam in enumerate(entries, 1):
             self.progress({"faze": "otazka", "epocha": cislo,
@@ -236,6 +251,7 @@ class ContrastiveTrainer:
             krok = self._krok(zaznam)
             if krok is None:
                 continue
+            skorovano += 1
             loss, zmen, vrchol = krok
             loss_celkem += loss
             korekci += bool(zmen)
@@ -243,7 +259,13 @@ class ContrastiveTrainer:
             if vrchol is not None:
                 vrcholy_spravnych.append(vrchol)
         zmeny = _zmeny_vah(pred, self.corpus.registry)
-        return {"loss": round(loss_celkem / max(1, len(entries)), 4),
+        # Loss se dělí SKÓROVANÝMI, ne všemi. Otázka, u které se nenajde
+        # fitující věta, se učit nedá — přispět nulou by znamenalo tvářit
+        # se, že je vyřešená. Naměřeno: z 85 otázek jich 66 skórovat
+        # nešlo a loss vycházel 0,0949 místo 0,4248.
+        return {"loss": round(loss_celkem / max(1, skorovano), 4),
+                "skorovano": skorovano,
+                "preskoceno": len(entries) - skorovano,
                 "korekci": korekci, "hran": hran,
                 "vrchol_median": round(_median(vrcholy_spravnych), 4),
                 "zmeny": zmeny[:self.top_changes],
@@ -326,12 +348,14 @@ class ContrastiveTrainer:
         """Průměrná hinge loss na odložených otázkách — bez učení."""
         if not entries:
             return 0.0
-        celkem = 0.0
+        celkem = skorovano = 0.0
         for zaznam in entries:
             krok = self._krok_bez_uceni(zaznam)
             if krok is not None:
                 celkem += krok
-        return celkem / len(entries)
+                skorovano += 1
+        # Táž poctivost jako u tréninkové lossy: dělí se skórovanými.
+        return celkem / skorovano if skorovano else 0.0
 
     def _krok_bez_uceni(self, zaznam):
         otazka = self._pole_otazky(zaznam["otazka"])
