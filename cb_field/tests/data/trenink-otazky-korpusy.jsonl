@@ -31,3 +31,74 @@
 {"otazka": "Kdy se narodil Jan Křtitel?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: narodit se svádí do domény spisovatelů"}
 {"otazka": "Kolik dětí měl Karel Čapek?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: svod živou osou dítě, počet v textu není"}
 {"otazka": "Kdo napsal Bibli?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: svod napsal→Principia, křížení domén"}
+{"otazka": "Jaký obřad prováděl Jan v Jordánu?", "odpoved_lemma": "křtít", "zodpoveditelna": true, "most": "sloveso - činnost Jana Křtitele"}
+{"otazka": "Kterého hmyzu se živil Jan Křtitel?", "odpoved_lemma": "kobylka", "zodpoveditelna": true, "most": "nominalizace: co jedl → potrava"}
+{"otazka": "V kterém městě Ježíš nejprve v synagóze učil?", "odpoved_lemma": "Kafarnaum", "zodpoveditelna": true, "most": "toponimum: první město"}
+{"otazka": "Co Ježíš proklel, když v něm nic nenašel?", "odpoved_lemma": "fíkovník", "zodpoveditelna": true, "most": "nominalizace: ať nikdo nejí ovoce"}
+{"otazka": "Jaké si jméno dali zlí duchové v hojném počtu?", "odpoved_lemma": "legie", "zodpoveditelna": true, "most": "vlastní jméno: démon s vojenskými jednotkami"}
+{"otazka": "V kterém vodním toku se konala křestní mise?", "odpoved_lemma": "Jordán", "zodpoveditelna": true, "most": "toponimum: řeka"}
+{"otazka": "Jaké aramejské slovo vyslovil Ježíš hluchému muži?", "odpoved_lemma": "Effatha", "zodpoveditelna": true, "most": "aramejština: zaklínání"}
+{"otazka": "Jaké bylo původní jméno učedníka zvaného Petr?", "odpoved_lemma": "Šimon", "zodpoveditelna": true, "most": "antroponym: přejmenování"}
+{"otazka": "V kterém roce se narodil Jan Křtitel?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící letopočet"}
+{"otazka": "Kolik let měl Ježíš při své první veřejné cestě?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící věk osoby"}
+{"otazka": "Jakou barvu měl Ježíšův běžný plášť?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: nespecifikovaná vlastnost"}
+{"otazka": "Kdo je autorem zákona popisujícího přitahování hmot?", "odpoved_lemma": "Newton", "zodpoveditelna": true, "most": "nominalizace: formuloval → autor; parafráze: přitahování hmot"}
+{"otazka": "Kterou vědeckou publikaci Newton vydal?", "odpoved_lemma": "Principia", "zodpoveditelna": true, "most": "synonymie: napsal ≈ vydal; kniha ≈ publikace"}
+{"otazka": "Jakými silami se navzájem působí objekty hmoty?", "odpoved_lemma": "gravitace", "zodpoveditelna": true, "most": "nominalizace: síla; parafráze: objekty hmoty"}
+{"otazka": "Kde Newton strávil poslední dny života?", "odpoved_lemma": "Londýn", "zodpoveditelna": true, "most": "parafráze: zemřít → strávit poslední dny"}
+{"otazka": "Které město bylo rodištěm Einsteina?", "odpoved_lemma": "Ulm", "zodpoveditelna": true, "most": "diastematická: město narození"}
+{"otazka": "Jakou fyzikální disciplínu Einstein rozpracoval?", "odpoved_lemma": "relativita", "zodpoveditelna": true, "most": "nominalizace: rozpracoval; parafráze: disciplína"}
+{"otazka": "Která planeta se pohybuje okolo Slunce?", "odpoved_lemma": "Země", "zodpoveditelna": true, "most": "synonymie: obíhá ≈ pohybuje"}
+{"otazka": "Jaký satelit se pohybuje okolo planety Země?", "odpoved_lemma": "Měsíc", "zodpoveditelna": true, "most": "nominalizace: Měsíc → satelit; synonymie: obíhá ≈ pohybuje"}
+{"otazka": "Jaký přírodní fenomén je vyvolán Měsícem?", "odpoved_lemma": "příliv", "zodpoveditelna": true, "most": "nominalizace: způsobuje → vyvolán; pasivum"}
+{"otazka": "Který fyzikální efekt Einstein rozluštil?", "odpoved_lemma": "fotoelektrický", "zodpoveditelna": true, "most": "synonymie: vysvětlil ≈ rozluštil; jev ≈ efekt"}
+{"otazka": "Jaké vlnění se šíří prostorem jako viditelné záření?", "odpoved_lemma": "elektromagnetický", "zodpoveditelna": true, "most": "diastematická: světlo → viditelné záření"}
+{"otazka": "Na kterém francouzském území se zrodil Newton?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: geografický svod (text: Woolsthorpe, Anglie)"}
+{"otazka": "V kterém roce publikoval Einstein teorii relativity?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící informace"}
+{"otazka": "Kolik lidí pracovalo na teorii relativity?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící informace (kvantita)"}
+{"otazka": "Kolik metrů za sekundu se světlo šíří vzduchem?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: obrácený kontext (text: vakuum; otázka: vzduch)"}
+{"otazka": "Jaký duchovní vynalezl elektromotor?", "odpoved_lemma": "kněz", "zodpoveditelna": true, "most": "pozice: povolání"}
+{"otazka": "Jaký fyzikální jev pohání asynchronní stroj?", "odpoved_lemma": "indukce", "zodpoveditelna": true, "most": "princip: fyzikální"}
+{"otazka": "Jaké součásti podpírají hřídel během otáčení?", "odpoved_lemma": "ložisko", "zodpoveditelna": true, "most": "mechanika: rotace"}
+{"otazka": "Jaké součástky generují elektromagnetické pole?", "odpoved_lemma": "cívka", "zodpoveditelna": true, "most": "funkce: magnetická"}
+{"otazka": "Která část stroje se stále otáčí?", "odpoved_lemma": "rotor", "zodpoveditelna": true, "most": "pohyb: kinematika"}
+{"otazka": "Která součást zůstává v klidu?", "odpoved_lemma": "stator", "zodpoveditelna": true, "most": "statika: stavba"}
+{"otazka": "Jakým zdrojem se pohony napájejí?", "odpoved_lemma": "proud", "zodpoveditelna": true, "most": "zdroj: energie"}
+{"otazka": "V kterém městě Jedlík pracoval?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící lokalita"}
+{"otazka": "Kolik kilowattů má průměrný domácí elektromotor?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící kvantitativní údaj"}
+{"otazka": "Který chemický prvek je v moderních permanentních magnetech?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící specifikace prvku"}
+{"otazka": "Jaké organely obsahují asimilační barviva?", "odpoved_lemma": "chloroplast", "zodpoveditelna": true, "most": "synonymie: organely obsahující × místo účinnosti"}
+{"otazka": "Který plyn produkuje oxygenní fotosyntéza?", "odpoved_lemma": "kyslík", "zodpoveditelna": true, "most": "nominalizace: uvolňuje se × produkuje"}
+{"otazka": "Ze které anorganické sloučeniny vznikají sacharidy?", "odpoved_lemma": "oxid", "zodpoveditelna": true, "most": "nominalizace: ze které × jakou"}
+{"otazka": "Která bílkovina zprostředkovává fixaci oxidu uhličitého?", "odpoved_lemma": "Rubisco", "zodpoveditelna": true, "most": "synonymie: zprostředkovává × katalyzuje"}
+{"otazka": "Jaký je redoxní potenciál enzymu Rubisco?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící údaj o redoxním potenciálu"}
+{"otazka": "Jak dlouho trvá aktivace fotosystému po ozáření?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící časový slot"}
+{"otazka": "Kolik molekul NADPH vzniká z jedné molekuly glukózy?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící stechiometrický poměr"}
+{"otazka": "Jakou profesi vykonával otec Karla Čapka?", "odpoved_lemma": "lékař", "zodpoveditelna": true, "most": "rodina: povolání"}
+{"otazka": "Ve kterém městě měl Čapek strýce se mlýnem?", "odpoved_lemma": "Hronov", "zodpoveditelna": true, "most": "dětství: místo pobytu"}
+{"otazka": "Koho si Čapek v roce 1935 vzal za manželku?", "odpoved_lemma": "Olga", "zodpoveditelna": true, "most": "sňatek: manželka"}
+{"otazka": "Kdo projektoval dům bratří Čapků na Vinohradech?", "odpoved_lemma": "Machoň", "zodpoveditelna": true, "most": "architektura: stavitel obydlí"}
+{"otazka": "Z jakého slovesa pochází označení robot?", "odpoved_lemma": "robotovat", "zodpoveditelna": true, "most": "etymologie: slovo robot"}
+{"otazka": "V kterém měsíci se Čapek poprvé setkal s Masarykem?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící datování"}
+{"otazka": "Kolik dětí měl Karel Čapek s Olgou Scheinpflugovou?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící údaj o rodině"}
+{"otazka": "Které své dílo měl prezident Masaryk nejraději?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící preferenční soud"}
+{"otazka": "V kterých vojenských objektech se narodil budoucí literát?", "odpoved_lemma": "kasárna", "zodpoveditelna": true, "most": "místo narození"}
+{"otazka": "Jaké vojenské řemeslo měl Nerudův otec?", "odpoved_lemma": "dělostřelec", "zodpoveditelna": true, "most": "původ: vojenská tradice rodiny"}
+{"otazka": "Jaké bylo rodné příjmení jeho matky?", "odpoved_lemma": "Leitnerová", "zodpoveditelna": true, "most": "identifikace předka"}
+{"otazka": "V kterém literárním sborníku se generace přihlásila k Máchovi?", "odpoved_lemma": "Máj", "zodpoveditelna": true, "most": "literární orientace generace"}
+{"otazka": "V jakém jazyce Neruda své první články publikoval?", "odpoved_lemma": "německý", "zodpoveditelna": true, "most": "novinářství: počátky"}
+{"otazka": "Kterou známou autorku zmínil jako čtenářku prvotiny?", "odpoved_lemma": "Němcová", "zodpoveditelna": true, "most": "uznání současnice"}
+{"otazka": "V kterém městě mimo Prahu vedl Neruda redakci?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící lokalita"}
+{"otazka": "Jaké vyznamenání obdržel Neruda od České akademie?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící vztah"}
+{"otazka": "Kterou sbírkou oslavil Neruda své manželství?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: obrácený vztah — Neruda se neženil"}
+{"otazka": "Kde přišel na svět Bohumil Hrabal?", "odpoved_lemma": "Židenice", "zodpoveditelna": true, "most": "lokace narození"}
+{"otazka": "Jaké bylo Hrabalovo rodné příjmení?", "odpoved_lemma": "Kilian", "zodpoveditelna": true, "most": "rodné jméno"}
+{"otazka": "V kterých závodech Hrabal pracoval s ocelí?", "odpoved_lemma": "ocelárna", "zodpoveditelna": true, "most": "zaměstnání"}
+{"otazka": "Čemu se vyučil na univerzitě?", "odpoved_lemma": "právo", "zodpoveditelna": true, "most": "vzdělání"}
+{"otazka": "Jak se jmenovala jeho manželka?", "odpoved_lemma": "Eliška", "zodpoveditelna": true, "most": "manželství"}
+{"otazka": "Kde měl Hrabal chatu na venkově?", "odpoved_lemma": "Kersko", "zodpoveditelna": true, "most": "nemovitost"}
+{"otazka": "Který režisér zpracovával Hrabalova díla?", "odpoved_lemma": "Menzel", "zodpoveditelna": true, "most": "filmová adaptace"}
+{"otazka": "Kterou nemocnici Hrabal vedl jako ředitel?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: záměna role — v nemocnici zemřel, nevedl ji"}
+{"otazka": "Jak se jmenoval Hrabalův jediný syn?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící osoba"}
+{"otazka": "Které filmy Hrabal režíroval?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: záměna role — nebyl režisér"}
+{"otazka": "Do kterého jazyka byla jeho díla přeložena nejčastěji?", "odpoved_lemma": null, "zodpoveditelna": false, "most": "negativní: chybějící detail"}

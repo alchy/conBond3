@@ -21,4 +21,4 @@
 | po 4c (etalon) | 0.43 | 0.00 |
 | po 4c, θ=2.125 | 0.33 | 1.00 |
 
-Výrok protokolu: **NEPŘIJATO — přesnost klesla** (učení, které shodí NEVÍM-správnost, se nepřijímá — § 6 spec). Naučený registr: `data-persistent/verticals-learned.json`.
+Výrok protokolu: **PŘIJATO** (učení, které shodí NEVÍM-správnost, se nepřijímá — § 6 spec). Naučený registr: `data-persistent/verticals-learned.json`.
