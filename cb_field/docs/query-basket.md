@@ -105,7 +105,44 @@ Pozn. k pořadí: typované spojky mají smysl teprve nad query basketem,
 který umí operovat. Nejdřív profil a jeho fit, pak spojky, pak
 odvozování — jinak by vznikly hrany, které nemá kdo použít.
 
-## 6 · Co je hotové a co ne
+## 6 · Algebra košů (zobecnění, J. 2026-08-04)
+
+> „máme koše otázek i odpovědí, máme logické operátory mezi koši
+> a závislosti mezi koši. lze naučit závislosti pomocí nového koše.
+> lze použít operátory mezi jednotlivými koši (takový NOT je též pěkný,
+> AND — kombinace dvou otázkových košů)"
+
+Koš přestává být jen výřezem věty a stává se **univerzální jednotkou**:
+
+| co | je koš | k čemu
+|---|---|---|
+| otázka | ano | co se ptáme (podnět + neznámá) |
+| odpověď | ano | co odpovídá (fakt v korpusu) |
+| **závislost** | **ano** | vazba mezi dvěma koši, a **učí se** |
+
+Poslední řádek je to podstatné: závislost se nereprezentuje jen jako
+hrana mezi vertikálami, ale může dostat **vlastní koš** — uzel, do
+kterého teče aktivace a který má své vertikály a váhy. Hrana se tím
+reifikuje do uzlu a učí se týmž mechanismem jako všechno ostatní
+(Adam, relativní marže, ochrana axiomů). Graf tak roste o uzly, které
+nesou vztah, ne jen o uzly, které nesou slovo.
+
+Operátory pak nejsou nad tvrzeními, ale **mezi koši**:
+
+- **NOT(A)** — obrácené znaménko aktivací: koš „co tam nemá být".
+  Není to filtr; je to koš jako každý jiný, jen se zápornými vahami,
+  takže se s ním dá dál počítat i učit.
+- **AND(A, B)** — součin po vertikálách: svítí, co je v obou. Kombinace
+  dvou **otázkových** košů dá složenou otázku („kdo" ∧ „kdy"), aniž by
+  ji někdo musel předem definovat.
+- **OR(A, B)** — součet: stačí jeden.
+
+Vlastnost, na které záleží: výsledek operace je zase koš, takže se dá
+řetězit, uložit do registru jako uzel a učit. Tím se z odpovídače
+stává počítadlo nad grafem — a odvození zůstává čitelné, protože každý
+mezikrok je pojmenovatelný koš.
+
+## 7 · Co je hotové a co ne
 
 Hotové: bezeslovná reprezentace, kotvy a jejich hierarchie, koše
 s dvojitým r (slovo × věta), kontrastivní učení s Adamem, relativní
