@@ -266,11 +266,16 @@ narodil Karel Čapek?" (typ *most: elipsa podmětu*) je `cover` 0,00, ale
 
 ## 5 · Naměřený stav (2 912 vět, etalon 40 otázek)
 
-| | hodnota |
-|---|---|
-| přesnost@1 (zodpověditelné) | 11/30 |
-| věta s odpovědí v top-3 | 22/30 |
-| mlčení | 0 |
+| předvýběr | přesnost@1 | věta v top-3 | mlčení |
+|---|---|---|---|
+| kosinus slov otázky | 11/30 | 21/30 | 0 |
+| **grafem (depth=2)** | 11/30 | **24/30** | 0 |
+| grafem + spektrum | 11/30 | 24/30 | 0 |
+
+Předvýběr grafem zvedl VĚTNÉ čtení o tři otázky a přesnosti se nedotkl
+— což dává smysl: graf vybírá věty, výběr slova uvnitř věty dělají
+`meet` a `given`. Pokrytí zůstalo beze změny (1,000 / 0,604 / 0,885),
+protože se počítá nad celým korpusem, ne nad shortlistem.
 
 Nejčastější vzorec chyby: **správná věta první, špatné slovo z ní.**
 

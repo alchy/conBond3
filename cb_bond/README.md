@@ -54,7 +54,7 @@ usadí — stejně jako u cb_field.
 | `GraphMirror` | delty grafu → okno viewBase2; `emit`, `mirror`, `refresh`, `illuminate` |
 | `ContrastiveTrainer`, `ValidationSplit`, `TrainingReport` | kontrastivní učení nad metadaty; validace řídí konec |
 | `SpectralMember`, `truncated_svd` | latentní podobnost jako vážený člen (§ 5/S2); vypnutý nulou |
-| `GraphRecall` | předvýběr vět GRAFEM: lemata otázky → uzly → záře → věty |
+| `GraphRecall` | předvýběr vět GRAFEM: lemata otázky → uzly → záře → věty; předá se `Matcher(graph_recall=…)` |
 | `learning_bag`, `sentence_hit`, `LEARN_PREFIXES` | učicí pytel (bez WORD=) a větné měřítko úspěchu |
 
 ## Závislosti

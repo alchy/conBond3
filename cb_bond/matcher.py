@@ -251,7 +251,8 @@ class Matcher:
     def __init__(self, corpus, *, spread_depth: int = 2,
                  weights: ScoreWeights = ScoreWeights(),
                  theta: float = 0.0, epsilon: float = 0.0,
-                 top_k: int = 50, spectral_k: int = 0) -> None:
+                 top_k: int = 50, spectral_k: int = 0,
+                 graph_recall=None) -> None:
         self.corpus = corpus
         self.spread_depth = spread_depth
         self.weights = weights
@@ -262,6 +263,11 @@ class Matcher:
         #: vůbec; SVD nad 12 tisíci větami není zadarmo a nikdo za něj
         #: nemá platit, dokud si o něj neřekne váhou.
         self.spectral_k = spectral_k
+        #: Předvýběr grafem (GraphRecall), nebo None pro kosinus slov.
+        #: Graf nese strukturu, pytel jen množinu — naměřeno 53/117
+        #: proti 37/117 (věta s odpovědí v top-50). Předává se
+        #: parametrem (§ 3): Matcher si graf nestaví sám.
+        self.graph_recall = graph_recall
         self.spectral = None
         self._cache_klic = None
         self._links = None
@@ -375,13 +381,21 @@ class Matcher:
         """Pozice vět, které stojí za jemné čtení.
 
         Tohle je celý recall: co se sem nedostane, se po tokenech
-        nečte — a je to dnes nejužší místo systému (naměřeno: z otázek,
-        jejichž odpověď v korpusu JE, se do top-50 dostane jen 32 %).
+        nečte — a je to nejužší místo systému. S `graph_recall` se
+        vybírá GRAFEM (naměřeno 53/117 proti 37/117 kosinem), jinak
+        kosinem slov, která otázka tvrdí.
         """
+        k = top_k or self.top_k
+        if self.graph_recall is not None:
+            vybrane = self.graph_recall.sentences(question, top_k=k)
+            # Graf, který nezná ani jedno lemma otázky, nesmí shodit
+            # čtení — pak rozhoduje kosinus jako dřív.
+            if vybrane:
+                return vybrane
         skore = self.recall_scores(question)
         if not skore.any():
-            return tuple(range(min(top_k or self.top_k, len(self.corpus))))
-        k = min(top_k or self.top_k, len(skore))
+            return tuple(range(min(k, len(self.corpus))))
+        k = min(k, len(skore))
         nejlepsi = np.argpartition(-skore, k - 1)[:k]
         return tuple(int(i) for i in nejlepsi[np.argsort(-skore[nejlepsi])])
 

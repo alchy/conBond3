@@ -12,7 +12,8 @@ import numpy as np
 
 from cb_bond import (Matcher, MatchResult, ScoreCandidate,
                      ScoreWeights, saturate, semantic_bag)
-from cb_bond.tests.vzorky import KRESTA, OTAZKA_KREST, SYNAGOGA
+from cb_bond.tests.vzorky import (GRAVITACE, KRESTA, OTAZKA_KREST,
+                                 SYNAGOGA)
 from cb_field import Corpus, SentenceField
 from cb_bond.matcher import _cos
 
@@ -443,6 +444,42 @@ class TestVysledek(unittest.TestCase):
         for kandidat in obraceny.candidates:
             self.assertAlmostEqual(kandidat.score, -podle[kandidat.key],
                                    places=5)
+
+
+class TestPredvyberGrafem(unittest.TestCase):
+    """Matcher smí předvýběr delegovat na graf (naměřeně lepší)."""
+
+    def test_s_grafem_se_cte_to_co_vybral_graf(self):
+        from cb_bond import GraphRecall, KnowledgeGraph
+        corpus = _korpus(SYNAGOGA, KRESTA)
+        graf = KnowledgeGraph()
+        for pole in corpus:
+            graf.add_sentence(pole)
+        matcher = Matcher(corpus, spread_depth=1,
+                          graph_recall=GraphRecall(graf, corpus), top_k=1)
+
+        vysledek = matcher.match(_otazka(corpus))
+
+        self.assertEqual({k.sentence for k in vysledek.candidates}, {1})
+
+    def test_bez_grafu_zustava_kosinus(self):
+        corpus = _korpus(SYNAGOGA, KRESTA)
+        matcher = Matcher(corpus, spread_depth=1)
+
+        self.assertIsNone(matcher.graph_recall)
+        self.assertTrue(matcher.recall(_otazka(corpus)))
+
+    def test_graf_bez_znameho_lemmatu_neshodi_match(self):
+        # když graf nenajde nic, čte se dál — mlčet naslepo se nesmí
+        from cb_bond import GraphRecall, KnowledgeGraph
+        corpus = _korpus(GRAVITACE)
+        graf = KnowledgeGraph()
+        for pole in corpus:
+            graf.add_sentence(pole)
+        matcher = Matcher(corpus, spread_depth=1,
+                          graph_recall=GraphRecall(graf, corpus))
+
+        self.assertTrue(matcher.match(_otazka(corpus)).candidates)
 
 
 class TestDvoustupnoveCteni(unittest.TestCase):

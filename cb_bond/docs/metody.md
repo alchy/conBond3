@@ -43,7 +43,7 @@ Veřejné API modulu. Co tady není, je vnitřek a smí se změnit
 
 | metoda | co dělá / na čem visí |
 |---|---|
-| `Matcher(corpus, *, spread_depth=2, weights, theta, epsilon, top_k=50)` | páruje otázku s korpusem; otázka musí být pole nad TÝMŽ registrem |
+| `Matcher(corpus, *, spread_depth=2, weights, theta, epsilon, top_k=50, spectral_k=0, graph_recall=None)` | páruje otázku s korpusem; otázka musí být pole nad TÝMŽ registrem. S `graph_recall` vybírá věty GRAF, jinak kosinus slov |
 | `given_axes(question)` | slovní osy, které otázka dává — bez tázacích slov (QLEM=) a bez interpunkce |
 | `coverage(question)` | `{daná osa: nejlepší pokrytí přes věty}`; neznámá osa dá **přesnou nulu** |
 | `recall(question, top_k)` | pozice vět ke jemnému čtení — jeden součin (§ 5/S1) |

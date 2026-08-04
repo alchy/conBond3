@@ -15,7 +15,8 @@ import json
 import sys
 from pathlib import Path
 
-from cb_bond import Matcher, ScoreWeights
+from cb_bond import GraphRecall, KnowledgeGraph, Matcher, ScoreWeights
+from cb_bond import sentence_hit
 from cb_field import SentenceField
 from cb_field.corpusfile import build_corpus
 from cb_udpipe import UdpipeClient
@@ -100,6 +101,24 @@ def main() -> int:
 
     print(f"\nsprávně {spravne} z {len(zodpoveditelne)} zodpověditelných "
           f"({len(rows)} otázek celkem)\n")
+
+    graf = KnowledgeGraph()
+    for pole_vety in corpus:
+        graf.add_sentence(pole_vety)
+    grafem = Matcher(corpus, spread_depth=1, theta=0.0,
+                     graph_recall=GraphRecall(graf, corpus, depth=2))
+    g_presne = g_veta = 0
+    for radek in rows:
+        if not radek["zodpoveditelna"]:
+            continue
+        vysledek = grafem.match(pole(radek["otazka"]))
+        g_presne += bool(vysledek.best and
+                         vysledek.best.lemma == radek["odpoved_lemma"])
+        g_veta += sentence_hit(vysledek, radek["odpoved_lemma"], corpus,
+                               top=3)
+    print(f"předvýběr grafem: přesnost {g_presne}/{len(zodpoveditelne)} "
+          f"· věta v top3 {g_veta}/{len(zodpoveditelne)}"
+          f"   (kosinem: {spravne} · {sum(1 for r in rows if r['zodpoveditelna'] and sentence_hit(matcher.match(pole(r['otazka'])), r['odpoved_lemma'], corpus, top=3))})\n")
 
     print(f"{'ablace členů skóre':26} {'naměřeno':>10}   reference")
     for jmeno, (referencni, uprava) in ABLACE.items():
