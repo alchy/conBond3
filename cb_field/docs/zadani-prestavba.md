@@ -1,291 +1,305 @@
-# Zadání přestavby — od main k větvi E, načisto a objektově
+# Zadání: cb_bond — jádro vazeb nad polem (stavba načisto)
 
-Zadání pro vývojáře: postavit funkcionalitu větve E (promoce + učení
-+ hloubka; viz vetev-e.md) ČISTĚ od stavu posledního commitu na main
-(`b447090` — pole věty: SentenceField, koše, aktivace, append-only
-registr s vazbami, kukátko). Platí README-MODULES.md beze zbytku:
-service/api oddělení, závislosti parametrem (§ 3), unittest bez běžící
-služby (§ 13), format_version na uložených datech (§ 14), měření
-s protiváhou. Větev feature/field-templates slouží jako REFERENCE
-CHOVÁNÍ a zdroj zmražených přejímek — kód se z ní neopisuje.
+Nový modul **cb_bond** je core systému. Staví se čistě, objektově,
+podle README-MODULES.md, NAD modulem cb_field, který zůstává jako
+hotový mezikrok (pole věty). Větev feature/field-templates je
+referencí chování a zdrojem zmražených přejímek — kód se z ní
+neopisuje.
 
-## 0 · Co na main je a smí se použít
+## 1 · Proč se cb_bond staví
 
-- `SentenceField` (věta → řádky aktivací → koše → matice; registr
-  parametrem, otázkovost, přenos směru předložky).
-- `VerticalRegistry` (append-only osa, vážené vazby s ochranou
-  axiomů, `spread` = v + v·L, vectorize/unvectorize, save/load v1).
-- `service.py` (expand_token, activations, kotvy, is_question),
-  kukátko na pole (:42301).
-- `cb_udpipe` (parser s trvalou cache), `cb_logger`.
+Systém má z otázky v přirozené češtině **vybrat kandidátní věty,
+které obsahují odpověď** — nad korpusem, který roste (texty, slovník,
+dialog), a s učením, které zobecňuje, ne memoruje.
 
-## 1 · Neporušitelné invarianty (platí pro každý nový řádek)
+Pole (cb_field) umí větu rozložit na vážené aktivace gramatiky
+a slov. To na výběr věty nestačí, a každý důvod je naměřený:
 
-1. **NN se NIKDY netrénuje nad jinými daty než metadaty z vertikál.**
-   Konkrétní slovo vstupuje do učení výhradně promocí do custom
-   slotu. Hlídá pojistkový test (řádky slova NESOU, pytel je
-   nepropustí).
-2. **Žádné filtry v datové cestě** — rozvoj = nový uzel, vážená
-   hrana nebo vážený člen skóre (klidně záporný). Jediné řezy jsou
-   θ (NEVÍM) a ε (DOTAZ) na konečném skóre.
-3. **Append-only + verze osy.** Sloupec registru znamená totéž
-   navždy; jedinou výjimkou je přeobsazení custom slotů, které zvedá
-   `axis_version` — nese ji cache matic vět, pytle faktů i soubor na
-   disku a čtení s cizí verzí je HLASITÁ chyba (tichá záměna významu
-   je nejnebezpečnější vada návrhu).
-4. **Transparentní promoce:** po selektu vertikál se přegeneruje
-   celý korpus a koše nesou aktivaci CUSTOM= samy; teprve potom
-   učení. Žádná zvláštní větev pro otázku či dialog — aktivaci dělá
-   stavba pole nahlédnutím do osy.
-5. **Poziční nezávislost pytle otázky** — pytel je množina; pozice
-   zůstává jen v tom, KTERÁ věta fituje (roli nese pád).
-6. **Cokoli se děje v grafu, se projeví v jeho vizualizaci** —
-   každá mutace i vysvícení jde emitorem delt (viewBase2); bez
-   diváka se delta zahodí, systém nestojí.
-7. **Offline-first fixace:** korpus i slovníkové definice žijí ve
-   fixovaných JSON souborech; síť jen při prvním setkání se slovem.
-   Jméno souboru je neprůhledný identifikátor (žádné mapy klíčované
-   doménou).
-8. **Determinismus:** žádná náhoda bez semínka, žádný čas z hodin;
-   dvojí zavolání = týž výsledek.
-9. **Číslo bez protiváhy se neuvádí** (přesnost × NEVÍM × dosah;
-   tokenové a větné čtení vedle sebe).
+- **Pytel ztrácí strukturu.** „Kde byl pokřtěn Ježíš?" — Jordán
+  (2,088) a Galilej (2,068) jsou v pytli k nerozeznání, protože obě
+  jsou „místo v téže větě". Strukturně je rozdíl triviální: Jordán
+  visí na *pokřtěný*, Galilej na *přijít*. Proto **graf faktů**.
+- **Osa roste se světem donekonečna.** Slovních vertikál přibývá
+  s každým textem; NN potřebuje **pevnou vstupní dimenzi**. Proto
+  **promoce**: omezený počet custom slotů, o které slova soutěží
+  statistikou grafu, s přepočtem při růstu korpusu (a naměřenou
+  stabilizací — výměny slotů řídnou).
+- **Učení nad slovy memoruje.** Párové mosty slovo↔slovo se mezi
+  otázkami nepřenášejí (naměřeno); model, který se učí jen nad
+  metadaty vertikál, přenáší TYP otázky na nové otázky. Proto
+  **invariant metadat** a promoce jako jediná brána slova do učení.
+- **Otázka bývá chudší než odpověď.** „Kolik se smí jezdit po
+  dálnici?" nenese *rychlost* ani *povolený*. Proto **expanze**:
+  otázka si sama opatří definice (korpus → slovník → dialog)
+  a vztahové vazby, čímž aktivuje OBLAST kolem svého textu.
+- **Jeden token není odpověď.** Krátké degenerátní věty vyhrávaly
+  normalizací; odpověď je věta, kde se souhlasné aktivace SHLUKUJÍ.
+  Proto **gaussovské čtení pole** (vrchol vyhlazené aktivace).
+- **Co systém dělá, musí být vidět.** Graf a jeho vizualizace jsou
+  totéž — každá mutace se projeví deltou (viewBase2). Bez toho se
+  chování nedá posuzovat jinak než čísly.
 
-## 2 · Cílová architektura (moduly a zodpovědnosti)
+## 2 · Základní principy (neporušitelné)
 
-    corpus.py      Corpus: věty nad sdíleným registrem; r, r_sentences,
-                   documents (hranice kontextu); regenerate()
-    corpusfile.py  fixovaný JSON: CorpusFile/CorpusBlock/CorpusQuestion,
-                   load/validace/build_corpus/etalon_entries
-    graph.py       FactGraph + NodeStat; promote_verticals; light_up;
-                   emitor delt
-    matching.py    pytle, saturace, hloubka k, členy skóre, masky,
-                   ScoreDecomposition (líný rozklad), match()
-    query.py       čtení pole: sentence_activation, span, gaussian_peaks,
-                   AND/OR/NOT
-    learning.py    kontrastivní učení nad metadaty, split_etalon,
-                   sentence_hit, kalibrace θ
-    promotion.py   atomický promoční cyklus
-    relations.py   definiční hrany, cílené derivace, ensure_definition
-    dialog.py      fact_gaps, reply, append_context, expand_question
-    graphview.py   projekce do viewBase2 (instalace VÝHRADNĚ
-                   z github.com/alchy/viewBase2#subdirectory=python)
-    measure_*.py   spustitelné přejímky (graf, dialog, nn)
+1. **Učení výhradně nad metadaty z vertikál.** Konkrétní slovo
+   vstupuje do učení jen promocí do custom slotu. (Pojistkový test:
+   řádky slova nesou, učicí pytel je nepropustí.)
+2. **Žádné filtry v datové cestě.** Rozvoj = uzel, vážená hrana,
+   vážený člen skóre (klidně záporný). Jediné řezy: θ (NEVÍM)
+   a ε (DOTAZ) na konečném skóre.
+3. **Append-only osa + verze obsazení.** Sloupec znamená totéž
+   navždy; výjimkou jsou custom sloty — jejich přeobsazení zvedá
+   verzi osy, kterou nese každá cache i soubor; čtení s cizí verzí
+   je hlasitá chyba (tichá záměna významu je nejhorší vada).
+4. **Transparentní promoce.** Po selektu vertikál se přegeneruje
+   celý korpus; koše nesou aktivaci CUSTOM= samy — stejnou cestou
+   otázka i dialogová věta. Teprve potom trénink; trénink jen při
+   změně osy.
+5. **Poziční nezávislost pytle otázky.** Pytel je množina (roli
+   nese pád); pozice zůstává jen v tom, KTERÁ věta fituje.
+6. **Graf = jeho vizualizace.** Každá mutace i vysvícení jde
+   emitorem delt; bez diváka se delta zahodí, systém nestojí.
+7. **Offline-first fixace.** Korpusy, otázky i slovníková hesla
+   žijí ve fixovaných JSON souborech; síť jen při prvním setkání.
+   Jméno souboru je neprůhledný identifikátor.
+8. **Determinismus.** Žádná náhoda bez semínka, žádný čas z hodin.
+9. **Číslo bez protiváhy se neuvádí.** Přesnost × mlčení × dosah;
+   tokenové a větné čtení vedle sebe.
 
-Vazby: corpus → field/registry; matching → corpus; learning →
-matching+query; promotion → graph+corpus+registry; dialog →
-matching+relations; nic necyklí. Parser a registr se VŽDY předávají
-parametrem.
+## 3 · Vztah k cb_field (mezikrok)
 
-## 3 · Etapy stavby — každá s zmraženou přejímkou
+cb_field zůstává extrakční vrstvou a dorůstá jen o tři věci, které
+jsou bytostně „pole":
 
-Referenční čísla jsou naměřená na fixovaných datech; slouží jako
-přejímka nové stavby („když se čísla rozejdou, je chyba
-v implementaci, ne v konceptu").
+1. `Corpus` + `corpusfile` — pole více vět nad sdíleným registrem,
+   fixovaný JSON (bloky s původním textem, globální indexy vět,
+   otázky s odkazem `corpus`), `Corpus.regenerate()`;
+2. `VerticalRegistry.set_custom_axes()` + `axis_version` +
+   `snapshot()/restore()` + save/load v2 — limitovaná část osy
+   s verzí obsazení;
+3. `SentenceField` — transparentní aktivace `CUSTOM=` při stavbě
+   (nahlédnutím do osy; slovní vrstva, METADATA zůstává bezeslovná).
 
-### E1 · Corpus a fixovaný JSON
+cb_bond na cb_field výhradně importuje; parser i registr se předávají
+parametrem (§ 3, § 4 politiky). Na registru smí cb_bond volat jen
+`link/unlink/get_link/spread/set_custom_axes/snapshot/restore`.
 
-    class Corpus:
-        def __init__(self, registry=None, r=1, r_sentences=0)
-        def add_sentence(self, sentence, document=None) -> SentenceField
-        def add_text(self, text, parser, document=None) -> SentenceField
-        def regenerate(self) -> None    # přestaví pole z tokenů
-                                        # proti aktuální ose (bez parsování)
+## 4 · Objektový návrh cb_bond
 
-Formát JSON (format_version 1): blocks[{topic, text?, sentences[]}],
-questions[{text, sentence|null, answer_lemma|null, answerable}],
-volitelně corpus="jméno.json" (otázky k cizímu souboru). Klíčové
-kontrakty:
-- blok se parsuje VCELKU (text má přednost před join položek — věta
-  vytržená z odstavce se dělí jinak); rozpad se rovná položkám
-  počtem i zněním, jinak hlasitá chyba s adresou;
-- globální index věty = pořadí přes bloky; blok = dokument.
+Pojmenování anglicky a vypovídající; docstringy česky. Metakód =
+podpisy a kontrakty, ne implementace. Konstruktor vždy dostává
+závislosti (corpus, parser, registry) parametrem.
 
-**Přejímka E1:** převod referenčních 7 txt korpusů dá 2 912 vět;
-rekonstrukce z JSON bitově táž (otisk grafu níže); validátor odmítne
-soubor s rozjetým číslováním.
+### 4.1 · KnowledgeGraph — paměť faktů
 
-### E2 · Graf faktů
-
-    CONTENT_UPOS = {NOUN, PROPN, VERB, ADJ, ADV, NUM}   # bez PRON
-    class FactGraph:
-        def __init__(self, emit=None)   # emitor delt (§ invariant 6)
+    class KnowledgeGraph:
+        """Uzly = UPOS:lemma obsahových slov (bez PRON), hrany =
+        závislosti závislý→hlava mezi obsahovými uzly, se zdrojem
+        text|dialog|dictionary. Každá mutace jde emitorem delt."""
+        def __init__(self, emit: Callable | None = None)
         def add_sentence(self, sentence, source="text") -> int
-        # uzel „UPOS:lemma"; hrana závislý→hlava jen mezi obsahovými;
-        # NodeStat: occurrences, edges (instance), neighbours, ratio
+        def node_stat(self, key) -> NodeStat      # occurrences, edges,
+                                                  # neighbours, ratio
         def node_stats(self) -> dict
-        def stats(self) -> dict         # jen uzly s hranou
+        def edges(self) -> tuple                  # (src, dst, deprel,
+                                                  # weight, source)
+        def statistics(self) -> GraphStatistics   # jen uzly s hranou
+        def select_verticals(self, limit=328) -> tuple
+            """Cílový stav custom slotů: skóre = distinct²/edges,
+            deterministicky, celý stav (ne přírůstek)."""
+        def illuminate(self, ranked_sentences, question_lemmas,
+                       boost=2.0) -> dict
+            """Vysvícení: věty rozsvítí uzly, lemata otázky znásobí
+            jas rozsvícených, jeden krok záře po hranách. Emituje
+            style delty."""
 
-**Přejímka E2 (korpus 2 912 vět):** 16 074 hranových instancí;
-5 695 různých lemmat s hranou (5 727 klíčů UPOS:lemma); stupeň 5,6;
-průměr různých 4,6; rok 162/191/0,85 · Ježíš 60/111/0,54 · mít
-185/260 · říci (UPOS-klíč) 178/308. Izolovaný uzel se nepočítá;
-PRON není uzel.
+### 4.2 · Matcher — párování otázky s korpusem
 
-### E3 · Promoce a atomický cyklus
+    @dataclass(frozen=True)
+    class ScoreWeights:
+        center: float = 2.0     # zdůraznění středu (vlastní kosinový člen)
+        cover: float = 1.0      # min přes dané osy — mohutnost důkazu
+        topic: float = 1.0      # obsahový překryv s celou větou
+        given: float = -3.0     # postih za odpověď slovem otázky
+        fit: float = 0.0        # kotvy středu (přiznaná slepá ulička)
 
-    def promote_verticals(graph, limit=328) -> tuple
-        # skóre = různých²/hran; CELÝ cílový stav; deterministicky
-    registry.set_custom_axes(target)    # jen CUSTOM=…; uvolněné sloupce
-        # = díry (None; key() a unvectorize na díře = ValueError);
-        # vertikála odchází I S HRANAMI; axis_version++ při změně
-    registry.snapshot() / restore(s)    # bit po bitu vč. verzí
+    class Matcher:
+        """Čistě váhové párování: každý token korpusu kandiduje.
+        Pytle se šíří k kroky po vazbách (tanh po každém kroku)
+        a cachují na (růst, link_version, axis_version, r, k)."""
+        def __init__(self, corpus, *, spread_depth: int = 2,
+                     weights: ScoreWeights = ScoreWeights(),
+                     theta: float = THETA, epsilon: float = EPSILON)
+        def match(self, question) -> MatchResult
+        def coverage(self, question) -> dict      # {osa: max přes věty};
+                                                  # mrtvá osa = přesná 0
+        def given_axes(self, question) -> list    # WORD= bez QLEM=
 
-    def promotion_cycle(corpus, graph, measure, retrain, limit=328):
-        before = measure(corpus); snap = registry.snapshot()
-        changes = registry.set_custom_axes(CUSTOM+promote_verticals(...))
-        if beze změny osy: return prijato=True, preuceni=False
-        corpus.regenerate()             # transparentní aktivace CUSTOM=
-        retrain(corpus); after = measure(corpus)
-        if kterákoli metrika klesla: restore(snap); corpus.regenerate()
+    class MatchResult:
+        outcome: str            # answer | ask | silent
+        candidates: list        # Candidate se skóre a LÍNÝM rozkladem
+        def __and__(self, other) -> "MatchResult"   # AND: součin/min
+        def __or__(self, other)  -> "MatchResult"   # OR: součet
+        def __invert__(self)     -> "MatchResult"   # NOT: −skóre
 
-Aktivace CUSTOM= při stavbě pole: token, jehož `CUSTOM=UPOS:lemma`
-je v registru, dostane tuto vertikálu do SLOVNÍ vrstvy (METADATA
-zůstává bezeslovná) s vahou slovní vertikály.
+### 4.3 · AnswerField — čtení téhož pole v různých rozlišeních
 
-**Přejímka E3:** top 328 obsahuje rok/mít/moci/stát/začít/dílo;
-Hrabal mimo; jmen ≤ 10 %; hranice (2 912 vět) 12,1; stará matice se
-odmítne použít; po uvolnění nezůstanou hrany; rollback bit po bitu;
-bez promoce se nezmění žádné číslo. Stabilizace: výměny slotů na
-stejný přírůstek korpusu klesají (naměřeno 38→31→23→16 %).
+    class AnswerField:
+        """Token, okno, věta i gaussovský vrchol jsou jen čtení
+        jednoho pole — nic se nefiltruje."""
+        def __init__(self, result: MatchResult)
+        def tokens(self) -> list
+        def spans(self, width=2) -> list
+        def sentences(self) -> list               # normalizovaná aktivace
+        def gaussian_peaks(self, sigma=1.5) -> list
+            """Zvon na každém kandidátu; věta = nejvyšší vrchol
+            vyhlazeného pole (shluk poráží osamělou špičku).
+            Konvoluce full+řez (věta kratší než jádro)."""
 
-### E4 · Párování (matching)
+### 4.4 · ContrastiveTrainer — učení metadatového vztahu
 
-Členy skóre kandidáta (kosiny, −1…+1; váhy = páky):
+    class ValidationSplit:
+        def __init__(self, share=0.3, seed=328)
+        def split(self, entries) -> (train, held_out)   # vrstvené,
+                                                        # deterministické
 
-    skóre = cos(q̃, okno) + (W_CENTER−1)·cos(q̃, střed)
-          + W_COVER · min přes DANÉ osy otázky z tanh(spread(věta))
-          + W_TOPIC · cos(slova q, slova věty)
-          + W_GIVEN · cos(slova q, slova středu)      # záporná páka
-    (W_CENTER=2, W_COVER=1, W_TOPIC=1, W_GIVEN=−3, W_FIT=0)
+    class ContrastiveTrainer:
+        """Učí vztah otázka(meta) → věta(meta): fitující věta
+        (answer_position, jinak nejvýš položená s lemmatem) proti
+        nejlepší nefitující, obě gaussovským vrcholem, pytle CELÝCH
+        vět. Hinge s relativní marží, Adam na hraně, meze ±1, axiomy
+        chrání registr. Mlčení: vítěz nezodpověditelné pod medián
+        správných vrcholů. Validační loss řídí odvolání epochy."""
+        LEARN_PREFIXES = ("LEM=", "QLEM=", "ANCHOR=", "QANCHOR=",
+                          "Polarity=", "CUSTOM=")     # NIKDY WORD=
+        def __init__(self, corpus, parser, *,
+                     split: ValidationSplit = ValidationSplit(),
+                     eta=0.01, margin_ratio=0.2)
+        def train(self, entries, max_epochs=10) -> TrainingReport
+        def semantic_bag(self, sentence, rows) -> dict   # surový pytel,
+                                                         # jen LEARN osy
 
-    def saturate(v, L, steps=SPREAD_STEPS):   # SPREAD_STEPS = 2 (větev E)
-        for _ in range(steps): v = tanh(v + v·L)   # tanh po KAŽDÉM kroku
+    class TrainingReport:
+        epochs: list      # loss, validation_loss, sentence_hits_train,
+                          # sentence_hits_validation, silence, edges
+        def converged(self) -> bool
 
-Dané osy = WORD= řádků bez QLEM= (tázací osa se nekryje, ta se
-odpovídá). Pytle faktů se cachují na (len, link_version,
-axis_version, r, r_sentences, steps); profil okna 1/(1+d); přítok
-sousedních vět W_CONTEXT/(1+d) jen uvnitř dokumentu. Rozklad skóre
-(top_nodes) je LÍNÝ (ScoreDecomposition — počítal se pro 58k
-kandidátů a četl ho jen vítěz; ~60 % času match). MATCH_PREFIXES =
-WORD/LEM/QLEM/ANCHOR/QANCHOR/Polarity/CUSTOM (bez PUNCT).
+    class ThresholdCalibrator:
+        """θ/ε na trénovací sadě (nikdy na etalonu); merit =
+        přesnost + mlčení. K1: kalibrovat na větných vrcholech."""
+        def calibrate(self, corpus, entries, parser) -> Calibration
 
-**Přejímka E4 (2 912 vět, k=1, bez učení):** přesnost 0,3667 ·
-mlčení 0 · dosah 10/19/1 — bitově. Ježíš question coverage: být
-1,000 · pokřtěný 0,604 · Ježíš 0,885.
+    def sentence_hit(result, lemma, top=3) -> bool
+        """Úspěch posílení: validní věta mezi top gaussovskými."""
 
-### E5 · Čtení pole (query)
+### 4.5 · PromotionCycle — atomická výměna vstupní vrstvy
 
-    sentence_activation(result)         # kladné aktivace / počet
-    gaussian_peaks(result, sigma=1.5)   # zvon N(centrum,σ) na kandidátu,
-        # věta = nejvyšší VRCHOL vyhlazeného pole; full-konvoluce
-        # s řezem (věta kratší než jádro!)
-    AND/OR/NOT                          # váhami: součin kladných /
-                                        # min, součet, obrácené znaménko
+    class PromotionCycle:
+        """selekt → zápis custom slotů → přegenerování korpusu →
+        trénink → měření s protiváhami → přijmout / vrátit bit po
+        bitu. Beze změny osy se nepřeučuje (stabilizace)."""
+        def __init__(self, measure: Callable, retrain: Callable,
+                     limit=328)
+        def run(self, corpus, graph) -> CycleOutcome
+            # CycleOutcome: accepted, before, after, axis_changes,
+            # retrained
 
-**Přejímka E5:** shluk 3×1,0 v dlouhé větě porazí špičku 1,5
-v krátké (průměrová normalizace preferuje degenerát — dokumentovat
-testem); „Máš ženu?" nevyhrává.
+### 4.6 · RelationMiner a DefinitionResolver — vztahové vazby
 
-### E6 · Učení
+    class RelationMiner:
+        def mine_definitions(self, corpus, registry) -> int
+            """Kopulární vzor: root NOUN/PROPN v NOMINATIVU + nsubj
+            + cop → vazba WORD=subjekt → WORD=predikát, zdroj
+            definition, váha 0,7. Lokativní kopula definice není."""
+        def mine_derivations(self, graph, registry,
+                             around=None) -> int
+            """Kmen (bez diakritiky, ≥5 znaků a ≥75 % kratšího
+            lemmatu) × překryv sousedství; váha 0,7·(stem/2 +
+            overlap/2). VÝHRADNĚ cíleně (around) — plošné nasazení
+            zavrženo měřením (−3,3 b)."""
 
-    LEARN_PREFIXES = (LEM=, QLEM=, ANCHOR=, QANCHOR=, Polarity=, CUSTOM=)
-    def split_etalon(entries, share=0.3, seed=328)  # vrstvené, determ.
-    def sentence_hit(result, lemma, top=3)          # věta v kandidátech
-                                                    # (gaussovské čtení)
-    def train_on_etalon(corpus, entries, parser, ...):
-        # VĚTNÝ kontrast: fitující věta (answer_position, jinak nejvýš
-        # položená s lemmatem) × nejlepší nefitující; vrcholy gauss;
-        # pytle CELÝCH vět bez středu; hinge s rel. marží 0,2·|soupeř|;
-        # Adam na hraně, meze ±1, axiomy chrání registr;
-        # mlčení: vítěz nezodpověditelné pod medián správných vrcholů;
-        # VALIDAČNÍ loss (30 %) řídí odvolání epochy;
-        # bez soupeřící věty se neučí
-    def calibrate_theta(corpus, entries, parser)    # jen trénink; K1:
-                                                    # přejít na věty
+    class DefinitionResolver:
+        """Tři zdroje definice, od nejlevnějšího: korpus (vazba už
+        je) → slovník/Wikipedie (fixace do store, offline-first) →
+        dialog. Stažené heslo jde standardní cestou: parse → korpus
+        (zdroj dictionary) → graf → definiční vazba."""
+        def __init__(self, corpus, graph, parser, *,
+                     lookup=wikipedia_lookup, store: Path | None)
+        def resolve(self, word_key) -> str    # corpus|dictionary|dialogue
+
+### 4.7 · QuestionExpander a Responder — dialogová vrstva
+
+    class QuestionExpander:
+        """Sebe-rozšíření otázky: pro jmenné dané osy opatří definice
+        (resolver) a spáruje cílené derivace kolem kmenů otázky;
+        rozšíření koše pak dělá šíření po nových vazbách."""
+        def __init__(self, resolver: DefinitionResolver,
+                     miner: RelationMiner)
+        def expand(self, question) -> Expansion
+            # Expansion: definitions {osa: zdroj}, derivations: int
+
+    class Responder:
+        """Odpovídá VŽDY; mezeru ohlásí (needs_context + missing);
+        věta uživatele jde stejnou cestou jako každý text."""
+        def __init__(self, matcher: Matcher, graph: KnowledgeGraph,
+                     expander: QuestionExpander | None = None)
+        def gaps(self, question) -> list      # mrtvé osy (přesné nuly)
+        def reply(self, question, *, expand=False) -> Reply
+        def append_context(self, text, parser) -> SentenceField
+
+### 4.8 · GraphMirror — živé zrcadlo (viewBase2)
+
+    class GraphMirror:
+        """Překlad delt KnowledgeGraph na objektové API viewBase2
+        (ensure_node / ensure_edge bez smyček / update_node). Uzly
+        nesou metadata sousedů s deprel a stupeň. Instalace VÝHRADNĚ
+        z github.com/alchy/viewBase2#subdirectory=python; verze
+        frontendu se ověřuje otiskem bundle."""
+        def __init__(self, window)            # GraphWindow viewBase2
+        def emit(self, delta) -> None         # předává se KnowledgeGraph
+
+    # spuštění: ./run-python -m cb_bond.graphview   (:8080)
+
+### 4.9 · BenchmarkProtocol — měření
+
+    class BenchmarkProtocol:
+        """Ramena nad týmž korpusem: baseline / trénink / hloubka /
+        promoční cyklus / složení / kalibrované θ. Supervize = JSONL
+        + otázkové soubory s corpus-referencí (offsety →
+        answer_position). Tiskne vylosované příklady (semínko);
+        ukládá přijatý stav (registr s verzí osy)."""
+        def run(self) -> BenchmarkReport
+
+## 5 · Zmražené přejímky (naměřeno; nová stavba je musí zopakovat)
+
+| co | hodnota |
+|---|---|
+| KnowledgeGraph na 2 912 větách | 16 074 hran · 5 695 lemmat s hranou · stupeň 5,6 · rok 162/191/0,85 · Ježíš 60/111/0,54 |
+| select_verticals | top 328 s rok/mít/moci/stát/začít/dílo · Hrabal mimo · jmen ≤ 10 % · hranice 12,1 |
+| Matcher baseline (2 912 vět, k=1, bez učení) | přesnost 0,3667 · mlčení 0 · dosah 10/19/1 — bitově |
+| coverage („Kde byl pokřtěn Ježíš?") | být 1,000 · pokřtěný 0,604 · Ježíš 0,885; mrtvá osa = přesná 0 |
+| mine_definitions (12 258 vět) | 94 vazeb (gravitace→síla, foton→částice); lokativy nic |
+| gaussian_peaks | shluk 3×1,0 porazí špičku 1,5; „Máš ženu?" nevyhrává |
+| trainer | epocha zlepšující trénink a zhoršující validaci se odvolá; bez soupeřící věty se neučí |
+| PromotionCycle | rollback bit po bitu; beze změny osy nepřeučuje; stará matice se odmítne |
+| větev E (12 258 vět, 240 otázek) | přesnost ≥ 0,467 · mlčení 0 · dosah 10 · vad 0; věta v kandidátech na validaci ≥ 24/50 |
+| dialog (dálnice) | mezera právě WORD=NOUN:dálnice; po doplnění 0,604 a odpoved |
 
 Zavržené varianty (nezkoušet znovu): šíření učicích pytlů maticí
-(22,9M hran, 0,43→0,17); WORD= v pytlích s útlumem synonym; plošné
-derivace v L (−3,3 b).
+(22,9M hran, 0,43→0,17) · WORD= v učicích pytlích (i s útlumem) ·
+plošné derivace v L (−3,3 b) · kmen 3–4 znaky (19–33k šumu) ·
+promoce skórem poměr×n/(n+1) (saturuje) · práh pro detekci mezery
+(mrtvá osa je přesná nula).
 
-**Přejímka E6:** pojistkový test invariantu 1; kouřový test — epocha,
-která zlepší trénink a zhorší validaci, se odvolá.
+## 6 · Data k převzetí a definice hotového
 
-### E7 · Vztahové vazby a expanze
+Data (nefixovat znovu): data-persistent/korpus/korpus-101…107, 201,
+202, 301…326 (mimo git, fetch skripty, ZDROJ.md); tests/data/korpus/
+korpus-001…003 + otazky-201/202; trenink-otazky-korpusy.jsonl (120);
+etalon-otazky-korpusy.jsonl (40 — NIKDY do tréninku).
 
-    definition_links(corpus, registry)      # kopulární vzor, root
-        # NOUN/PROPN v NOMINATIVU + nsubj + cop → WORD=subj → WORD=pred,
-        # zdroj definice, váha 0,7 (lokativní kopula NENÍ definice)
-    derivation_links(graph, registry, around=None)
-        # kmen (bez diakritiky, ≥5 znaků a ≥75 % kratšího lemmatu)
-        # × překryv sousedství; váha 0,7·(kmen/2+překryv/2); JEN cíleně
-    ensure_definition(word_key, corpus, graph, parser, lookup, store)
-        # korpus → Wikipedie (fixace do store JSON) → dialog
-    expand_question(question, corpus, graph, parser)
-        # jmenné dané osy → definice; derivace kolem kmenů otázky;
-        # rozšíření koše pak dělá šíření (jen matice)
-
-**Přejímka E7:** 94 definičních vazeb na korpusu (gravitace→síla,
-foton→částice); dálnice→komunikace ze živého lookupu; po ingestu
-definice vznikne rychlost–rychlostní; žádná plošná derivace.
-
-### E8 · Dialog
-
-    fact_gaps(question, corpus)     # mrtvá osa = PŘESNÁ nula (propast,
-                                    # ne škála — práh není potřeba)
-    reply(question, corpus, graph)  # odpovídá VŽDY; needs_context+missing
-    append_context(text, ...)       # věta uživatele standardní cestou,
-                                    # zdroj dialog
-
-**Přejímka E8:** „Jak je omezena rychlost na dálnici?" hlásí právě
-WORD=NOUN:dálnice (rychlost zná z fyziky); po doplnění pokrytí 0,604
-a východisko odpoved; v grafu hrany se zdrojem dialog.
-
-### E9 · Vizualizace (viewBase2)
-
-    FactGraph(emit=viewbase_emitter(window))
-    # delty: node / edge (bez smyček — viewBase je odmítá) / style
-    # (glow); uzly nesou metadata sousede („ADJ:pokřtěný (obl)"),
-    # stupen; light_up: věty rozsvítí uzly, lemata otázky znásobí jas
-    # rozsvícených, jeden krok záře po hranách (Jordán > Galilej)
-    ./run-python -m cb_field.graphview     # :8080; verzi frontendu
-    # ověřovat otiskem bundle v index.html
-
-### E10 · Měřicí protokol
-
-measure_nn: ramena A (baseline) / B (učení) / D (hloubka na čistém)
-/ C (promoční cyklus — rozhodne sám) / E (hloubka nad C) / F
-(kalibrované θ); tiskne vylosované příklady (semínko 328) a ukládá
-přijatý stav E (registr s verzí osy). Supervize = JSONL sada +
-otázkové soubory s corpus-referencí (offsety → answer_position).
-
-**Cílová čísla větve E (12 258 vět, 240 otázek):** E ≥ 0,467 ·
-mlčení 0 · dosah 10 · vad 0; s tokenovým θ 0,233/1,00 (provozní bod
-je krok K1). Věta v kandidátech na validaci ≥ 24/50.
-
-## 4 · Data (převzít, nefixovat znovu)
-
-- fixované korpusy: data-persistent/korpus/korpus-101…107 (převod
-  původních), 201 vesmír, 202 hudba, 301…326 NZ — mimo git, pořizují
-  fetch skripty (ZDROJ.md, licence);
-- tests/data/korpus: korpus-001…003 (vlastní texty s otázkami),
-  otazky-201/202 (60+60 s indexy vět);
-- tests/data: trenink-otazky-korpusy.jsonl (120), etalon-otazky-
-  korpusy.jsonl (40 — NIKDY do tréninku), testbed.
-
-## 5 · Definice hotového
-
-- unittest přes ./run-python, bez běžící služby (atrapy parseru,
-  zmražené tokeny v testech — vzor stávajících test_*);
-- všechny přejímky E1–E10 prošly na fixovaných datech;
-- měřicí skripty zapisují reporty do docs/ s protiváhami;
-- žádný modul necyklí, závislosti parametrem, format_version na
-  všem uloženém;
-- dokumentace: príručka větve (vzor vetev-e.md) + tenhle dokument
-  aktualizovaný o odchylky (zapsané, ne zamlčené).
-
-## 6 · Co NEstavět (vědomě odloženo)
-
-Kroky K1–K8 handoveru kvality (kalibrace θ/ε na větách, hygiena
-korpusu, expanze v reply, ≥500 otázek, promoce×žánr, křivky σ/limit,
-DeriNet, typy vztahů) — přijdou až nad čistou stavbou.
+Hotovo = unittest přes ./run-python bez běžící služby (atrapy,
+zmražené tokeny), všechny přejímky § 5 prošly, měřicí reporty
+s protiváhami v docs/, service/api oddělení, format_version na všem
+uloženém, dokumentace jádra (vzor vetev-e.md). Kroky K1–K8
+(handover-kvalita.md) se staví až NAD hotovým cb_bond.
