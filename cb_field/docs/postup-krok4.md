@@ -469,3 +469,31 @@ basket: cílený metadatový vzor, ne jednotlivá osa. Dnešní skóre umí
 členy jen SČÍTAT, takže dvě slabé shody dají totéž co jedna silná;
 konjunkce (součin) uvnitř skóre chybí — a je to táž mechanika, kterou
 už mají AND/OR/NOT v `query.py`, jen zatím nad výsledky, ne uvnitř.
+
+## 20 · Metadata aktivují, ale nevybírají (2026-08-04)
+
+Otázka J.: *„bylo něco aktivováno? bylo mezi tou aktivací, co jsme
+hledali?"* — a je to správná otázka; přesnost@1 na ni neodpovídá.
+
+Testbed r=2, párování BEZ slovních os (jen LEM/QLEM/ANCHOR/QANCHOR/
+Polarity), 1 006 kandidátů:
+
+| | jen metadata | se slovy |
+|---|---|---|
+| správná má nenulovou aktivaci | **33/33** | 33/33 |
+| medián pořadí správné | 83 | 1 |
+| v top 10 | 2/33 | 33/33 |
+
+**Metadata aktivují spolehlivě** — hledané je pokaždé mezi aktivovaným,
+v horních ~8 % pole. Co nedělají, je VÝBĚR: „být místem po slovese
+v minulém čase" splňuje v korpusu ~80 dalších uzlů a pytel je od sebe
+neodliší. Slova aktivaci nepřidávají (ta je stejná i bez nich), přidávají
+ADRESU — řeknou, ve které z těch osmdesáti to je.
+
+Dřívější čtení („jen meta neodpoví nikdy, tedy slova jsou nutná") bylo
+špatné: neselhala aktivace, selhal výběr. Oprava směru podle J.:
+*„chceme aktivace nad textem, kandidáta vybereme grafem"* — pole se
+rozsvítí, ale vybírat má graf (vzor, role, vazby), ne součet v pytli.
+Zvýšení W_FIT ani W_CENTER nepomohlo (0/33 při obou), protože oba jen
+převáží členy uvnitř téhož součtu; výběr potřebuje jinou operaci, ne
+jinou váhu — konjunkci vzoru, ne sumu.
