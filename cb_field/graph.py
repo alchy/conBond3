@@ -145,3 +145,35 @@ class FactGraph:
     def __repr__(self) -> str:
         s = self.stats()
         return f"FactGraph({s['uzlu']} uzlů, {s['hran']} hran)"
+
+
+#: Strop custom vertikál (krok 2 handoveru). Platí na promované osy;
+#: osy z UDPipe stojí vedle a nesoutěží. Pevná velikost je to, co dělá
+#: z registru vstupní vrstvu sítě s pevnou dimenzí — a tlak k obecnosti:
+#: co se nevejde, nebylo dost nosné.
+PROMOTION_LIMIT = 328
+
+
+def promote_verticals(graph: FactGraph,
+                      limit: int = PROMOTION_LIMIT) -> tuple:
+    """Cílový stav osy custom vertikál — kdo si zaslouží sloupec.
+
+    Kritérium: skóre = různých²/hran (efektivní počet různých sousedů).
+    Odměňuje rozmanitost i obecnost zároveň — uzel musí mít mnoho
+    sousedů A ZÁROVEŇ se neopakovat do týchž míst. Tlumená varianta
+    poměr × n/(n+1) je zavržená měřením (saturuje při dvaceti hranách,
+    handover krok 2), duplicitu s osami UDPipe hlídá už krok 1:
+    funkční slova, která by gramatiku držela podruhé, uzlem nejsou.
+
+    Vratnost: vrací se CELÝ cílový stav, ne přírůstek — porovnává se
+    stav proti stavu, takže uzel, který z grafu zmizí, po přepočtu
+    z osy vypadne. Deterministické: shodné skóre řadí klíč uzlu,
+    ne pořadí vět.
+
+    Nesahá na registr, cache ani indexy — zápis osy je práce
+    promočního cyklu (krok 3).
+    """
+    scored = sorted(
+        (-stat.distinct ** 2 / stat.edges, key)
+        for key, stat in graph.node_stats().items() if stat.edges)
+    return tuple(key for _score, key in scored[:limit])

@@ -1,14 +1,14 @@
-"""Měření grafu faktů na korpusu — přejímka kroku 1 handoveru.
+"""Měření grafu faktů na korpusu — přejímka kroků 1 a 2 handoveru.
 
 Spuštění:  ./run-python -m cb_field.measure_graph
 
 Přeběhne korpus komplexních textů (2 912 vět), postaví FactGraph
-a porovná čísla s referenčním měřením ze 4. 8. 2026. Referenční
-statistika klíčovala uzly jen lemmatem; graf podle handoveru klíčuje
-UPOS:lemma („stát" stát-NOUN od stát-VERB odlišuje). Report proto
-uvádí obě čtení vedle sebe (workflow § B5: číslo bez protiváhy se
-neuvádí) — hranové instance jsou na klíči nezávislé a musejí sedět
-přesně.
+a porovná čísla s referenčním měřením ze 4. 8. 2026; nad grafem pak
+prověří promoci (krok 2). Referenční statistika klíčovala uzly jen
+lemmatem; graf podle handoveru klíčuje UPOS:lemma („stát" stát-NOUN od
+stát-VERB odlišuje). Report proto uvádí obě čtení vedle sebe (workflow
+§ B5: číslo bez protiváhy se neuvádí) — hranové instance jsou na klíči
+nezávislé a musejí sedět přesně.
 """
 
 import sys
@@ -16,7 +16,7 @@ from datetime import date
 from pathlib import Path
 
 from cb_field import __version__
-from cb_field.graph import FactGraph
+from cb_field.graph import FactGraph, promote_verticals
 
 MODULE_DIR = Path(__file__).resolve().parent
 REPORT = MODULE_DIR / "docs" / "mereni-graf.md"
@@ -83,6 +83,23 @@ def main() -> None:
         checks.append((f"{lemma} {distinct}/{edges}/{occ}",
                        actual == (distinct, edges, occ), actual))
 
+    # --- krok 2: promoce -------------------------------------------------
+    promoted = promote_verticals(graph)
+    names = [k for k in promoted if k.startswith("PROPN:")]
+    share = len(names) / len(promoted) if promoted else 0.0
+    stats = graph.node_stats()
+    boundary = promoted[-1]
+    boundary_stat = stats[boundary]
+    for key in ("NOUN:rok", "VERB:mít", "VERB:moci", "VERB:stát",
+                "VERB:začít", "NOUN:dílo"):
+        checks.append((f"promoce obsahuje {key}", key in promoted, "mimo"))
+    checks.append(("PROPN:Hrabal mimo limit",
+                   "PROPN:Hrabal" not in promoted, "uvnitř"))
+    checks.append(("podíl vlastních jmen <= 10 %", share <= 0.10,
+                   f"{share:.0%}"))
+    checks.append(("dvojí zavolání = identický seznam",
+                   promoted == promote_verticals(graph), "liší se"))
+
     print(f"korpus {len(corpus)} vět · graf {s['uzlu']} uzlů "
           f"(UPOS:lemma) · {s['hran']} hran")
     failed = 0
@@ -108,6 +125,36 @@ def main() -> None:
                   "lemmatem; sloučení UPOS mění jen uzly, které jsou "
                   "víc slovními druhy najednou (stát). Hranové "
                   "instance na klíči nezávisejí a sedí přesně.")
+    report.append("")
+    report.append("## Promoce do custom vertikál (krok 2)")
+    report.append("")
+    report.append(f"Skóre = různých²/hran, limit {len(promoted)} "
+                  f"custom vertikál; vlastních jmen v limitu "
+                  f"{len(names)} ({share:.0%}). Hranice posledního "
+                  f"místa: `{boundary}` se skóre "
+                  f"{boundary_stat.distinct ** 2 / boundary_stat.edges:.1f}.")
+    report.append("")
+    report.append("| # | uzel | různých | hran | skóre |")
+    report.append("|---|---|---|---|---|")
+    for position, key in enumerate(promoted[:12], start=1):
+        stat = stats[key]
+        report.append(
+            f"| {position} | {key} | {stat.distinct} | {stat.edges} "
+            f"| {stat.distinct ** 2 / stat.edges:.1f} |")
+    report.append("")
+    report.append("Kam padla vlastní jména: "
+                  + " · ".join(
+                      f"{key.split(':', 1)[1]} {promoted.index(key) + 1}."
+                      for key in ("PROPN:Praha", "PROPN:Karel",
+                                  "PROPN:Ježíš", "PROPN:Bohumil")
+                      if key in promoted)
+                  + " — Hrabal mimo limit.")
+    report.append("")
+    report.append("Otevřené k rozhodnutí (J.): dělení rozpočtu 328 mezi "
+                  "slova a typy vztahů — typy zatím v grafu nejsou, "
+                  "soutěží jen slova.")
+    report.append("")
+    report.append("## Kontroly")
     report.append("")
     report.append("| kontrola | stav |")
     report.append("|---|---|")

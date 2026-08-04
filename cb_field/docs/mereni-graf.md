@@ -10,6 +10,31 @@
 
 Referenční čísla ze 4. 8. 2026 klíčovala uzly jen lemmatem; sloučení UPOS mění jen uzly, které jsou víc slovními druhy najednou (stát). Hranové instance na klíči nezávisejí a sedí přesně.
 
+## Promoce do custom vertikál (krok 2)
+
+Skóre = různých²/hran, limit 328 custom vertikál; vlastních jmen v limitu 11 (3%). Hranice posledního místa: `VERB:představovat` se skóre 12.1.
+
+| # | uzel | různých | hran | skóre |
+|---|---|---|---|---|
+| 1 | NOUN:rok | 162 | 191 | 137.4 |
+| 2 | VERB:mít | 185 | 260 | 131.6 |
+| 3 | VERB:říci | 178 | 308 | 102.9 |
+| 4 | VERB:moci | 119 | 147 | 96.3 |
+| 5 | VERB:jít | 129 | 174 | 95.6 |
+| 6 | VERB:přijít | 124 | 168 | 91.5 |
+| 7 | NOUN:část | 88 | 100 | 77.4 |
+| 8 | VERB:stát | 81 | 89 | 73.7 |
+| 9 | NOUN:život | 90 | 110 | 73.6 |
+| 10 | VERB:vyjít | 82 | 97 | 69.3 |
+| 11 | NOUN:povídka | 87 | 115 | 65.8 |
+| 12 | NOUN:léta | 79 | 97 | 64.3 |
+
+Kam padla vlastní jména: Praha 19. · Karel 35. · Ježíš 45. · Bohumil 52. — Hrabal mimo limit.
+
+Otevřené k rozhodnutí (J.): dělení rozpočtu 328 mezi slova a typy vztahů — typy zatím v grafu nejsou, soutěží jen slova.
+
+## Kontroly
+
 | kontrola | stav |
 |---|---|
 | vet = 2912 | OK |
@@ -29,5 +54,14 @@ Referenční čísla ze 4. 8. 2026 klíčovala uzly jen lemmatem; sloučení UPO
 | začít 62/67/30 | OK |
 | Ježíš 60/111/106 | OK |
 | Bohumil 60/120/55 | OK |
+| promoce obsahuje NOUN:rok | OK |
+| promoce obsahuje VERB:mít | OK |
+| promoce obsahuje VERB:moci | OK |
+| promoce obsahuje VERB:stát | OK |
+| promoce obsahuje VERB:začít | OK |
+| promoce obsahuje NOUN:dílo | OK |
+| PROPN:Hrabal mimo limit | OK |
+| podíl vlastních jmen <= 10 % | OK |
+| dvojí zavolání = identický seznam | OK |
 
-Prošlo 17/17 kontrol.
+Prošlo 26/26 kontrol.

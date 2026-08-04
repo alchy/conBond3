@@ -9,7 +9,7 @@ proto nejsou vypsané.
 
 import unittest
 
-from cb_field.graph import FactGraph
+from cb_field.graph import FactGraph, promote_verticals
 from cb_udpipe import Token
 
 
@@ -141,6 +141,47 @@ class TestFactGraph(unittest.TestCase):
         self.assertEqual(graph.nodes(), ())
         self.assertEqual(graph.stats()["uzlu"], 0)
         self.assertEqual(graph.stats()["prumerny_stupen"], 0.0)
+
+
+class TestPromoteVerticals(unittest.TestCase):
+    """Krok 2 handoveru: skóre = různých²/hran, limit, cílový stav."""
+
+    def _graph(self):
+        graph = FactGraph()
+        graph.add_sentence(_Sentence(KREST))
+        return graph
+
+    def test_poradi_podle_ruznych_na_druhou_ku_hranam(self):
+        # přijít 5²/5 = 5 > pokřtěný 3²/3 = 3 > ostatní 1²/1 = 1
+        promoted = promote_verticals(self._graph(), limit=2)
+        self.assertEqual(promoted, ("VERB:přijít", "ADJ:pokřtěný"))
+
+    def test_opakovani_hran_skore_srazi(self):
+        # dvojí táž věta: různých zůstává, hran se zdvojí → skóre
+        # klesne na polovinu (odměna za rozmanitost, ne za frekvenci)
+        graph = self._graph()
+        graph.add_sentence(_Sentence(KREST))
+        promoted = promote_verticals(graph, limit=2)
+        self.assertEqual(promoted, ("VERB:přijít", "ADJ:pokřtěný"))
+
+    def test_vraci_cely_cilovy_stav_a_je_deterministicka(self):
+        graph = self._graph()
+        first = promote_verticals(graph)
+        self.assertEqual(first, promote_verticals(graph))
+        self.assertEqual(len(first), 8)          # celé osazenstvo grafu
+        self.assertEqual(promote_verticals(FactGraph()), ())
+
+    def test_shodne_skore_rozhoduje_klic(self):
+        # šest uzlů se skóre 1,0 → řadí se klíčem, ne pořadím vět
+        promoted = promote_verticals(self._graph())
+        self.assertEqual(promoted[2:], tuple(sorted(promoted[2:])))
+
+    def test_izolovany_uzel_nekandiduje(self):
+        graph = FactGraph()
+        graph.add_sentence(_Sentence((
+            _t(1, "Prší", "pršet", "VERB", 0, "root"),
+            _t(2, ".", ".", "PUNCT", 1, "punct"))))
+        self.assertEqual(promote_verticals(graph), ())
 
 
 if __name__ == "__main__":
