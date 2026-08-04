@@ -76,3 +76,23 @@ Princip 6 zadání říká, že graf a jeho vizualizace jsou totéž. Kdyby si
 graf kreslítko vytvářel sám, byla by z toho závislost jádra na I/O
 (zakázáno README-MODULES § 1) a testy by potřebovaly běžící službu.
 Emitor je proto obyčejná funkce v konstruktoru; bez ní graf mlčí.
+
+## 8 · Setkání se měří až po šíření OBOU stran
+
+Otázka nese `QANCHOR=space:loc`, věta `ANCHOR=space:loc`; společnou
+souřadnici mají až o krok dál, v `ANCHOR=space`. Šířit jen otázku
+znamená měřit setkání v místě, kam druhá strana nedošla — členy pak
+měří podobnost gramatiky, ne významu. Proto se saturuje i okno a střed
+kandidáta, týmž `spread_depth`.
+
+Související past, na kterou se přišlo testem: pytel se nesmí saturovat
+sám v sobě. Když to `_pytel` dělal a `match` šířil znovu, běžela otázka
+v hloubce 2, když měla v 1 — a `spread_depth` přestal být pákou, kterou
+si člověk nastavuje.
+
+## 9 · Interpunkce není kandidát
+
+Tečka odpovědí být nemůže. Není to filtr v datové cestě (princip 2):
+skórování všech ostatních tokenů zůstává bez výjimky, jen se neměří
+skóre u znaku, který nemůže být odpovědí. Bez toho se „." objevovala
+na druhém místě a jen ředila pořadí.

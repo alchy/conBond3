@@ -192,3 +192,64 @@ TAM_BYDLI = Veta(
               xpos="Z:-------------", feats=None,
               head=2, deprel="punct", deps=None, misc=None),
     ))
+
+#: „Kde byl pokřtěn Ježíš?" — otázka ze zadání. Dané osy (WORD= řádků
+#: bez QLEM=) jsou právě být, pokřtěný, Ježíš; *kde* nese QLEM= a mezi
+#: dané osy nepatří — ptá se, netvrdí.
+OTAZKA_KREST = Veta(
+    "Kde byl pokřtěn Ježíš?",
+    (
+        Token(id=1, form="Kde", lemma="kde", upos="ADV",
+              xpos="Db-------------",
+              feats={"PronType": "Int,Rel"},
+              head=3, deprel="advmod", deps=None, misc=None),
+        Token(id=2, form="byl", lemma="být", upos="AUX",
+              xpos="VpYS----R-AAI--",
+              feats={"Aspect": "Imp", "Gender": "Masc", "Number": "Sing",
+                     "Polarity": "Pos", "Tense": "Past", "VerbForm": "Part",
+                     "Voice": "Act"},
+              head=3, deprel="aux:pass", deps=None, misc=None),
+        Token(id=3, form="pokřtěn", lemma="pokřtěný", upos="ADJ",
+              xpos="VsYS----X-APP--",
+              feats={"Aspect": "Perf", "Degree": "Pos", "Gender": "Masc",
+                     "Number": "Sing", "Polarity": "Pos", "Variant": "Short",
+                     "VerbForm": "Part", "Voice": "Pass"},
+              head=0, deprel="root", deps=None, misc=None),
+        Token(id=4, form="Ježíš", lemma="Ježíš", upos="PROPN",
+              xpos="NNMS1-----A----",
+              feats={"Animacy": "Anim", "Case": "Nom", "Gender": "Masc",
+                     "NameType": "Giv", "Number": "Sing"},
+              head=3, deprel="nsubj:pass", deps=None, misc=None),
+        Token(id=5, form="?", lemma="?", upos="PUNCT",
+              xpos="Z:-------------", feats=None,
+              head=3, deprel="punct", deps=None, misc=None),
+    ))
+
+#: „Ježíš učil v synagoze." — druhá věta s Ježíšem, aby korpus měl
+#: soupeře: pokrytí osy Ježíš je pak maximum přes věty, ne jediná věta.
+SYNAGOGA = Veta(
+    "Ježíš učil v synagoze.",
+    (
+        Token(id=1, form="Ježíš", lemma="Ježíš", upos="PROPN",
+              xpos="NNMS1-----A----",
+              feats={"Animacy": "Anim", "Case": "Nom", "Gender": "Masc",
+                     "NameType": "Giv", "Number": "Sing"},
+              head=2, deprel="nsubj", deps=None, misc=None),
+        Token(id=2, form="učil", lemma="učit", upos="VERB",
+              xpos="VpYS----R-AAI--",
+              feats={"Aspect": "Imp", "Gender": "Masc", "Number": "Sing",
+                     "Polarity": "Pos", "Tense": "Past", "VerbForm": "Part",
+                     "Voice": "Act"},
+              head=0, deprel="root", deps=None, misc=None),
+        Token(id=3, form="v", lemma="v", upos="ADP",
+              xpos="RR--6----------",
+              feats={"AdpType": "Prep", "Case": "Loc"},
+              head=4, deprel="case", deps=None, misc=None),
+        Token(id=4, form="synagoze", lemma="synagoha", upos="NOUN",
+              xpos="NNFS6-----A----",
+              feats={"Case": "Loc", "Gender": "Fem", "Number": "Sing"},
+              head=2, deprel="obl", deps=None, misc=None),
+        Token(id=5, form=".", lemma=".", upos="PUNCT",
+              xpos="Z:-------------", feats=None,
+              head=2, deprel="punct", deps=None, misc=None),
+    ))

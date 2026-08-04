@@ -45,3 +45,33 @@ hran. Je to vědomý rozdíl (koncepce § 3), ne nedopatření.
 **Skript přejímky potřebuje data mimo git.** Korpusy 101–107 leží
 v `cb_field/data-persistent/korpus/` (licence, viz ZDROJ.md). Bez nich
 skript skončí s kódem 2 a řekne to — netváří se, že prošel.
+
+## Krok 3: co sedí a co ne
+
+**Sedí přesně.** Pokrytí otázky o křtu 1,000 / 0,604 / 0,885 —
+hodnoty ze zadání do třetího místa. Mrtvá osa je **přesná nula**
+(`WORD=NOUN:dálnice` v biblicko-fyzikálním korpusu), takže detekce
+mezery pro krok 8 stojí na propasti, ne na prahu. Ověřeno i na vzorku
+kroku 8: být 1,000 · omezený 0,604 · rychlost 0,604 · na 1,000 ·
+dálnice 0,000 — celá pětice souhlasí.
+
+Čísla dávají smysl: `tanh(0,7) = 0,604` je jeden výskyt slovní osy,
+`tanh(1,4) = 0,885` dva, saturovaná jednička mnoho.
+
+**NESEDÍ přesnost.** Zadání má baseline 0,3667 (11/30 etalonu),
+naměřeno **0,10 (3/30)**. Mlčení 0 souhlasí. Co je o rozdílu známo:
+
+- **Není to předvýběrem vět.** Při čtení CELÉHO korpusu (top_k = 2 912)
+  vychází táž přesnost 3/30, přestože věta s lemmatem odpovědi je
+  v shortlistu ve 30/30 případů. Ztrácí se ve skórování, ne v recallu.
+- **Není to hloubkou ani pokrytím.** Pokrytí sedí a k=1 je zadané.
+- **Měřené varianty členu setkání** (30 zodpověditelných otázek):
+  vše 3/30 · jen metadata 2/30 · **jen slova 6/30** · vše s tématem ×3
+  4/30. Směr „obsahová slova víc než gramatika" pomáhá, ale na 11/30
+  nestačí.
+
+Zadání členy skóre vypisuje, ale neurčuje, nad kterou reprezentací se
+počítají a jak se normalizují; kód proto drží doslovný zápis ze zadání
+(vše, včetně WORD=) a rozdíl se přiznává, místo aby se váhy ohýbaly,
+dokud číslo nesedne. Kdo bude krok 3 dolaďovat, má tady změřený
+výchozí bod a čtyři už vyloučené cesty.

@@ -30,10 +30,24 @@ from cb_bond.graph import (  # noqa: E402
     KnowledgeGraph,
     NodeStat,
 )
+from cb_bond.matcher import (  # noqa: E402
+    LinkOperator,
+    MatchResult,
+    Matcher,
+    ScoreCandidate,
+    ScoreWeights,
+    saturate,
+)
 
 __all__ = [
     "KnowledgeGraph",
     "NodeStat",
     "NODE_UPOS",
+    "Matcher",
+    "MatchResult",
+    "ScoreCandidate",
+    "ScoreWeights",
+    "LinkOperator",
+    "saturate",
     "__version__",
 ]

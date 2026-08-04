@@ -38,3 +38,26 @@ Veřejné API modulu. Co tady není, je vnitřek a smí se změnit
 | co | jak |
 |---|---|
 | přejímka kroku 2 | `./run-python cb_bond/scripts/prejimka-graf.py` — porovná graf 2 912 vět se zmraženými hodnotami § 6 zadání, nenulový návrat při rozdílu |
+
+## Matcher (matcher.py)
+
+| metoda | co dělá / na čem visí |
+|---|---|
+| `Matcher(corpus, *, spread_depth=2, weights, theta, epsilon, top_k=50)` | páruje otázku s korpusem; otázka musí být pole nad TÝMŽ registrem |
+| `given_axes(question)` | slovní osy, které otázka dává — bez tázacích slov (QLEM=) a bez interpunkce |
+| `coverage(question)` | `{daná osa: nejlepší pokrytí přes věty}`; neznámá osa dá **přesnou nulu** |
+| `recall(question, top_k)` | pozice vět ke jemnému čtení — jeden součin (§ 5/S1) |
+| `match(question)` | `MatchResult` se seřazenými kandidáty a východiskem |
+| `links` | řídký operátor vazeb registru (postaví se při první potřebě) |
+
+| objekt | co to je |
+|---|---|
+| `ScoreWeights` | páky členů skóre: `center` 2,0 · `cover` 1,0 · `topic` 1,0 · `given` −3,0 · `fit` 0,0 |
+| `ScoreCandidate` | token ve větě: `sentence`, `token`, `lemma`, `score`, `decomposition()` (líný rozklad) |
+| `MatchResult` | `candidates`, `outcome` (answer/ask/silent), `best`, `sentences()`, algebra `&` `\|` `~` |
+| `LinkOperator` | vazby registru jako tři pole (řádky/sloupce/váhy) — v·L bez husté matice (§ 5/S3) |
+| `saturate(v, links, steps)` | šíření s tanh po KAŽDÉM kroku |
+
+| co | jak |
+|---|---|
+| přejímka kroku 3 | `./run-python cb_bond/scripts/prejimka-matcher.py` |
