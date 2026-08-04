@@ -1,6 +1,6 @@
 # Měření detekce mezery a dialogu (krok 4 handoveru)
 
-- datum: 2026-08-04 · verze modulu 0.9.0 · korpus 2912 vět + 1 dialogová
+- datum: 2026-08-04 · verze modulu 0.10.0 · korpus 2912 vět + 1 dialogová
 
 ## Jak je omezena rychlost na dálnici?
 

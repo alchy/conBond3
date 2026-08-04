@@ -28,10 +28,13 @@ KONTEXT = ("Dálnice je silnice pro motorová vozidla, kde je stanovena "
 
 def main() -> None:
     from cb_udpipe import UdpipeClient
-    from cb_field.evaluate import build_complex_corpus
+    from cb_field.corpusfile import build_corpus
+    from cb_field.measure_graph import REFERENCE_FILES
 
     parser = UdpipeClient()
-    corpus = build_complex_corpus(parser)
+    # zmražená reference (viz measure_graph): příklad z handoveru je
+    # měřený na korpusu ze 4. 8. 2026, rostoucí baseline sem nepatří
+    corpus = build_corpus(REFERENCE_FILES, parser, r=1)
     graph = FactGraph()
     for field in corpus:
         graph.add_sentence(field)

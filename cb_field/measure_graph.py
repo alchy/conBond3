@@ -21,6 +21,13 @@ from cb_field.graph import FactGraph, promote_verticals
 MODULE_DIR = Path(__file__).resolve().parent
 REPORT = MODULE_DIR / "docs" / "mereni-graf.md"
 
+#: Zmražená reference: přejímka kroků 1–2 je měřená na korpusu ze
+#: 4. 8. 2026 (2 912 vět). Baseline evaluate smí růst dalšími soubory,
+#: tahle kontrola ne — proto výslovný seznam, ne glob.
+REFERENCE_FILES = tuple(
+    MODULE_DIR / "data-persistent" / "korpus" / f"korpus-{n}.json"
+    for n in range(101, 108))
+
 #: Referenční čísla ze 4. 8. 2026 (docs/handover-implementace.md,
 #: krok 1) — měřeno nad uzly klíčovanými lemmatem bez UPOS.
 REFERENCE = {
@@ -53,10 +60,10 @@ def lemma_stats(graph: FactGraph) -> dict:
 
 def main() -> None:
     from cb_udpipe import UdpipeClient
-    from cb_field.evaluate import build_complex_corpus
+    from cb_field.corpusfile import build_corpus
 
     parser = UdpipeClient()
-    corpus = build_complex_corpus(parser)
+    corpus = build_corpus(REFERENCE_FILES, parser, r=1)
     graph = FactGraph()
     for field in corpus:
         graph.add_sentence(field)

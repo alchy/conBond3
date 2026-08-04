@@ -10,8 +10,8 @@ import unittest
 from pathlib import Path
 
 from cb_field.corpus import Corpus
-from cb_field.corpusfile import add_to_corpus, etalon_entries, \
-    load_corpus_file
+from cb_field.corpusfile import add_to_corpus, build_corpus, \
+    etalon_entries, load_corpus_file
 from cb_field.tests.test_graph import KREST, _Sentence
 
 
@@ -119,6 +119,14 @@ class TestAddToCorpus(unittest.TestCase):
         self.assertEqual(entries[1], {
             "otazka": "A na co ne?", "odpoved_lemma": None,
             "zodpoveditelna": False})
+
+    def test_build_corpus_spoji_vic_souboru_v_poradi(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            first = _write(tmp, _valid_data(), "a.json")
+            second = _write(tmp, _valid_data(), "b.json")
+            corpus = build_corpus((first, second), _Parser((2, 1, 2, 1)),
+                                  r=1)
+        self.assertEqual(len(corpus), 6)          # 3 + 3 vět v pořadí
 
     def test_blok_s_puvodnim_textem_se_parsuje_z_nej(self):
         # převod z txt ukládá původní odstavec: spojení položek mezerou

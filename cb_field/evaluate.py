@@ -41,17 +41,14 @@ def build_complex_corpus(parser, r: int = 1, r_sentences: int = 0):
     2 912 vět, 16 074 hran, 5 695 lemmat — shodné s dřívějším ingestem
     txt po doménách.
     """
-    from cb_field.corpusfile import add_to_corpus, load_corpus_file
+    from cb_field.corpusfile import build_corpus
     folder = MODULE_DIR / "data-persistent" / "korpus"
     paths = sorted(folder.glob("korpus-*.json"))
     if not paths:
         sys.exit(f"chybí fixované korpusy v {folder}\n"
                  f"pořídíš: ./cb_field/scripts/fetch-korpusy.sh a pak "
                  f"./run-python cb_field/scripts/preved-korpusy-json.py")
-    corpus = Corpus(r=r, r_sentences=r_sentences)
-    for path in paths:
-        add_to_corpus(corpus, load_corpus_file(path), parser)
-    return corpus
+    return build_corpus(paths, parser, r=r, r_sentences=r_sentences)
 
 
 def load_etalon_korpusy() -> list:

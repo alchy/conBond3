@@ -147,6 +147,17 @@ def add_to_corpus(corpus: Corpus, corpus_file: CorpusFile,
     return tuple(positions)
 
 
+def build_corpus(paths, parser, r: int = 1,
+                 r_sentences: int = 0) -> Corpus:
+    """Korpus z fixovaných souborů v daném pořadí (závislosti
+    parametrem, § 3). Pořadí určuje volající — glob pro rostoucí
+    baseline, výslovný seznam pro zmraženou referenci."""
+    corpus = Corpus(r=r, r_sentences=r_sentences)
+    for path in paths:
+        add_to_corpus(corpus, load_corpus_file(path), parser)
+    return corpus
+
+
 def etalon_entries(corpus_file: CorpusFile,
                    positions: tuple | None = None) -> list:
     """Otázky souboru ve tvaru etalonu (evaluate/learning).

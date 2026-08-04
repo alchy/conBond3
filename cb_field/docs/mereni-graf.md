@@ -1,6 +1,6 @@
 # Měření grafu faktů (krok 1 handoveru)
 
-- datum: 2026-08-04 · verze modulu 0.9.0 · korpus 2912 vět
+- datum: 2026-08-04 · verze modulu 0.10.0 · korpus 2912 vět
 
 ## Graf podle handoveru (uzel = UPOS:lemma)
 
