@@ -7,6 +7,106 @@ referencí chování a zdrojem zmražených přejímek — kód se z ní
 neopisuje. Všechny vzorky v tomhle zadání jsou REÁLNÁ data
 a NAMĚŘENÉ hodnoty z reference.
 
+## 0 · Co se staví: celé workflow od otázky k odpovědi
+
+Než architektura — K ČEMU to celé je. cb_bond je tázací systém nad
+vlastními texty: uživatel položí otázku v češtině a systém mu vrátí
+**kandidátní VĚTY, které nesou odpověď** (ne jediný token — token je
+jen jemnější čtení), s východiskem a s vysvětlením. Konkrétně,
+celý průběh, který vývojář implementuje:
+
+    UŽIVATEL: Jak je omezena rychlost na dálnici?
+
+    1) PARSE      otázka projde parserem → pole (koš) jejích os
+    2) EXPANZE    systém si všimne chudé osy (dálnice) a SÁM si
+                  opatří definici: korpus → slovník/Wikipedie
+                  (fixuje se) → dialog s uživatelem; koš otázky se
+                  rozšíří o oblast (komunikace, silnice, vozidla)
+    3) MATCH      rozšířený koš se páruje s koši všech vět korpusu
+                  (váhy, šíření po vazbách, žádné filtry)
+    4) ČTENÍ      aktivační pole se čte gaussovsky → seřazené
+                  kandidátní věty; věta s odpovědí má vrchol
+    5) ODPOVĚĎ    reply: „Nejvyšší povolená rychlost na dálnici
+                  v Česku je sto třicet kilometrů za hodinu."
+                  východisko answer | ask | needs_context | silent
+                  — při mezeře se systém ZEPTÁ, neml­čí naslepo
+    6) ZRCADLO    v grafu (viewBase2) se rozsvítí uzly kandidátních
+                  vět, lemata otázky je zesílí — člověk VIDÍ, proč
+                  systém odpověděl, bez čtení kódu
+
+Mimo dotaz běží dvě smyčky, které systém zlepšují:
+
+    UČICÍ SMYČKA    supervize (otázka + index věty s odpovědí) →
+                    kontrastivní trénink vztahu otázka(meta) →
+                    věta(meta); 30 % otázek odloženo na validaci,
+                    která řídí konec učení (zobecnění, ne memorování)
+    PROMOČNÍ SMYČKA růst korpusu → statistika grafu → výměna custom
+                    slotů (pojmenované neurony vstupní vrstvy) →
+                    přegenerování korpusu → přeučení → měření →
+                    přijmout / vrátit; s růstem faktů řídne
+
+K čemu to vede: dialogový, učící se a PRŮHLEDNÝ tázací systém nad
+rostoucím korpusem — každé rozhodnutí má rozklad po pojmenovaných
+členech a projeví se ve vizualizaci; dlouhodobě substrát pro
+odvozování nad grafem (definice, vztahy, typy). Měřítko úspěchu
+kroku za krokem: věta s odpovědí mezi kandidáty (recall), přesnost,
+správné mlčení, dosah — vždy s protiváhami.
+
+## 0b · Korpus: kde leží, jak vypadá, jak ho načíst
+
+Vývojář se odráží od HOTOVÝCH dat (nefixuje znovu):
+
+    cb_field/data-persistent/korpus/     ← mimo git (licence);
+        korpus-101…107.json   převod referenčních textů (2 912 vět:
+                              Markovo evangelium, fyzika, spisovatelé)
+        korpus-201.json       vesmír (605 vět, Wikipedie)
+        korpus-202.json       hudba (600 vět, Wikipedie)
+        korpus-301…326.json   Nový zákon po knihách (8 141 vět)
+        → pořízení: cb_field/scripts/fetch-*.py, preved-korpusy-json.py
+    cb_field/tests/data/korpus/          ← v gitu (vlastní texty):
+        korpus-001…003.json   doprava/příroda/dějiny + vlastní otázky
+        otazky-201/202.json   otázky k 201/202 (corpus-reference)
+    cb_field/tests/data/
+        trenink-otazky-korpusy.jsonl  120 otázek (trénink+validace)
+        etalon-otazky-korpusy.jsonl   40 otázek (měření — NIKDY trénink)
+
+Struktura souboru (plný popis docs/korpus-json.md): bloky =
+souvislé odstavce (`text` = původní odstavec, `sentences` = jeho
+očíslovaný rozpad; globální index věty běží přes bloky), otázky
+míří na index věty; soubor s `"corpus": "…"` nese jen otázky
+k cizímu souboru.
+
+**Načtení — spustitelný vzorek:**
+
+    from pathlib import Path
+    from cb_udpipe import UdpipeClient
+    from cb_field.corpusfile import (build_corpus, load_corpus_file,
+                                     etalon_entries, add_to_corpus)
+
+    parser = UdpipeClient()          # rozbory jdou z trvalé cache
+    paths = sorted(Path("cb_field/data-persistent/korpus")
+                   .glob("korpus-*.json"))
+    corpus = build_corpus(paths, parser, r=1)   # 12 258 vět
+
+    corpus[12].source        # „Nejvyšší povolená rychlost na …"
+    corpus[12].tokens        # tokeny z parseru (lemma, UPOS, head…)
+    corpus[12].complete[3]   # aktivace řádku {osa: váha} vč. WORD=
+    corpus.registry          # JEDNA sdílená osa všech vět
+    len(corpus.registry)     # ~27 000 vertikál
+
+    otazky = load_corpus_file(
+        Path("cb_field/tests/data/korpus/otazky-201.json"))
+    # otazky.corpus == "korpus-201.json" → indexy se mapují na
+    # pozice v kombinovaném korpusu přes offsety souborů;
+    # etalon_entries(otazky, positions) dá {"otazka", "odpoved_lemma",
+    # "zodpoveditelna", "answer_position"}
+
+Corpus je posloupnost `SentenceField` nad JEDNÍM registrem (osa je
+společná — matice vět jsou porovnatelné); dokumentové markery drží
+hranice bloků (kontext r_sentences nepřeteče odstavec). Validace
+každého datového souboru: `./run-python -m cb_field.corpusfile
+<soubor>` (formát, 1 položka = 1 věta, answer_lemma proti lemmatům).
+
 ## 1 · Proč se cb_bond staví
 
 Systém má z otázky v přirozené češtině **vybrat kandidátní věty,
