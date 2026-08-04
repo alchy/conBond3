@@ -1,0 +1,368 @@
+{
+  "format_version": 1,
+  "language": "cs",
+  "corpus": "korpus-201.json",
+  "blocks": [],
+  "questions": [
+    {
+      "text": "Jakou rychlostí v kilometrech za sekundu na megaparsek se podle textu rozpíná vesmír?",
+      "sentence": 6,
+      "answer_lemma": "75",
+      "answerable": true
+    },
+    {
+      "text": "Kolik miliard světelných let činí nejmenší odhadovaný průměr pozorovatelného vesmíru?",
+      "sentence": 132,
+      "answer_lemma": "93",
+      "answerable": true
+    },
+    {
+      "text": "Z jakého jazyka pochází podle textu české slovo vesmír?",
+      "sentence": 243,
+      "answer_lemma": "ruský",
+      "answerable": true
+    },
+    {
+      "text": "Z kolika základních principů se podle textu skládá vesmír?",
+      "sentence": 532,
+      "answer_lemma": "tři",
+      "answerable": true
+    },
+    {
+      "text": "Kdo v roce 1931 formuloval myšlenku vesmíru vzniklého z prvotního atomu?",
+      "sentence": 11,
+      "answer_lemma": "Lemaître",
+      "answerable": true
+    },
+    {
+      "text": "Kdo poprvé použil termín velký třesk během rozhlasového pořadu v roce 1949?",
+      "sentence": 12,
+      "answer_lemma": "Hoyle",
+      "answerable": true
+    },
+    {
+      "text": "Ve kterém roce byl učiněn objev reliktního záření, jenž rozhodujícím způsobem podpořil model velkého třesku?",
+      "sentence": 152,
+      "answer_lemma": "1965",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá období velmi rychlého exponenciálního rozpínání krátce po Planckově epoše?",
+      "sentence": 538,
+      "answer_lemma": "inflační",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá vědní obor zabývající se vznikem, vývojem a strukturou vesmíru jako celku?",
+      "sentence": 20,
+      "answer_lemma": "kosmologie",
+      "answerable": true
+    },
+    {
+      "text": "Kdo byl vedle Aristotela ovlivněn pythagorejským důrazem na matematický řád a harmonii kosmu?",
+      "sentence": 360,
+      "answer_lemma": "Platón",
+      "answerable": true
+    },
+    {
+      "text": "Kdo ve 2. století navázal na aristotelovskou tradici svým geocentrickým modelem pohybu těles?",
+      "sentence": 457,
+      "answer_lemma": "Ptolemaios",
+      "answerable": true
+    },
+    {
+      "text": "Kdo v 16. století navrhl heliocentrický model sluneční soustavy?",
+      "sentence": 540,
+      "answer_lemma": "Koperník",
+      "answerable": true
+    },
+    {
+      "text": "Jak se z hlediska gravitační vázanosti označuje uspořádání hvězd, prachu a temné hmoty tvořící galaxii?",
+      "sentence": 24,
+      "answer_lemma": "systém",
+      "answerable": true
+    },
+    {
+      "text": "Kolik bilionů galaxií se podle odhadů z roku 2016 nachází v pozorovatelné části vesmíru přinejmenším?",
+      "sentence": 167,
+      "answer_lemma": "dva",
+      "answerable": true
+    },
+    {
+      "text": "Kolik základních typů galaxií rozlišuje Hubbleova klasifikace podle tvaru?",
+      "sentence": 251,
+      "answer_lemma": "pět",
+      "answerable": true
+    },
+    {
+      "text": "Jak se jmenuje spirální galaxie, která je z galaxií místní skupiny největší?",
+      "sentence": 465,
+      "answer_lemma": "Andromeda",
+      "answerable": true
+    },
+    {
+      "text": "Ve kterém rameni Galaxie leží sluneční soustava vzhledem k jejímu galaktickému jádru?",
+      "sentence": 33,
+      "answer_lemma": "Orion",
+      "answerable": true
+    },
+    {
+      "text": "Jaký díl pozemské populace nemůže podle map umělého jasu spatřit Mléčnou dráhu ze svého domova?",
+      "sentence": 181,
+      "answer_lemma": "třetina",
+      "answerable": true
+    },
+    {
+      "text": "Kolikrát je hmotnost Mléčné dráhy přibližně větší než hmotnost Slunce?",
+      "sentence": 257,
+      "answer_lemma": "890",
+      "answerable": true
+    },
+    {
+      "text": "Jaký tvar má podle textu jádrová oblast Mléčné dráhy obklopená diskem plynu a prachu?",
+      "sentence": 466,
+      "answer_lemma": "příčka",
+      "answerable": true
+    },
+    {
+      "text": "Jak se hvězdě dříve zastarale říkalo?",
+      "sentence": 44,
+      "answer_lemma": "stálice",
+      "answerable": true
+    },
+    {
+      "text": "Co se v jádru hvězdy termonukleární fúzí přeměňuje na helium?",
+      "sentence": 51,
+      "answer_lemma": "vodík",
+      "answerable": true
+    },
+    {
+      "text": "Čím je určena barva hvězdy, kterou vyzařuje nejintenzivněji?",
+      "sentence": 559,
+      "answer_lemma": "frekvence",
+      "answerable": true
+    },
+    {
+      "text": "Jaké jednotky se často používají při udávání hmotnosti, svítivosti a poloměru hvězd?",
+      "sentence": 191,
+      "answer_lemma": "solární",
+      "answerable": true
+    },
+    {
+      "text": "Co ani nedokáže uniknout z černé díry kvůli její silné gravitaci?",
+      "sentence": 79,
+      "answer_lemma": "světlo",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá hranice černé díry, ze které už není návratu?",
+      "sentence": 81,
+      "answer_lemma": "horizont",
+      "answerable": true
+    },
+    {
+      "text": "V kterém roce se termín pro velmi hutné neviditelné těleso poprvé objevil v tištěné podobě v amerických magazínech?",
+      "sentence": 399,
+      "answer_lemma": "1963",
+      "answerable": true
+    },
+    {
+      "text": "Ve kterém souhvězdí se nachází binární systém s prvním vážným kandidátem na černou díru z roku 1971?",
+      "sentence": 473,
+      "answer_lemma": "labuť",
+      "answerable": true
+    },
+    {
+      "text": "Kolik měsíců planet obsahuje podle textu sluneční soustava?",
+      "sentence": 87,
+      "answer_lemma": "455",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá oblak, který podle předpokladů obklopuje sluneční soustavu na jejím vnějším okraji?",
+      "sentence": 88,
+      "answer_lemma": "Oortův",
+      "answerable": true
+    },
+    {
+      "text": "Na kolik miliard let maximálně vystačí jaderné palivo Slunce podle textu?",
+      "sentence": 404,
+      "answer_lemma": "7",
+      "answerable": true
+    },
+    {
+      "text": "Před kolika miliardami let přibližně vznikla sluneční soustava?",
+      "sentence": 585,
+      "answer_lemma": "5",
+      "answerable": true
+    },
+    {
+      "text": "Kolik milionů let trvá jeden oběh Slunce kolem středu Galaxie?",
+      "sentence": 96,
+      "answer_lemma": "226",
+      "answerable": true
+    },
+    {
+      "text": "Jakou barvu vnímají lidé u Slunce kvůli teplotě jeho povrchu?",
+      "sentence": 202,
+      "answer_lemma": "žlutý",
+      "answerable": true
+    },
+    {
+      "text": "Kdo byl v antickém Řecku bohem Slunce cestujícím po obloze ve zlatém voze?",
+      "sentence": 413,
+      "answer_lemma": "Helios",
+      "answerable": true
+    },
+    {
+      "text": "Kdo v roce 1938 navrhl jadernou fúzi jako energetický zdroj Slunce?",
+      "sentence": 516,
+      "answer_lemma": "Bethe",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá vědní obor zabývající se zkoumáním planet?",
+      "sentence": 104,
+      "answer_lemma": "planetologie",
+      "answerable": true
+    },
+    {
+      "text": "Kdo objevil planetu Uran v roce 1781?",
+      "sentence": 340,
+      "answer_lemma": "Herschel",
+      "answerable": true
+    },
+    {
+      "text": "V kterém roce byl objeven Neptun na základě výpočtu nepravidelností v pohybu Uranu?",
+      "sentence": 343,
+      "answer_lemma": "1846",
+      "answerable": true
+    },
+    {
+      "text": "Které transneptunické těleso mělo hmotnost srovnatelnou s Plutem?",
+      "sentence": 517,
+      "answer_lemma": "Eris",
+      "answerable": true
+    },
+    {
+      "text": "Jak se jmenuje jediný přirozený satelit, který Země získala krátce po svém vzniku?",
+      "sentence": 106,
+      "answer_lemma": "měsíc",
+      "answerable": true
+    },
+    {
+      "text": "Kolik procent zemského povrchu pokrývá souvislý oceán kapalné vody?",
+      "sentence": 112,
+      "answer_lemma": "71",
+      "answerable": true
+    },
+    {
+      "text": "Kolik miliard let jsou staré nejstarší nalezené horniny svědčící o vzniku zemské kůry?",
+      "sentence": 227,
+      "answer_lemma": "4",
+      "answerable": true
+    },
+    {
+      "text": "Kdo poprvé spočítal velikost Země podle rozdílu v délce poledního stínu mezi Asuánem a Alexandrií?",
+      "sentence": 438,
+      "answer_lemma": "Eratosthenés",
+      "answerable": true
+    },
+    {
+      "text": "Jak se jmenuje hora, jejíž vrchol je díky zploštění Země nejvzdálenějším místem od jejího středu?",
+      "sentence": 447,
+      "answer_lemma": "Chimborazo",
+      "answerable": true
+    },
+    {
+      "text": "Kdo byl prvním člověkem, který vstoupil do vesmíru?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "V kterém roce přistál na Měsíci první člověk?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik měsíců má planeta Mars?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Jaká je průměrná teplota na povrchu planety Venuše?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kdo jako první objevil planetu Jupiter?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik satelitů obíhá kolem planety Saturn?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Jak se jmenuje kosmická sonda, která jako první přistála na Marsu?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "V kterém roce byl vypuštěn Hubbleův vesmírný dalekohled na oběžnou dráhu?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Jakou teplotu mělo reliktní záření v okamžiku svého vzniku?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik kilogramů vážil největší meteorit dosud nalezený na Zemi?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kdo byla první žena, která letěla do vesmíru?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Jak dlouho trvá kosmické lodi cesta na Mars?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik korun stálo vybudování Jamesova Webbova teleskopu?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Jaké chemické prvky byly objeveny v atmosféře planety Venuše?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "V kterém roce byla založena Evropská kosmická agentura?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    }
+  ]
+}

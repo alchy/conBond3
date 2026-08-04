@@ -1,0 +1,242 @@
+{
+  "format_version": 1,
+  "language": "cs",
+  "blocks": [
+    {
+      "topic": "Dálnice a silniční síť",
+      "sentences": [
+        "Dálnice je pozemní komunikace určená pro rychlou a bezpečnou dopravu motorových vozidel.",
+        "Silnice v Česku dělíme na dálnice, silnice první třídy, silnice druhé třídy a silnice třetí třídy.",
+        "První dálnice na území Československa se stavěla už ve třicátých letech dvacátého století.",
+        "Dálnice D1 spojuje Prahu s Brnem a dále pokračuje směrem na Ostravu.",
+        "Nejvyšší povolená rychlost na dálnici v Česku je sto třicet kilometrů za hodinu.",
+        "Vozidla se na dálnici pohybují pouze jedním směrem po oddělených jízdních pásech.",
+        "Středový svodidlový pás odděluje protisměrné jízdní pásy a zabraňuje čelním srážkám.",
+        "Odpočívadla podél dálnic slouží řidičům k odpočinku a doplnění paliva.",
+        "Dálniční most přes údolí umožňuje překonat velký výškový rozdíl bez zbytečných zatáček.",
+        "Mýtné se v Česku vybírá elektronicky pomocí palubních jednotek umístěných v nákladních vozidlech.",
+        "Osobní automobily platí za užívání dálnic ročním, měsíčním nebo desetidenním kupónem.",
+        "Dopravní značení na dálnici informuje řidiče o vzdálenosti k nejbližšímu sjezdu.",
+        "Asfaltový povrch vozovky se pravidelně opravuje kvůli vlivu mrazu a těžké dopravy.",
+        "Silnice první třídy propojují krajská města a významné regionální celky.",
+        "Kruhový objezd zvyšuje plynulost provozu a snižuje počet vážných dopravních nehod.",
+        "Dopravní zácpy vznikají nejčastěji v ranních a odpoledních hodinách kolem velkých měst.",
+        "Stavba nové dálnice trvá kvůli povolením a výkupu pozemků často mnoho let."
+      ]
+    },
+    {
+      "topic": "Železnice a vlaky",
+      "sentences": [
+        "Železnice umožňuje přepravu velkého množství cestujících a nákladu po ocelových kolejích.",
+        "Koněspřežná dráha mezi Českými Budějovicemi a Lincem patřila mezi první veřejné železnice v Evropě.",
+        "Parní lokomotivy poháněly vlaky pomocí páry vznikající spalováním uhlí ve válcovém kotli.",
+        "Parní trakci později nahradila trakce elektrická a motorová s naftovými motory.",
+        "Elektrifikace železničních tratí umožnila nasazení rychlejších a tišších elektrických lokomotiv.",
+        "Vysokorychlostní vlaky ve Francii a Japonsku dosahují rychlosti přes tři sta kilometrů za hodinu.",
+        "Hlavní nádraží v Praze patří mezi nejrušnější železniční stanice v zemi.",
+        "Kolejnice se ukládají na betonové nebo dřevěné pražce zajišťující stabilní rozchod koleje.",
+        "Standardní rozchod koleje používaný ve většině Evropy měří tisíc čtyři sta třicet pět milimetrů.",
+        "Nákladní vlaky přepravují uhlí, dřevo, kontejnery a další suroviny na dlouhé vzdálenosti.",
+        "Osobní dopravu ve městech doplňuje příměstská doprava zajišťovaná menšími elektrickými jednotkami.",
+        "Železniční přejezd chrání silniční provoz závorami a výstražnými světly před blížícím se vlakem.",
+        "Signalizační systém na trati řídí pohyb vlaků pomocí návěstidel a automatických bloků.",
+        "Nákladní vagony se řadí do vlakových souprav podle cíle a typu přepravovaného zboží.",
+        "Tunel pod Alpami zkracuje cestu vlaků mezi severní a jižní Evropou o mnoho hodin.",
+        "Souprava Pendolino naklápí skříň vozu v obloucích a tím zvyšuje průjezdnou rychlost.",
+        "Nákladní doprava po železnici zatěžuje životní prostředí méně než přeprava kamiony po silnici."
+      ]
+    },
+    {
+      "topic": "Mosty a jejich konstrukce",
+      "sentences": [
+        "Most je stavba překonávající vodní tok, údolí nebo jinou překážku a nesoucí dopravní cestu.",
+        "Karlův most v Praze spojuje Staré Město s Malou Stranou přes řeku Vltavu.",
+        "Kamenné mosty stavěli lidé už ve starověkém Římě pomocí oblouků z tesaného kamene.",
+        "Obloukové mosty přenášejí zatížení do pilířů pomocí tlakových sil působících podél oblouku.",
+        "Visuté mosty zavěšují mostovku na ocelová lana upevněná mezi vysokými pylony.",
+        "Zavěšené mosty používají přímá lana vedená šikmo od pylonu přímo k mostovce.",
+        "Nosníkové mosty patří mezi nejjednodušší konstrukce a využívají se u kratších rozpětí.",
+        "Golden Gate Bridge v San Francisku patří mezi nejznámější visuté mosty na světě.",
+        "Ocelové konstrukce mostů se chrání proti korozi nátěry nebo speciální povrchovou úpravou.",
+        "Předpjatý beton umožnil stavět delší mostní pole s menším počtem podpěr.",
+        "Dálniční mosty musí unést zatížení od těžkých nákladních vozidel po mnoho desetiletí.",
+        "Železniční mosty přenášejí kromě statického zatížení i dynamické rázy od projíždějících vlaků.",
+        "Pilíře mostu se zakládají hluboko do řečiště, aby odolaly proudu vody i povodním.",
+        "Pravidelné prohlídky mostních konstrukcí odhalují praskliny a korozi dříve, než ohrozí bezpečnost.",
+        "Lávka pro pěší a cyklisty bývá lehčí konstrukce než most pro automobilovou dopravu.",
+        "Nejdelší mosty na světě měří přes čtyřicet kilometrů a překonávají mořské zálivy."
+      ]
+    },
+    {
+      "topic": "Městská hromadná doprava",
+      "sentences": [
+        "Městská hromadná doprava zajišťuje přepravu obyvatel po městě pomocí tramvají, autobusů a metra.",
+        "Tramvaje jezdí po kolejích zabudovaných přímo do povrchu ulic a náměstí.",
+        "Trolejbusy čerpají elektrickou energii z trolejového vedení pomocí sběračů umístěných na střeše vozidla.",
+        "Pražské metro tvoří tři linky označené písmeny a barvami, které se kříží na přestupních stanicích.",
+        "Autobusy městské dopravy jezdí i do čtvrtí, kam kolejová doprava nedosáhne.",
+        "Jízdenky pro městskou dopravu si cestující kupují v automatech, aplikaci nebo přímo u řidiče.",
+        "Integrovaný dopravní systém spojuje vlaky, autobusy a metro pod jedním tarifem.",
+        "Zastávky městské dopravy bývají vybaveny přístřeškem, lavičkou a elektronickou tabulí s odjezdy.",
+        "Nízkopodlažní vozidla usnadňují nástup cestujícím s kočárky, vozíky nebo těžkými zavazadly.",
+        "Preferenční pruhy vyhrazené pro autobusy a tramvaje zrychlují jejich průjezd přeplněnými ulicemi.",
+        "Sdílená kola a koloběžky doplňují v posledních letech tradiční městskou hromadnou dopravu.",
+        "Cyklostezky oddělují cyklisty od automobilového provozu a zvyšují bezpečnost cyklistické dopravy.",
+        "Parkovací zóny v centrech měst omezují počet aut a podporují využívání hromadné dopravy.",
+        "Noční linky autobusů a tramvají zajišťují dopravu i v době, kdy metro nejezdí.",
+        "Elektrické autobusy nahrazují ve městech starší vozidla se spalovacími motory kvůli nižším emisím.",
+        "Řízení dopravy ve městě koordinuje světelná signalizace na křižovatkách podle aktuálního provozu."
+      ]
+    },
+    {
+      "topic": "Spalovací motory",
+      "sentences": [
+        "Spalovací motor přeměňuje chemickou energii paliva na mechanickou práci pohánějící vozidlo.",
+        "Zážehový motor zapaluje směs paliva a vzduchu jiskrou ze zapalovací svíčky.",
+        "Vznětový motor zapaluje palivo samovznícením po vstříknutí do silně stlačeného horkého vzduchu.",
+        "Čtyřdobý motor pracuje v cyklu sání, komprese, expanze a výfuku.",
+        "Píst se pohybuje ve válci nahoru a dolů a přes ojnici otáčí klikovým hřídelem.",
+        "Vačkový hřídel řídí otevírání a zavírání sacích a výfukových ventilů v přesném okamžiku.",
+        "Turbodmychadlo využívá energii výfukových plynů ke stlačení nasávaného vzduchu a zvýšení výkonu.",
+        "Chladicí soustava odvádí přebytečné teplo z motoru pomocí kapaliny proudící chladičem.",
+        "Mazací soustava snižuje tření mezi pohyblivými díly a chrání je před opotřebením.",
+        "Benzinové motory dosahují vyšších otáček, zatímco naftové motory nabízejí větší točivý moment.",
+        "Výfukový systém s katalyzátorem snižuje množství škodlivin vypouštěných do ovzduší.",
+        "Objem válců motoru se udává v litrech a ovlivňuje jeho výkon i spotřebu.",
+        "Karl Benz sestrojil první automobil poháněný spalovacím motorem v Německu v roce 1885.",
+        "Motorová nafta a benzin patří mezi nejrozšířenější paliva pro spalovací motory vozidel.",
+        "Emise oxidu uhličitého ze spalovacích motorů přispívají ke změně klimatu na celé planetě."
+      ]
+    },
+    {
+      "topic": "Elektrické motory",
+      "sentences": [
+        "Elektrický motor přeměňuje elektrickou energii na mechanickou práci pomocí magnetického pole.",
+        "Stator elektrického motoru zůstává nehybný, zatímco rotor se uvnitř něj otáčí.",
+        "Statorové vinutí vytváří točivé magnetické pole, které roztáčí rotor motoru.",
+        "Asynchronní motor indukuje proud v rotoru bez přímého elektrického připojení k vinutí.",
+        "Synchronní motor otáčí rotorem přesně stejnou rychlostí, jakou má točivé magnetické pole.",
+        "Elektromobily ukládají energii v bateriích a předávají ji motoru přes výkonovou elektroniku.",
+        "Elektrický motor dosahuje maximálního točivého momentu už od nulových otáček.",
+        "Rekuperační brzdění přeměňuje kinetickou energii vozidla zpět na elektrickou energii při zpomalování.",
+        "Trakční baterie elektromobilu se skládá z mnoha článků propojených do modulů.",
+        "Nabíjecí stanice dodávají elektromobilům energii buď střídavým, nebo rychlým stejnosměrným proudem.",
+        "Elektrické motory nevypouštějí při provozu žádné výfukové plyny přímo na místě jízdy.",
+        "Účinnost elektrického motoru bývá výrazně vyšší než účinnost motoru spalovacího.",
+        "Elektrické lokomotivy a tramvaje využívají elektromotory už více než sto let.",
+        "Hybridní vozidla kombinují spalovací motor s jedním nebo více elektromotory.",
+        "Chlazení elektromotoru zajišťuje vzduch nebo kapalina proudící kolem vinutí a magnetů."
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "text": "Kolik kilometrů za hodinu činí nejvyšší povolená rychlost na dálnici v Česku?",
+      "sentence": 4,
+      "answer_lemma": "třicet",
+      "answerable": true
+    },
+    {
+      "text": "Kam pokračuje dálnice D1 dále od Prahy a Brna?",
+      "sentence": 3,
+      "answer_lemma": "Ostrava",
+      "answerable": true
+    },
+    {
+      "text": "Čemu zabraňuje středový svodidlový pás mezi protisměrnými jízdními pásy na dálnici?",
+      "sentence": 6,
+      "answer_lemma": "srážka",
+      "answerable": true
+    },
+    {
+      "text": "Kdo sestrojil první automobil poháněný spalovacím motorem v roce 1885?",
+      "sentence": 78,
+      "answer_lemma": "Benz",
+      "answerable": true
+    },
+    {
+      "text": "Ve kterých letech se na území Československa začala stavět první dálnice?",
+      "sentence": 2,
+      "answer_lemma": "třicátý",
+      "answerable": true
+    },
+    {
+      "text": "Mezi jaký typ mostů patří stavba Golden Gate Bridge v San Francisku?",
+      "sentence": 41,
+      "answer_lemma": "visutý",
+      "answerable": true
+    },
+    {
+      "text": "Kolik milimetrů měří standardní rozchod koleje používaný ve většině evropských zemí?",
+      "sentence": 25,
+      "answer_lemma": "čtyři",
+      "answerable": true
+    },
+    {
+      "text": "Čím čerpají trolejbusy elektrickou energii z trolejového vedení?",
+      "sentence": 52,
+      "answer_lemma": "sběrač",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá způsob brzdění, který přeměňuje kinetickou energii vozidla zpět na elektrickou energii?",
+      "sentence": 88,
+      "answer_lemma": "rekuperační",
+      "answerable": true
+    },
+    {
+      "text": "Z jakého druhu energie vzniká mechanická práce ve spalovacím motoru?",
+      "sentence": 66,
+      "answer_lemma": "chemický",
+      "answerable": true
+    },
+    {
+      "text": "Přes kterou řeku vede Karlův most spojující Staré Město s Malou Stranou?",
+      "sentence": 35,
+      "answer_lemma": "Vltava",
+      "answerable": true
+    },
+    {
+      "text": "Jaký typ motoru má podle textu nižší účinnost než motor elektrický?",
+      "sentence": 92,
+      "answer_lemma": "spalovací",
+      "answerable": true
+    },
+    {
+      "text": "Kolik korun stojí roční dálniční kupón pro osobní automobil?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Ve kterém roce byla dokončena stavba mostu Golden Gate Bridge?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kdo navrhl konstrukci Karlova mostu v Praze?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Ve kterém městě se vyrábí motory používané v elektromobilech?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Jak velký dojezd mají elektromobily na jedno nabití baterie?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Který výrobce vyrábí nejprodávanější elektrický automobil na světě?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{"otazka": "Kde bydlí Jana?", "odpoved_lemma": "Brno", "zodpoveditelna": true}
+{"otazka": "Kde bydlí Petr?", "odpoved_lemma": "Liberec", "zodpoveditelna": true}
+{"otazka": "Kde pracuje Marie?", "odpoved_lemma": "kancelář", "zodpoveditelna": true}
+{"otazka": "Kde pracuje Eva?", "odpoved_lemma": "pošta", "zodpoveditelna": true}
+{"otazka": "Kde spí kočka?", "odpoved_lemma": "kuchyň", "zodpoveditelna": true}
+{"otazka": "Kde je Petr?", "odpoved_lemma": "Praha", "zodpoveditelna": true}
+{"otazka": "Kde čeká řidič?", "odpoved_lemma": "nádraží", "zodpoveditelna": true}
+{"otazka": "Kde sedí děda?", "odpoved_lemma": "lavička", "zodpoveditelna": true}
+{"otazka": "Kde se pase kůň?", "odpoved_lemma": "louka", "zodpoveditelna": true}
+{"otazka": "Kde spí pes?", "odpoved_lemma": "bouda", "zodpoveditelna": true}
+{"otazka": "Kam šel Karel?", "odpoved_lemma": "les", "zodpoveditelna": true}
+{"otazka": "Kam běžel pes?", "odpoved_lemma": "zahrada", "zodpoveditelna": true}
+{"otazka": "Kam letěla Soňa?", "odpoved_lemma": "Paříž", "zodpoveditelna": true}
+{"otazka": "Kam jela Marie?", "odpoved_lemma": "Ostrava", "zodpoveditelna": true}
+{"otazka": "Kam jeli turisté?", "odpoved_lemma": "hora", "zodpoveditelna": true}
+{"otazka": "Odkud přijela teta?", "odpoved_lemma": "Amerika", "zodpoveditelna": true}
+{"otazka": "Odkud odjela Soňa?", "odpoved_lemma": "Praha", "zodpoveditelna": true}
+{"otazka": "Odkud přijel Pavel?", "odpoved_lemma": "Liberec", "zodpoveditelna": true}
+{"otazka": "Odkud se vrátili sousedé?", "odpoved_lemma": "hora", "zodpoveditelna": true}
+{"otazka": "Odkud se vrátil Karel?", "odpoved_lemma": "práce", "zodpoveditelna": true}
+{"otazka": "Kdy přijel Petr do Brna?", "odpoved_lemma": "leden", "zodpoveditelna": true}
+{"otazka": "Kdy odjel Petr do Vídně?", "odpoved_lemma": "pondělí", "zodpoveditelna": true}
+{"otazka": "Kdy začíná schůze?", "odpoved_lemma": "devět", "zodpoveditelna": true}
+{"otazka": "Kdy odjíždí autobus z nádraží?", "odpoved_lemma": "poledne", "zodpoveditelna": true}
+{"otazka": "Kdy se přestěhoval Karel do Plzně?", "odpoved_lemma": "březen", "zodpoveditelna": true}
+{"otazka": "Kdy odletěli ptáci na jih?", "odpoved_lemma": "říjen", "zodpoveditelna": true}
+{"otazka": "Kdy odjela Jana do Vídně?", "odpoved_lemma": "včera", "zodpoveditelna": true, "pozn": "známá mez: odpověď je příslovce, není kandidátním středem — čeká na krok 3 (slot kdy)"}
+{"otazka": "Kolik dětí čekalo před školou?", "odpoved_lemma": "pět", "zodpoveditelna": true}
+{"otazka": "Kdo bydlí v Liberci?", "odpoved_lemma": "Petr", "zodpoveditelna": true}
+{"otazka": "Kdo pracuje v nemocnici?", "odpoved_lemma": "lékař", "zodpoveditelna": true}
+{"otazka": "Kdo se vrátil z hor?", "odpoved_lemma": "soused", "zodpoveditelna": true}
+{"otazka": "Kdo spí v boudě?", "odpoved_lemma": "pes", "zodpoveditelna": true}
+{"otazka": "Kdo studuje v Olomouci?", "odpoved_lemma": "Soňa", "zodpoveditelna": true}
+{"otazka": "Kde bydlí Alois?", "odpoved_lemma": null, "zodpoveditelna": false}
+{"otazka": "Kdo bydlí v Ostravě?", "odpoved_lemma": null, "zodpoveditelna": false, "pozn": "Marie se v Ostravě narodila, nebydlí tam — svod k záměně"}
+{"otazka": "Kam letěl Karel?", "odpoved_lemma": null, "zodpoveditelna": false, "pozn": "létala Soňa, ne Karel — svod přes sloveso"}
+{"otazka": "Kdy odjel Honza?", "odpoved_lemma": null, "zodpoveditelna": false}
+{"otazka": "Kde parkuje Petr?", "odpoved_lemma": null, "zodpoveditelna": false, "pozn": "parkuje soused — svod přes sloveso"}
+{"otazka": "Kolik koček čekalo před školou?", "odpoved_lemma": null, "zodpoveditelna": false, "pozn": "čekalo pět dětí — svod přes rámec"}
+{"otazka": "Odkud přijela Marie?", "odpoved_lemma": null, "zodpoveditelna": false, "pozn": "Marie jela DO Ostravy — svod přes směr"}

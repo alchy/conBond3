@@ -1,0 +1,40 @@
+{"otazka": "Kdo zformuloval zákon všeobecné gravitace?", "odpoved_lemma": "Newton", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Kdo zformuloval obecnou teorii relativity?", "odpoved_lemma": "Einstein", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Co napsal Newton?", "odpoved_lemma": "kniha", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Co vysvětlil Einstein?", "odpoved_lemma": "jev", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Co způsobuje Měsíc?", "odpoved_lemma": "příliv", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Kolem čeho obíhá Měsíc?", "odpoved_lemma": "země", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Kolem čeho obíhá Země?", "odpoved_lemma": "slunce", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Kde prožil Hrabal dětství?", "odpoved_lemma": "pivovar", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Kde si koupili manželé Hrabalovi chatu?", "odpoved_lemma": "Kersko", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Kam se přestěhovala rodina?", "odpoved_lemma": "Nymburk", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Kam šel v sobotu?", "odpoved_lemma": "synagóga", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Kam se vrátil po několika dnech?", "odpoved_lemma": "Kafarnaum", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Odkud přišel Ježíš?", "odpoved_lemma": "Nazareto", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Kdy se narodil Hrabalův nevlastní bratr?", "odpoved_lemma": "září", "zodpoveditelna": true, "typ": "přímá"}
+{"otazka": "Kde se narodil Einstein?", "odpoved_lemma": "Ulm", "zodpoveditelna": true, "typ": "závorkový údaj"}
+{"otazka": "Kdy zemřel Newton?", "odpoved_lemma": "1727", "zodpoveditelna": true, "typ": "závorkový údaj"}
+{"otazka": "Kdy obdržel Einstein Nobelovu cenu?", "odpoved_lemma": "1921", "zodpoveditelna": true, "typ": "přímá, letopočet"}
+{"otazka": "Co je světlo?", "odpoved_lemma": "vlnění", "zodpoveditelna": true, "typ": "kopula"}
+{"otazka": "Co je gravitace?", "odpoved_lemma": "síla", "zodpoveditelna": true, "typ": "kopula"}
+{"otazka": "Co je foton?", "odpoved_lemma": "částice", "zodpoveditelna": true, "typ": "kopula"}
+{"otazka": "K čemu slouží elektromotor?", "odpoved_lemma": "přeměna", "zodpoveditelna": true, "typ": "účel"}
+{"otazka": "Kde se dávali lidé křtít?", "odpoved_lemma": "řeka", "zodpoveditelna": true, "typ": "most: pasivní křtít"}
+{"otazka": "Kdo pokřtil Ježíše?", "odpoved_lemma": "Jan", "zodpoveditelna": true, "typ": "most: pasivum"}
+{"otazka": "Kdo je autorem Války s mloky?", "odpoved_lemma": "Čapek", "zodpoveditelna": true, "typ": "most: autorství přes dílo"}
+{"otazka": "Kde se narodil Karel Čapek?", "odpoved_lemma": "Svatoňovice", "zodpoveditelna": true, "typ": "most: elipsa podmětu"}
+{"otazka": "Kde se narodil Neruda?", "odpoved_lemma": "kasárna", "zodpoveditelna": true, "typ": "most: elipsa podmětu"}
+{"otazka": "Čím byl Newton?", "odpoved_lemma": "fyzik", "zodpoveditelna": true, "typ": "výčet profesí"}
+{"otazka": "Čím byl Einstein?", "odpoved_lemma": "fyzik", "zodpoveditelna": true, "typ": "výčet profesí"}
+{"otazka": "S čím klesá gravitační síla?", "odpoved_lemma": "čtverec", "zodpoveditelna": true, "typ": "vztah veličin"}
+{"otazka": "Co popisuje zákon všeobecné gravitace?", "odpoved_lemma": "přitahování", "zodpoveditelna": true, "typ": "nominalizace v cíli"}
+{"otazka": "Kdo zformuloval zákony termodynamiky?", "odpoved_lemma": null, "zodpoveditelna": false, "typ": "svod: sloveso sedí, fakt chybí"}
+{"otazka": "Co napsal Einstein?", "odpoved_lemma": null, "zodpoveditelna": false, "typ": "svod: záměna osob"}
+{"otazka": "Kdy se narodil Ježíš?", "odpoved_lemma": null, "zodpoveditelna": false, "typ": "svod: v Markovi není"}
+{"otazka": "Odkud přišel Jan?", "odpoved_lemma": null, "zodpoveditelna": false, "typ": "svod: přišel Ježíš"}
+{"otazka": "Kam šel Newton?", "odpoved_lemma": null, "zodpoveditelna": false, "typ": "svod: doména nemá pohyb"}
+{"otazka": "Kolem čeho obíhá Slunce?", "odpoved_lemma": null, "zodpoveditelna": false, "typ": "svod: obrácený vztah"}
+{"otazka": "Kde se narodil Hrabal?", "odpoved_lemma": null, "zodpoveditelna": false, "typ": "svod: narodil se bratr"}
+{"otazka": "Kdo pokřtil Jana?", "odpoved_lemma": null, "zodpoveditelna": false, "typ": "svod: obrácená role v pasivu"}
+{"otazka": "Co koupili Hrabalovi v Nymburce?", "odpoved_lemma": null, "zodpoveditelna": false, "typ": "svod: chata je v Kersku"}
+{"otazka": "Čím byl Hrabalův otec?", "odpoved_lemma": null, "zodpoveditelna": false, "typ": "svod: lékař byl otec Čapkův"}

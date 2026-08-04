@@ -67,8 +67,27 @@ spuštění bez sítě spadl.)*
 
 ## Korpusy
 
-Zatím žádné. Až přijdou, platí pro ně totéž co pro model:
+Platí pro ně totéž co pro model:
 
 * **Wikipedie** — CC BY-SA 4.0, přenáší se s údajem o zdroji.
 * **Ekumenický překlad Bible** — autorský, **do veřejného repozitáře nesmí**
   (jen Kralická).
+
+Odtud plyne dělení, které je vidět v adresářích: co je licencované, leží
+v `data-persistent/` (gitignorováno), co je vlastní text, leží v `tests/data/`
+(v gitu). Rozvod je záměrný a **nesmí se obrátit** — soupis dole říká, co kam
+patří, aby to při dalším ingestu nikdo nemusel dohadovat.
+
+| co | kde | odkud | v gitu? |
+|---|---|---|---|
+| `korpus-101…107.json` (2 912 vět) | `cb_field/data-persistent/korpus/` | převod textů z `data-persistent/corpora/` (conBond2, `scripts/fetch-korpusy.sh`): Markovo evangelium, fyzika, spisovatelé | **ne** |
+| `korpus-201.json` (605) · `korpus-202.json` (600) | tamtéž | Wikipedie — vesmír, hudba | **ne** |
+| `korpus-301…326.json` (8 141) | tamtéž | Nový zákon po knihách | **ne** |
+| `korpus-001…003.json` (295 vět) | `cb_field/tests/data/korpus/` | vlastní texty (doprava, příroda, dějiny) + 54 vlastních otázek | ano |
+| `otazky-201.json` · `otazky-202.json` (2×60) | tamtéž | vlastní otázky k 201/202; soubor nese jen `questions` + `"corpus": …` | ano |
+| `trenink-otazky-korpusy.jsonl` (120) | `cb_field/tests/data/` | vlastní supervize (75 zodpověditelných) | ano |
+| `etalon-otazky-korpusy.jsonl` (40) | tamtéž | vlastní etalon (30 zodpověditelných) — **nikdy do tréninku** | ano |
+
+Otázkové soubory jsou vlastní tvorba, i když míří do licencovaného korpusu:
+nesou index věty a lemma odpovědi, ne její text. Kdo si projekt zkopíruje,
+dostane tedy měřicí aparát celý a texty k němu si pořídí sám.
