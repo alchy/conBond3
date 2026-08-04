@@ -170,6 +170,42 @@ def activation_field(result: MatchResult, sentence=None):
     return sentence, field
 
 
+def gaussian_peaks(result: MatchResult, sigma: float = 1.5) -> list:
+    """Věty podle VRCHOLU gaussovsky vyhlazeného pole aktivací.
+
+    Krok D návrhu (docs/rozsireni-otazky.md, J. 2026-08-04): vzor se
+    aplikuje klouzavým oknem a odpověď se vypíchne normálovou
+    distribucí — na každém kandidátu sedí zvon N(centrum, σ), zvony
+    se sčítají a věta se čte podle nejvyššího vrcholu. Shluk
+    souhlasných aktivací tak poráží osamělou špičku (ta se zvonem
+    rozprostře), zatímco normalizace průměrem zvýhodňovala krátké
+    věty s jedním silným tokenem („Máš ženu?", naměřeno na 12k
+    korpusu). Další ČTENÍ téhož pole vedle token/span/věta — žádná
+    nová mechanika; σ je parametr ke kalibraci.
+
+    Vrací [(věta, vrchol, index vrcholu)] sestupně.
+    """
+    import numpy as np
+
+    radius = max(1, int(3 * sigma))
+    offsets = np.arange(-radius, radius + 1)
+    kernel = np.exp(-offsets ** 2 / (2.0 * sigma * sigma))
+    kernel /= kernel.sum()
+    out = []
+    for sentence, _activation, candidates in sentence_activation(result):
+        field = np.zeros(len(sentence.tokens), dtype=np.float32)
+        for candidate in candidates:
+            field[candidate.center] = max(candidate.score, 0.0)
+        # full + řez místo mode="same": same vrací délku DELŠÍHO pole,
+        # takže u věty kratší než jádro by vrchol ukázal mimo věty
+        smoothed = np.convolve(field, kernel,
+                               mode="full")[radius:radius + len(field)]
+        peak = int(np.argmax(smoothed))
+        out.append((sentence, float(smoothed[peak]), peak))
+    out.sort(key=lambda row: -row[1])
+    return out
+
+
 def NOT(result: MatchResult, theta: float = THETA,
         epsilon: float = EPSILON) -> MatchResult:
     """Koš „co odpovědí NENÍ": obrácené znaménko skóre.

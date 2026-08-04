@@ -74,3 +74,54 @@ class TestOperaceMeziKosi(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestGaussovskyVrchol(unittest.TestCase):
+    """Krok D návrhu: věta podle VRCHOLU gaussovsky vyhlazeného pole —
+    shluk souhlasných aktivací poráží osamělou špičku, i silnější.
+    Přesně patologie „Máš ženu?": krátká věta s jedním tokenem vyhrává
+    normalizací průměrem, gaussovský vrchol ji srovná."""
+
+    def _result(self):
+        import numpy as np
+        from cb_field.field import SentenceField
+        from cb_field.matching import (Candidate, MatchResult,
+                                       ScoreDecomposition)
+        from cb_field.tests.test_graph import KREST, _t
+        dlouha = SentenceField(KREST, r=1, source="dlouhá se shlukem")
+        kratka = SentenceField((
+            _t(1, "Prší", "pršet", "VERB", 0, "root"),
+            _t(2, ".", ".", "PUNCT", 1, "punct")), r=1,
+            source="krátká špička")
+        dummy = ScoreDecomposition(None, np.array([], dtype=int),
+                                   np.array([]), 4)
+
+        def cand(sentence, center, score):
+            return Candidate(sentence=sentence, center=center,
+                             score=score, meet_score=0, cover_score=0,
+                             fit_score=0, topic_score=0, given_score=0,
+                             decomposition=dummy)
+
+        candidates = [cand(dlouha, 11, 1.0), cand(dlouha, 12, 1.0),
+                      cand(dlouha, 13, 1.0), cand(kratka, 0, 1.5)]
+        return MatchResult(outcome="odpoved",
+                           candidates=candidates), dlouha, kratka
+
+    def test_shluk_porazi_osamelou_spicku(self):
+        from cb_field.query import gaussian_peaks, sentence_activation
+        result, dlouha, kratka = self._result()
+        # normalizace průměrem preferuje degenerát (dokumentace vady):
+        prumer = sentence_activation(result)
+        self.assertIs(prumer[0][0], kratka)
+        # gaussovský vrchol preferuje shluk:
+        peaks = gaussian_peaks(result, sigma=1.5)
+        self.assertIs(peaks[0][0], dlouha)
+        self.assertGreater(peaks[0][1], peaks[1][1])
+        self.assertIn(peaks[0][2], (11, 12, 13))   # vrchol uvnitř shluku
+
+    def test_vrchol_je_v_mezich_pole(self):
+        from cb_field.query import gaussian_peaks
+        result, _dlouha, kratka = self._result()
+        for sentence, peak, center in gaussian_peaks(result):
+            self.assertGreaterEqual(peak, 0.0)
+            self.assertTrue(0 <= center < len(sentence.tokens))
