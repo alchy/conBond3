@@ -81,7 +81,20 @@ Zatím žádné. Až přijdou, platí pro ně totéž co pro model:
 | wiki životopisy a hesla (spisovatelé, fyzika) | česká Wikipedie, převzato z conBond2 `data/raw/` | **CC BY-SA 4.0** | **ne** — `cb_field/data-persistent/corpora/` |
 | Nový zákon (Markovo evangelium) | moderní český překlad, převzato z conBond2 | **licencovaný text** | **ne** — `cb_field/data-persistent/corpora/` |
 | `fyzika_gravitace.txt` | psáno ručně v conBond2 | vlastní | **ne** (drží se u ostatních korpusů) |
+| doména vesmír (`korpus-201.json`) | česká Wikipedie, staženo přes API | **CC BY-SA 4.0** | **ne** — `cb_field/data-persistent/korpus/` |
 
 Pořízení: `./cb_field/scripts/fetch-korpusy.sh` (kopíruje z `~/Projects/conBond2/data/raw/`).
 Měření (`docs/mereni-korpusy.md`) nese otisky souborů, aby čísla byla
 srovnatelná i bez dat v gitu.
+
+### Doména vesmír
+
+`korpus-201.json` pořizuje `./cb_field/scripts/fetch-vesmir.py` — stáhne
+plaintext extrakty (API `action=query&prop=extracts`) článků české
+Wikipedie počínaje heslem „Vesmír“ a jeho klíčovými navazujícími tématy:
+Vesmír, Velký třesk, Kosmologie, Galaxie, Mléčná dráha, Hvězda, Černá díra,
+Sluneční soustava, Slunce, Planeta, Země. Text je pod **CC BY-SA 4.0**,
+proto **do gitu nepatří** — soubor žije jen v gitignorované
+`cb_field/data-persistent/korpus/`. Blok = odstavec extraktu (bez sekcí
+Reference, Externí odkazy, Literatura, Poznámky, Související články),
+věty vznikají rozparsováním celého odstavce parserem cb-udpipe.
