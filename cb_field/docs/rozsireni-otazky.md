@@ -65,6 +65,26 @@ PŘIČTE vahou `W_EXPAND` (vážený člen, ne filtr).
   Nadřazený pojem v sousedství není vůbec (dálnice×silnice 0,00) —
   hyponymie musí přijít z definičních vět.
 
+### Smyčka expanze → promoce → trénink a její stabilizace
+
+Rozšíření (definice, vazby na autostrádu, auta…) mění statistiku
+grafu **poměrně značně** — po expanzi proto musí proběhnout **nová
+identifikace vertikál a nový trénink** (atomický promoční cyklus,
+který už existuje). Trénink se ale váže na ZMĚNU OSY: když selekt
+vrátí týž cílový stav (rovnost stavů, žádný práh), cyklus
+nepřeučuje. S počtem faktů se frekvence výměn slotů stabilizuje
+a přeučování řídne samo.
+
+**Naměřeno (2026-08-04):** výměny slotů na stejně velký přírůstek
+korpusu klesají monotónně —
+
+| vět v grafu | výměn slotů od minula |
+|---|---|
+| 3 064 | 124 (38 % osy) |
+| 6 129 | 101 (31 %) |
+| 9 193 | 77 (23 %) |
+| 12 258 | **51 (16 %)** |
+
 ## 4 · Co je naměřeno vs. co je hypotéza
 
 | tvrzení | stav |
@@ -73,6 +93,7 @@ PŘIČTE vahou `W_EXPAND` (vážený člen, ne filtr).
 | hloubka × učení nadaditivní (0,50) | NAMĚŘENO (3 517 vět) |
 | plné šíření učicích pytlů škodí | NAMĚŘENO (zavrženo) |
 | validační loss chrání zobecnění | NAMĚŘENO (kouřový test) |
+| osa se s růstem faktů stabilizuje (přeučování řídne) | NAMĚŘENO (výměny 38 % → 16 % na přírůstek) |
 | definice pokrývají potřebná slova | SONDA (218 lemmat; pokrytí vůči otázkám nezměřeno) |
 | okolí uzlu = použitelné rozšíření koše | SONDA (dálnice); vliv na dosah NEZMĚŘEN |
 | custom osy zlepšují samy o sobě | NEPOTVRZENO (C−B = 0) — hypotéza: projeví se až s expanzí a věnovaným učením |
@@ -134,6 +155,12 @@ PŘIČTE vahou `W_EXPAND` (vážený člen, ne filtr).
 - **F · Růst otázek** — agentní dávky otázek k fixovaným korpusům
   (formát s `answer_position`), cíl ≥ 500 otázek. Přejímka: validační
   křivky se stabilizují (menší rozptyl mezi semínky).
+- **G · Smyčka expanze → promoce → trénink** — po každé dávce
+  expanzí proběhne selekt vertikál; **přeučuje se jen při změně
+  cílového stavu osy** (rovnost stavů, žádný práh — mění to sémantiku
+  cyklu, proto k odsouhlasení). Cyklus hlásí počet výměn slotů;
+  přejímka: klesající křivka výměn (naměřený trend 38 % → 16 %
+  pokračuje) a žádné přeučení bez změny osy.
 
 ## 7 · Otevřená rozhodnutí (J.)
 
