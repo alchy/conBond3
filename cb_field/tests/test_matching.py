@@ -73,14 +73,14 @@ class TestPropojeni(unittest.TestCase):
         self.assertEqual(len(vysledek.candidates),
                          len(corpus[0].tokens))       # každý token kandidát
 
-    def test_tp3_uceni_premosti_ruzne_tvary(self):
-        """Kontrastivní krok spojí sloveso otázky se jménem odpovědi.
+    def test_tp3_uceni_stavi_metadatovy_vzor_ne_synonyma(self):
+        """Učení staví METADATOVÝ vzor, ne vazbu mezi dvěma slovy.
 
-        Otázka schválně bez slovního překryvu s faktem („Kam běžela
-        kočka?" nad „Šel pes do lesa.") — párování samo ji nezvládne
-        a právě tam musí učení postavit most běžet→les. Otázku
-        s překryvem už párování řeší s širokým odstupem a učení se
-        (správně) nespouští.
+        Pravidlo J. (2026-08-04): trénink nesmí utíkat k posilování
+        vazeb synonymy — vzory se dělají na metadatech a teprve pak se
+        povyšují ty, kde sedí vlastní lemma. Slovní most (běžet→les) by
+        platil pro jedinou dvojici slov; metadatový vzor (co poptává
+        „kam" → jaká kotva odpovídá) platí pro celý typ otázky.
         """
         from cb_field.learning import train_on_etalon
         corpus = _scena()
@@ -96,11 +96,17 @@ class TestPropojeni(unittest.TestCase):
         train_on_etalon(corpus, [{"otazka": "Kam běžela kočka?",
                                   "odpoved_lemma": "les",
                                   "zodpoveditelna": True}], _Parser())
-        hrana = corpus.registry.get_link("WORD=VERB:běžet",
-                                         "WORD=NOUN:les")
-        self.assertIsNotNone(hrana)
-        self.assertGreater(hrana[0], 0)
-        self.assertEqual(hrana[1], "etalon")
+        naucene = [(s, d, w) for s, d, w, zdroj
+                   in corpus.registry.links() if zdroj == "etalon"]
+        self.assertTrue(naucene, "učení nepostavilo žádnou hranu")
+        # žádná naučená hrana nesmí vést ze slova ani do slova
+        slovni = [(s, d) for s, d, _w in naucene
+                  if s.startswith("WORD=") or d.startswith("WORD=")]
+        self.assertEqual(slovni, [], f"učení postavilo synonyma: {slovni}")
+        # a poptávaná souřadnice otázky musí být mezi konci vazeb
+        konce = {s for s, _d, _w in naucene} | {d for _s, d, _w in naucene}
+        self.assertTrue(any(k.startswith(("QANCHOR=", "QLEM=", "ANCHOR="))
+                            for k in konce))
 
 
 if __name__ == "__main__":

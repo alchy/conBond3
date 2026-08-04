@@ -67,7 +67,20 @@ BETA2 = 0.999
 ADAM_EPS = 1e-8
 
 
-def _semantic_bag(sentence, rows, center=None) -> dict:
+#: Na čem se učí. Pravidlo J. (2026-08-04): *„vzory pro trénink musí
+#: pokrývat variabilní plochu, ale nesmí utíkat k posilování vazeb
+#: synonymy — ideálně pracujeme na vzorech jen s metadaty a teprve poté
+#: můžeme povýšit ty, kde sedí vlastní lemma."*
+#:
+#: Učit hrany mezi WORD= znamená stavět synonyma pár po páru; naměřeno
+#: (§ 15), že se mezi otázkami NEPŘENÁŠEJÍ — trénink 1 → 6/23 a etalon
+#: beze změny. Metadatový vzor je typový, takže naučené platí pro každou
+#: další otázku téhož druhu. Slova se proto z učicího pytle vypouštějí;
+#: v párování zůstávají (adresují podnět), jen se na nich neučí.
+LEARN_PREFIXES = tuple(p for p in MATCH_PREFIXES if p != "WORD=")
+
+
+def _semantic_bag(sentence, rows, center=None, prefixes=None) -> dict:
     """{vertikála: váha} přes dané řádky, jen párovací vertikály.
 
     center: řádek se zdůrazněním W_CENTER — týž profil, jaký má koš
@@ -75,11 +88,12 @@ def _semantic_bag(sentence, rows, center=None) -> dict:
     kterou optimalizuje: bez zdůraznění se odpověď ležící v okně obou
     kandidátů v rozdílu pytlů vyruší a most na ni nikdy nevznikne.
     """
+    allowed = LEARN_PREFIXES if prefixes is None else prefixes
     bag = {}
     for i in rows:
         emphasis = W_CENTER if i == center else 1.0
         for key, weight in sentence.complete[i].items():
-            if key.startswith(MATCH_PREFIXES) \
+            if key.startswith(allowed) \
                     and not key.startswith("WORD=PUNCT"):
                 bag[key] = bag.get(key, 0.0) + weight * emphasis
     return bag
@@ -98,8 +112,12 @@ def hebb(corpus, eta: float = ETA_HEBB,
     registry = corpus.registry
     bags = []
     for sentence in corpus:
-        bags.append(frozenset(
-            _semantic_bag(sentence, range(len(sentence.tokens)))))
+        # Hebb je mimo přejímací cestu a pracuje na souvýskytech slov
+        # (proto MATCH_PREFIXES, ne LEARN_PREFIXES) — až se vrátí nad
+        # strukturu (D4), rozhodne se, na které úrovni má běžet.
+        bags.append(frozenset(_semantic_bag(
+            sentence, range(len(sentence.tokens)),
+            prefixes=MATCH_PREFIXES)))
     total = len(bags)
     count = Counter()
     pair_count = Counter()
