@@ -334,3 +334,56 @@ ne na dvě.
   uzly i hrany se zdrojem `dialog`;
 - `reply` vrací kandidáta i při mezeře (nemlčí), a `missing` je prázdné
   u otázek, které korpus pokrývá.
+
+---
+
+## Krok 5 · Odpověď jako věta
+
+**Proč.** Token je nejslabší úroveň: uvnitř věty se `Jordán` (2,088) od
+`Galileje` (2,068) neodliší. Výběr věty naopak funguje (§ 22). Krok
+nepřidává schopnost — přestává zahazovat tu, kterou systém prokazatelně
+má.
+
+**Co vzniká.** `reply()` dostane úroveň výstupu jako parametr:
+`sentence` (výchozí), `span`, `token`. Všechny tři už jsou v `query.py`
+hotové a měřené; mění se jen to, co je výchozí. Zpětná kompatibilita
+se nedrží (J.) — token zůstává jako volba, ne jako závazek.
+
+### Příklad na reálných datech
+
+Táž otázka ve třech rozlišeních, korpus 2 912 vět:
+
+    Kde byl pokřtěn Ježíš?
+      token → řekl  (2,209)                              ŠPATNĚ
+      span  → jim řekl :                                 ŠPATNĚ
+      věta  → V těch dnech přišel Ježíš z Nazareta
+              v Galileji a byl v Jordánu pokřtěn od Jana SPRÁVNĚ
+
+Vítězný token pochází z jiné pasáže („Ježíš jim řekl: Kalich…"), takže
+span kolem něj je taky mimo. Agregace po větách ale vybere tu správnou.
+Jeden výpočet, tři čtení, dva různé výsledky.
+
+### Dvojí měření je podmínka, ne ozdoba
+
+Etalon korpusů, 30 zodpověditelných:
+
+| metrika | výsledek |
+|---|---|
+| přesnost@1 na tokenu | 15/30 = **0,50** |
+| větná přesnost | 20/30 = **0,67** |
+
+Rozdíl 0,50 → 0,67 **není zlepšení systému, je to změna otázky**: pět
+otázek uspěje jen tím, že se odpouští vnitřní výběr — věta odpověď
+obsahuje, ale který token to je, systém pořád neví.
+
+Proto se obě metriky počítají a v reportech uvádějí VEDLE SEBE. Jinak
+by řada měření vypadala, že skočila o 17 bodů, a přitom se nezměnilo
+nic než definice úspěchu — přesně to, před čím varuje workflow § B5
+(číslo bez protiváhy se neuvádí).
+
+### Přejímací kritérium
+
+- na otázce o křtu vrátí větu s Jordánem;
+- report uvádí tokenovou i větnou přesnost vedle sebe, nikdy jen jednu;
+- volba `token` dá týž výsledek jako dnešní cesta (kontrola, že se
+  změnilo jen výchozí rozlišení, ne výpočet).
