@@ -6,7 +6,9 @@ Kandidátem je KAŽDÝ token korpusu; žádná brána, žádný obsahový filtr,
 
     skóre(a ve větě f) = cos(q̃, okno)                setkání v uzlech
                        + (W_CENTER−1) · cos(q̃, střed)  zdůraznění středu
-                       + W_COVER · min_G s̃(f)        pokrytí otázky
+                       + W_COVER · min_G s̃(f)        podnět: pokrytí
+                       + W_FIT · cos(kotvy q, kotvy středu)  odpověď:
+                                                   sedí střed do neznámé
                        + W_TOPIC · cos(slova q, slova f)   bonus tématu
                        + W_GIVEN · cos(slova q, slova středu)  postih za
                                                    odpověď slovem, které
@@ -67,9 +69,18 @@ EPSILON = 0.057
 #: W_GIVEN — záporná váha za střed, jehož slovo otázka sama uvádí
 #:           (odpověď zaplňuje neznámou; místo vyloučení jen táhne dolů).
 #: W_COVER — pokrytí otázky: mohutnost důkazu pro řez θ (viz hlavička).
+#: W_FIT   — sedí střed do NEZNÁMÉ? Shoda poptávané souřadnice otázky
+#:           (QANCHOR stéká šířením do ANCHOR) s kotvou středu.
+#:           VÝCHOZÍ 0: samotné kotvy jsou na rozlišení odpovědi moc
+#:           hrubé (space/time/quantity má kdeco) a kosinus nad nimi je
+#:           skoro binární — naměřeno r=2: 0,94 → 0,85 při W_FIT=1.
+#:           Člen zůstává jako páka; jeho pořádnou podobou je query
+#:           basket (celý metadatový vzor koše odpovědi, ne jen kotva)
+#:           — rozhodnutí J. 2026-08-04, postup-krok4 § 16.
 W_TOPIC = 1.0
 W_GIVEN = -3.0
 W_COVER = 1.0
+W_FIT = 0.0
 
 #: Váhový profil koše kandidáta: střed × W_CENTER, okolí × 1. Bez
 #: zdůraznění středu vyhrává soused odpovědi (veze totéž okno) —
@@ -105,7 +116,8 @@ class Candidate:
     center: int
     score: float
     meet_score: float          # setkání v uzlech (kosinus, směr)
-    cover_score: float         # pokrytí otázky (mohutnost)
+    cover_score: float         # pokrytí otázky — podnět (mohutnost)
+    fit_score: float           # sedí střed do neznámé — odpověď
     topic_score: float         # bonus tématu (celé větě)
     given_score: float         # postih za dané slovo
     top_nodes: tuple           # rozklad: (vertikála, příspěvek)
@@ -131,6 +143,20 @@ def _semantic_indices(registry, vector_len):
     mask = np.zeros(vector_len, dtype=np.float32)
     for i, key in enumerate(registry.keys()[:vector_len]):
         if key.startswith(MATCH_PREFIXES):
+            mask[i] = 1.0
+    return mask
+
+
+def _anchor_indices(registry, vector_len):
+    """Maska kotev (ANCHOR=…) — souřadnice, na kterou se otázka ptá.
+
+    Tázací kotva otázky (QANCHOR=space) stéká šířením do ANCHOR=space,
+    takže obě strany se potkávají v týchž sloupcích; maskou se z pytle
+    vybere právě ta část, která nese SOUŘADNICI, ne obsah.
+    """
+    mask = np.zeros(vector_len, dtype=np.float32)
+    for i, key in enumerate(registry.keys()[:vector_len]):
+        if key.startswith("ANCHOR="):
             mask[i] = 1.0
     return mask
 
@@ -177,6 +203,7 @@ def _fact_bags(corpus):
     links = registry.link_matrix()
     semantic = _semantic_indices(registry, n)
     words = _word_block(registry, n)
+    anchors = _anchor_indices(registry, n)
     r = corpus.r
 
     # Kontextové pytle vět (druhé r): surový pytel celé věty, ať ho
@@ -246,8 +273,15 @@ def _fact_bags(corpus):
             center_words = rows[center] * words
             cidx = np.nonzero(center_words)[0]
             cvals = center_words[cidx]
+            # Kotvy STŘEDU (souřadnice, kterou střed nabízí) — druhá
+            # strana členu W_FIT. Šíření napřed, ať „v Brně" stekne
+            # z dir:at do space; maska až po něm.
+            center_anchor = saturated_unit(rows[center]) * anchors
+            aidx = np.nonzero(center_anchor)[0]
+            avals = center_anchor[aidx]
             centers.append((idx, combined[idx],
-                            cidx, cvals, float(np.linalg.norm(cvals))))
+                            cidx, cvals, float(np.linalg.norm(cvals)),
+                            aidx, avals, float(np.linalg.norm(avals))))
         wvals = sentence_words[widx]
         sentences.append((widx, wvals, float(np.linalg.norm(wvals)),
                           sat_idx, sentence_sat[sat_idx], centers))
@@ -259,7 +293,7 @@ def _fact_bags(corpus):
 def match(question: SentenceField, corpus: Corpus,
           theta: float = THETA, epsilon: float = EPSILON,
           w_topic: float = W_TOPIC, w_given: float = W_GIVEN,
-          w_cover: float = W_COVER,
+          w_cover: float = W_COVER, w_fit: float = W_FIT,
           top_nodes: int = 4, top_candidates: int | None = None
           ) -> MatchResult:
     """Propojí otázku s korpusem — čistě váhami, bez filtrů.
@@ -287,6 +321,10 @@ def match(question: SentenceField, corpus: Corpus,
     q_norm = float(np.linalg.norm(q_sat))
     q_words = q_raw * words
     q_words_norm = float(np.linalg.norm(q_words))
+    # Poptávaná souřadnice: QANCHOR otázky stekl šířením do ANCHOR,
+    # takže se maskou vybere právě to, na co se otázka ptá.
+    q_anchor = q_sat * _anchor_indices(registry, n)
+    q_anchor_norm = float(np.linalg.norm(q_anchor))
 
     # Dané obsahové osy otázky (pro pokrytí): WORD= řádků bez QLEM= —
     # tázací osa je neznámá, ta se nekryje, ta se odpovídá.
@@ -317,15 +355,18 @@ def match(question: SentenceField, corpus: Corpus,
                 for axis, j in ((a, int(np.searchsorted(sat_idx, a)))
                                 for a in given_axes))
             cover = w_cover * weakest
-        for center, (idx, vals, cidx, cvals, cnorm) \
-                in enumerate(centers):
+        for center, (idx, vals, cidx, cvals, cnorm,
+                     aidx, avals, anorm) in enumerate(centers):
             contributions = q_sat[idx] * vals / q_norm if q_norm \
                 else np.zeros(len(idx), dtype=np.float32)
             meet = float(contributions.sum())
             c_denominator = q_words_norm * cnorm
             given = float(w_given * (q_words[cidx] @ cvals)
                           / c_denominator) if c_denominator else 0.0
-            score = meet + cover + topic + given
+            a_denominator = q_anchor_norm * anorm
+            fit = float(w_fit * (q_anchor[aidx] @ avals)
+                        / a_denominator) if a_denominator else 0.0
+            score = meet + cover + topic + given + fit
             # top-K bez plného řazení: po Hebbovi mají rozšířené pytle
             # tisíce os a argsort × 58k kandidátů stál hodiny (naměřeno
             # samplem); argpartition je O(n)
@@ -338,6 +379,7 @@ def match(question: SentenceField, corpus: Corpus,
             candidates.append(Candidate(
                 sentence=sentence, center=center, score=score,
                 meet_score=round(meet, 6), cover_score=round(cover, 6),
+                fit_score=round(fit, 6),
                 topic_score=round(topic, 6), given_score=round(given, 6),
                 top_nodes=tuple(
                     (registry.key(int(idx[i])),

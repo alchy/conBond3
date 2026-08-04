@@ -316,3 +316,39 @@ správných odpovědí za 10/10 správných mlčení proti θ od oka
    smíšené?
 3. Učení mlčení na korpusech potřebuje buď víc epoch/větší η pro
    záporný směr, nebo cíl vázaný na pokrytí (mrtvá osa už je člen).
+
+## 16 · Obrat: query basket místo odpovídače (2026-08-04, J.)
+
+Zadání J. mění cíl kroku 4: **nehledáme přímou odpověď**. Otázka má
+učením vést k *optimálnímu koši odpovědi* (query basket metadata)
+a ten se teprve fituje na fakty; k odpovědi se systém nemusí dostat
+přímo, může být ukázána **logickými operacemi** nad koši. Vedle
+metadat otázky do toho vstupují **data o logických vazbách** (Bartlová:
+Metody řešení slovních úloh pomocí logiky — šipkový diagram = graf
+implikací, Vennovy diagramy = průniky košů). Spec: `docs/query-basket.md`.
+
+Proč to sedí na naměřené: párové mosty (WORD=X ↔ WORD=Y) se mezi
+otázkami NEPŘENÁŠEJÍ (§ 15: trénink 1 → 6/23, etalon beze změny).
+Query basket je typový profil (podpis otázky), takže naučené platí pro
+každou další otázku téhož druhu — tudy vede generalizace.
+
+**Dnešní W_FIT je slepá ulička v malém**: člen „sedí střed do neznámé"
+jsem postavil jen z kotev a kotvy jsou moc hrubé (space/time/quantity
+má kdeco), kosinus nad nimi je skoro binární. Naměřeno r=2: 0,94 →
+0,85 při W_FIT=1; 0,3 pomohlo na r=1 (0,85 → 0,88) a uškodilo na r=2.
+Výchozí hodnota proto 0 — člen zůstává jako páka, ale jeho pořádnou
+podobou je celý metadatový vzor koše, ne jedna kotva.
+
+**Mřížka dvojitého r** (korpusy, etalon 40, bez učení, θ=0,45):
+
+| r_slovo \ r_věta | 0 | 1 | 2 |
+|---|---|---|---|
+| 1 | 0,43 | 0,43 | 0,43 |
+| 2 | **0,47** | 0,47 | 0,40 |
+| 3 | 0,47 | 0,40 | 0,37 |
+
+Testbed (nezávislé věty): r=1 0,85 · **r=2 0,94** · r=3 0,88 · r=4 0,85.
+Závěr: r_slovo=2 je optimum na obou sadách (potvrzeno i odhadem J.);
+kontext vět dnes nepomáhá — pytel se rozředí dřív, než přinese fakt.
+Až query basket umí operovat nad koši, má r_věta co obsluhovat
+(odvození přes hranice vět); dnes je to jen širší pytel.
