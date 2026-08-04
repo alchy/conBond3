@@ -237,6 +237,57 @@ class TestOdvolaniEpochy(unittest.TestCase):
                          pred)
 
 
+class TestPohledNaVahy(unittest.TestCase):
+    """Co se model naučil — v průběhu, ne až na konci."""
+
+    def test_epocha_hlasi_KTERE_hrany_zmenila(self):
+        corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE)
+        trener = _trener(corpus, margin=9.0, lr=0.5)
+
+        zprava = trener.train([ZAZNAM], max_epochs=1)
+
+        zmeny = zprava.epochs[0]["zmeny"]
+        self.assertTrue(zmeny)
+        src, dst, stara, nova = zmeny[0]
+        self.assertNotEqual(stara, nova)
+        self.assertIsInstance(src, str)
+
+    def test_zmeny_jsou_serazene_podle_VELIKOSTI_kroku(self):
+        corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE)
+        trener = _trener(corpus, margin=9.0, lr=0.5)
+
+        zmeny = trener.train([ZAZNAM], max_epochs=1).epochs[0]["zmeny"]
+
+        kroky = [abs(nova - stara) for _, _, stara, nova in zmeny]
+        self.assertEqual(kroky, sorted(kroky, reverse=True))
+
+    def test_odvolana_epocha_hlasi_co_se_ZAHODILO(self):
+        # i odvolaná epocha má být čitelná: člověk chce vidět, co se
+        # systém pokusil naučit a proč to bylo vráceno
+        corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE, VEZENI)
+        trener = _trener(corpus, margin=9.0, lr=0.5)
+        hodnoty = iter([0.1, 9.9])
+        trener._validacni_loss = lambda entries: next(hodnoty)
+
+        zprava = trener.train([ZAZNAM], max_epochs=1)
+
+        self.assertTrue(zprava.epochs[0]["odvolano"])
+        self.assertTrue(zprava.epochs[0]["zmeny"])
+
+    def test_souhrn_rika_MEZI_KTERYMI_vrstvami_se_ucilo(self):
+        corpus = _korpus(KRESTA, SYNAGOGA, GRAVITACE)
+        trener = _trener(corpus, margin=9.0, lr=0.5)
+
+        zprava = trener.train([ZAZNAM], max_epochs=1)
+
+        # {(prefix zdroje, prefix cíle): počet hran}
+        souhrn = zprava.epochs[0]["vrstvy"]
+        self.assertTrue(souhrn)
+        for (src, dst), pocet in souhrn.items():
+            self.assertNotIn("=", src)      # jen prefix, ne celý klíč
+            self.assertGreater(pocet, 0)
+
+
 class TestZasah(unittest.TestCase):
 
     def test_sentence_hit_hleda_lemma_mezi_TOP_vetami(self):

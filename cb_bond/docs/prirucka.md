@@ -133,3 +133,24 @@ z osmi špatných, žádný na správného. Ablace ale sedí líp: bez pokrytí
 
 Opravuje se to i tak: dvě pravidla pro totéž („co otázka tvrdí") jsou
 o jedno víc, než kolik jich má být, a příště by se rozešla.
+
+## Když učení nedává smysl, podívej se na váhy
+
+`./run-python cb_bond/scripts/pohled-na-vahy.py` — vypíše, mezi
+kterými vrstvami se učilo a které hrany o tom rozhodly. Návod ke čtení
+je v `pohled-na-vahy.md`; nejkratší verze: **znaménko je důležitější
+než velikost**, `QLEM → ANCHOR` má být mezi prvními třemi, a `WORD=`
+tam nesmí být vůbec.
+
+Dvě naměřené pasti, které tenhle pohled odhalil:
+
+**Odvolání epochy bez tolerance neučí vůbec.** Epocha srazila trénink
+0,1144 → 0,0950 a validaci zhoršila o 0,00006 — a odvolala se. Šest
+stotisícin je šum v poslední cifře, ne zhoršení. Odvolání proto snáší
+1 % relativně (`ContrastiveTrainer.tolerance`).
+
+**Cache matcheru musí nést `link_version`, ne počet vazeb.** Učení mění
+VÁHY existujících hran, takže počet zůstane stejný a cache by dál
+vracela zastaralé pytle — validace by se pak měřila na stavu, který už
+neplatí. Zadání to předepisuje (`cache na (růst, link_version,
+axis_version, …)`) a chybělo to.

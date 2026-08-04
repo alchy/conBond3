@@ -178,6 +178,10 @@ class ContrastiveTrainer:
         #: epocha srazila trénink 0,114 → 0,095 a validaci zhoršila
         #: o 0,00006 — a odvolala se, takže se systém neučil vůbec.
         self.tolerance = tolerance
+        #: Kolik největších změn vah si epocha zapamatuje. Není to
+        #: strop učení, jen strop VÝPISU — hran bývá stovky a člověk
+        #: chce vidět ty, které rozhodly.
+        self.top_changes = 20
         self.report = TrainingReport()
         self._adam: dict = {}
 
@@ -209,6 +213,9 @@ class ContrastiveTrainer:
         return self.report
 
     def _epocha(self, entries) -> dict:
+        # Váhy na začátku epochy — proti nim se pak čte, CO se naučilo.
+        pred = {(src, dst): vaha
+                for src, dst, vaha in self.corpus.registry.links()}
         loss_celkem = korekci = hran = 0
         vrcholy_spravnych = []
         for zaznam in entries:
@@ -221,9 +228,12 @@ class ContrastiveTrainer:
             hran += zmen
             if vrchol is not None:
                 vrcholy_spravnych.append(vrchol)
+        zmeny = _zmeny_vah(pred, self.corpus.registry)
         return {"loss": round(loss_celkem / max(1, len(entries)), 4),
                 "korekci": korekci, "hran": hran,
-                "vrchol_median": round(_median(vrcholy_spravnych), 4)}
+                "vrchol_median": round(_median(vrcholy_spravnych), 4),
+                "zmeny": zmeny[:self.top_changes],
+                "vrstvy": _po_vrstvach(zmeny)}
 
     def _krok(self, zaznam):
         """Jeden učicí krok; None, když se nemá z čeho učit."""
@@ -336,6 +346,36 @@ class ContrastiveTrainer:
         from cb_field import SentenceField
         return SentenceField.from_text(text, self.parser, r=self.corpus.r,
                                        registry=self.corpus.registry)
+
+
+def _zmeny_vah(pred: dict, registry) -> list:
+    """Které hrany se změnily a jak — seřazeno podle VELIKOSTI kroku.
+
+    Čte se to jako „co se model naučil": zdroj, cíl, stará a nová váha.
+    Zaznamenává se i u epochy, která se pak odvolá — člověk chce vidět,
+    co se systém pokusil naučit, ne jen že to bylo vráceno.
+    """
+    zmeny = []
+    for src, dst, nova in registry.links():
+        stara = pred.get((src, dst), 0.0)
+        if nova != stara:
+            zmeny.append((src, dst, stara, nova))
+    zmeny.sort(key=lambda z: -abs(z[3] - z[2]))
+    return zmeny
+
+
+def _po_vrstvach(zmeny) -> dict:
+    """{(prefix zdroje, prefix cíle): počet hran} — kde se učilo.
+
+    Hrubší pohled než jednotlivé hrany: řekne, MEZI KTERÝMI vrstvami
+    reprezentace učení pracovalo (QLEM→ANCHOR, LEM→CUSTOM…), což je
+    první věc, na kterou se člověk ptá, když čísla nesedí.
+    """
+    souhrn: dict = {}
+    for src, dst, _, _ in zmeny:
+        klic = (src.split("=", 1)[0], dst.split("=", 1)[0])
+        souhrn[klic] = souhrn.get(klic, 0) + 1
+    return dict(sorted(souhrn.items(), key=lambda d: -d[1]))
 
 
 def _rozdil_pytlu(spravny: dict, soupere: dict) -> dict:

@@ -181,7 +181,11 @@ vstupní vrstvy a pole by tiše přestala aktivovat `CUSTOM=`.
 | `ContrastiveTrainer(corpus, matcher, parser, *, split, lr=0.003, margin=0.2, sigma=1.5)` | učí vazby registru; parser i matcher parametrem |
 | `train(entries, max_epochs=10)` | `TrainingReport`; epocha, která zhorší validaci, se odvolá |
 | `sentence_hit(result, lemma, corpus, top=3)` | nese některá z TOP vět lemma odpovědi? |
+| `TrainingReport.epochs[i]["zmeny"]` | `[(zdroj, cíl, stará, nová)]` — CO se v epoše naučilo, podle velikosti kroku |
+| `TrainingReport.epochs[i]["vrstvy"]` | `{(prefix zdroje, prefix cíle): počet}` — MEZI KTERÝMI vrstvami se učilo |
+| `ContrastiveTrainer.top_changes` | kolik změn si epocha pamatuje (výchozí 20); strop VÝPISU, ne učení |
 
 | co | jak |
 |---|---|
 | přejímka kroku 5 | `./run-python cb_bond/scripts/prejimka-uceni.py` |
+| co se model naučil | `./run-python cb_bond/scripts/pohled-na-vahy.py [kolik]` — návod ke čtení je v `docs/pohled-na-vahy.md` |
