@@ -146,6 +146,74 @@ def hebb(corpus, eta: float = ETA_HEBB,
     return {"vet": total, "paru": len(pair_count), "hran": added}
 
 
+#: Práh doložení pro typovou hranu: kolikrát nejmíň musí slovo stát
+#: v koši s kotvou, aby se typ naučil. Není to filtr obsahu — je to
+#: mez důvěryhodnosti doložení (jeden výskyt není vzor).
+MIN_TYPE_EVIDENCE = 2
+
+
+def learn_types(corpus, eta: float = 0.5,
+                min_evidence: int = MIN_TYPE_EVIDENCE) -> dict:
+    """Typ obecného jména z jeho okolí: „řeka je místo" (J. 2026-08-04).
+
+    Řetěz, který J. ukázal: *kde → místo ← řeka*. Uzel „místo"
+    v systému je (`ANCHOR=space`) a tázací „kde" k němu vede axiomem;
+    chybí druhá půlka — obecná jména dimenzi nedostávají. Vlastní jméno
+    „Jordán" má space z NameType=Geo, ale „řeka" nemá nic než dir:at
+    z předložky, takže se s otázkou nikdy nepotká.
+
+    Typ se proto UČÍ z textu, ne z tabulky (zákaz konkrétna): slovo
+    dostane hranu ke kotvě, se kterou opakovaně stojí v jednom koši,
+    silou NPMI (týž princip jako Hebb, jen cílený na strukturu, ne na
+    souvýskyt slov — tím se naplňuje dluh D4 „Hebb až nad strukturou").
+    Hrana vede WORD= → ANCHOR=, tedy slovo se povyšuje na typ; hrany
+    slovo↔slovo tu nevznikají, zákaz synonym platí.
+    """
+    from collections import Counter
+    registry = corpus.registry
+    pair = Counter()
+    word_count = Counter()
+    anchor_count = Counter()
+    total = 0
+    for sentence in corpus:
+        rows = sentence.complete
+        for center in range(len(rows)):
+            window = _window_rows(sentence, center, corpus.r)
+            words = {k for k in rows[center]
+                     if k.startswith("WORD=") and "PUNCT" not in k}
+            # dimenze, ne upřesnění: space/time/entity/quantity —
+            # „dir:at" nese předložka a o typu jména nevypovídá
+            anchors = {k for i in window for k in rows[i]
+                       if k.startswith("ANCHOR=") and ":" not in k}
+            if not words:
+                continue
+            total += 1
+            for w in words:
+                word_count[w] += 1
+                for a in anchors:
+                    pair[(w, a)] += 1
+            for a in anchors:
+                anchor_count[a] += 1
+
+    added = 0
+    for (word, anchor), n in pair.items():
+        if n < min_evidence:
+            continue
+        expected = word_count[word] * anchor_count[anchor] / max(total, 1)
+        if expected <= 0:
+            continue
+        pmi = math.log(n / expected)
+        denominator = -math.log(n / max(total, 1))
+        npmi = pmi / denominator if denominator > 0 else 0.0
+        if npmi <= 0:
+            continue
+        weight = max(-1.0, min(1.0, eta * npmi))
+        if registry.get_link(word, anchor) is None:
+            added += 1
+        registry.link(word, anchor, weight, source="hebb")
+    return {"kosu": total, "dvojic": len(pair), "typovych_hran": added}
+
+
 def _window_rows(sentence, center, r):
     return range(max(0, center - r), min(len(sentence.tokens),
                                          center + r + 1))

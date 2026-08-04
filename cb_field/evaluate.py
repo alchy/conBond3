@@ -97,6 +97,56 @@ def diagnose(result, expected_lemma, corpus):
     return ("SLABÁ" if d > 1e-6 else "NEPŘESNÁ"), round(d, 3)
 
 
+def reach_report(corpus, etalon, parser, top=3) -> dict:
+    """Obžaloba mechanismu: je odpověď v dosahu r mezi kandidáty?
+
+    Kritérium J. (2026-08-04): *„pokud v kontextu existuje v daném r
+    odpověď pro otázku, pak to, že není mezi kandidáty, znamená, že
+    mechanismus je špatný, učení nemělo správné zobecnění."*
+
+    Rozlišuje tři případy:
+      mimo_dosah  koš odpovědi nenese ani jedno DANÉ slovo otázky —
+                  legitimní selhání, podnět a odpověď se nesešly v koši
+      v_dosahu_ok odpověď je v dosahu a mezi prvními `top` kandidáty
+      **vada**    odpověď je v dosahu, a přesto propadla — tady se
+                  neomlouvá ani velikost báze, ani data
+
+    Vrací počty a seznam vadných otázek (ty se pitvají, ne průměrují).
+    """
+    counts = {"v_dosahu_ok": 0, "mimo_dosah": 0, "vada": 0}
+    vady = []
+    for entry in etalon:
+        if not entry["zodpoveditelna"]:
+            continue
+        question = SentenceField.from_text(entry["otazka"], parser,
+                                           r=corpus.r,
+                                           registry=corpus.registry)
+        given = {key for row in question.complete for key in row
+                 if key.startswith("WORD=") and "PUNCT" not in key
+                 and not any(k.startswith("QLEM=") for k in row)}
+        result = match(question, corpus, theta=float("-inf"), epsilon=0.0)
+        correct = next((c for c in result.candidates
+                        if c.token.lemma == entry["odpoved_lemma"]), None)
+        if correct is None:
+            counts["mimo_dosah"] += 1
+            continue
+        window = range(max(0, correct.center - corpus.r),
+                       min(len(correct.sentence.tokens),
+                           correct.center + corpus.r + 1))
+        in_reach = any(key in given for i in window
+                       for key in correct.sentence.complete[i])
+        rank = result.candidates.index(correct) + 1
+        if not in_reach:
+            counts["mimo_dosah"] += 1
+        elif rank <= top:
+            counts["v_dosahu_ok"] += 1
+        else:
+            counts["vada"] += 1
+            vady.append((entry["otazka"], entry["odpoved_lemma"], rank))
+    counts["vady"] = vady
+    return counts
+
+
 def evaluate_corpus(corpus, etalon, parser, theta=None):
     """Oznámkuje celý etalon; vrací (counts, přesnost, mlčení, detaily).
 
