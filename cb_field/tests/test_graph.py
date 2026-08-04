@@ -9,7 +9,7 @@ proto nejsou vypsané.
 
 import unittest
 
-from cb_field.graph import FactGraph, promote_verticals
+from cb_field.graph import FactGraph, light_up, promote_verticals
 from cb_udpipe import Token
 
 
@@ -141,6 +141,81 @@ class TestFactGraph(unittest.TestCase):
         self.assertEqual(graph.nodes(), ())
         self.assertEqual(graph.stats()["uzlu"], 0)
         self.assertEqual(graph.stats()["prumerny_stupen"], 0.0)
+
+
+class TestVysviceniGrafu(unittest.TestCase):
+    """Krok H: kandidátní věty rozsvítí uzly, lemata otázky znásobí
+    jas rozsvícených a záře teče po hranách — Jordán (visí na
+    posíleném pokřtěný) zjasní nad Galilejí (visí na přijít)."""
+
+    def test_jordan_zjasni_nad_galileji(self):
+        graph = FactGraph()
+        graph.add_sentence(_Sentence(KREST))
+        lights = light_up(graph, [(_Sentence(KREST), 1.0)],
+                          question_lemmas={"pokřtěný", "Ježíš"})
+        self.assertGreater(lights["PROPN:Jordán"],
+                           lights["PROPN:Galilej"])
+        # posílené lemma otázky září víc než neposílený uzel
+        self.assertGreater(lights["ADJ:pokřtěný"], lights["NOUN:den"])
+
+    def test_nerozsvicene_uzly_zustavaji_tmave(self):
+        graph = FactGraph()
+        graph.add_sentence(_Sentence(KREST))
+        graph.add_sentence(_Sentence((
+            _t(1, "Prší", "pršet", "VERB", 2, "nsubj"),
+            _t(2, "voda", "voda", "NOUN", 0, "root"))))
+        lights = light_up(graph, [(_Sentence(KREST), 1.0)],
+                          question_lemmas=set())
+        self.assertNotIn("VERB:pršet", lights)
+
+
+class TestEmitorDelt(unittest.TestCase):
+    """Krok I: cokoli se děje v grafu, se VŽDY projeví ve vizualizaci
+    — každá mutace i vysvícení jde přes emitor delt (viewBase2)."""
+
+    def test_mutace_grafu_emituji_delty(self):
+        events = []
+        graph = FactGraph(emit=events.append)
+        graph.add_sentence(_Sentence(KREST))
+        kinds = {e["op"] for e in events}
+        self.assertIn("node", kinds)
+        self.assertIn("edge", kinds)
+        nodes = {e["id"] for e in events if e["op"] == "node"}
+        self.assertIn("PROPN:Jordán", nodes)
+
+    def test_vysviceni_emituje_styl(self):
+        events = []
+        graph = FactGraph(emit=events.append)
+        graph.add_sentence(_Sentence(KREST))
+        events.clear()
+        light_up(graph, [(_Sentence(KREST), 1.0)],
+                 question_lemmas={"pokřtěný"})
+        styles = [e for e in events if e["op"] == "style"]
+        self.assertTrue(styles)
+        self.assertTrue(all("glow" in e for e in styles))
+
+
+class TestViewbaseAdapter(unittest.TestCase):
+
+    def test_delty_se_prelozi_na_objektove_api(self):
+        from cb_field.graphview import viewbase_emitter
+
+        class _Window:
+            calls = []
+            def ensure_node(self, node_id, **kw):
+                self.calls.append(("node", node_id))
+            def ensure_edge(self, src, dst, **kw):
+                self.calls.append(("edge", src, dst))
+            def update_node(self, node_id, **kw):
+                self.calls.append(("style", node_id, kw.get("glow")))
+
+        window = _Window()
+        graph = FactGraph(emit=viewbase_emitter(window))
+        graph.add_sentence(_Sentence(KREST))
+        light_up(graph, [(_Sentence(KREST), 1.0)],
+                 question_lemmas={"pokřtěný"})
+        kinds = {c[0] for c in window.calls}
+        self.assertEqual(kinds, {"node", "edge", "style"})
 
 
 class TestPromoteVerticals(unittest.TestCase):

@@ -57,11 +57,16 @@ class FactGraph:
     tím, že se nezavolá.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, emit=None) -> None:
         self._nodes: dict[str, NodeStat] = {}
         #: (od, do, deprel, zdroj) → váha; instance téže hrany se
         #: sčítají (1,0 na doklad), takže váha je zároveň počet dokladů.
         self._edges: dict[tuple, float] = {}
+        #: Emitor delt do vizualizace (viewBase2). Pravidlo J.:
+        #: cokoli se děje v grafu, se VŽDY projeví ve vizualizaci —
+        #: každá mutace i vysvícení jde tudy; None = delty se zahazují
+        #: (vzor kukátka: operace proběhne i bez běžícího diváka).
+        self._emit = emit
 
     @staticmethod
     def node_key(token) -> str | None:
@@ -84,6 +89,8 @@ class FactGraph:
             key = self.node_key(token)
             if key is None:
                 continue
+            if key not in self._nodes and self._emit:
+                self._emit({"op": "node", "id": key})
             self._nodes.setdefault(key, NodeStat()).occurrences += 1
         for token in tokens:
             src = self.node_key(token)
@@ -93,6 +100,9 @@ class FactGraph:
                 continue
             self._edges[(src, dst, token.deprel, source)] = \
                 self._edges.get((src, dst, token.deprel, source), 0.0) + 1.0
+            if self._emit:
+                self._emit({"op": "edge", "src": src, "dst": dst,
+                            "deprel": token.deprel, "source": source})
             for node, neighbour in ((src, dst), (dst, src)):
                 stat = self._nodes[node]
                 stat.edges += 1
@@ -145,6 +155,44 @@ class FactGraph:
     def __repr__(self) -> str:
         s = self.stats()
         return f"FactGraph({s['uzlu']} uzlů, {s['hran']} hran)"
+
+
+def light_up(graph: FactGraph, sentences, question_lemmas,
+             boost: float = 2.0) -> dict:
+    """Vysvícení znalostního grafu — cesta odpovědi (návrh § 7).
+
+    1. slova kandidátních vět ROZSVÍTÍ uzly (váha = váha věty);
+    2. konkrétní LEMATA OTÁZKY znásobí jas rozsvícených (meta zajistí
+       záchyt, lemata přesnost — multiplikativní krok při čtení,
+       invariant učení neporušen);
+    3. jeden krok záře po hranách: posílený soused přisvítí už
+       rozsvíceným uzlům (podíl hrany na sousedových hranách) —
+       Jordán visící na posíleném „pokřtěný" zjasní nad Galilejí.
+
+    sentences: [(věta, váha)] — kandidátní věty se svou aktivací.
+    Vrací {uzel: jas}; každé vysvícení jde emitorem delt do
+    vizualizace (pravidlo J.: cokoli se děje v grafu, se v ní projeví).
+    """
+    lights: dict = {}
+    for sentence, weight in sentences:
+        for token in sentence.tokens:
+            key = FactGraph.node_key(token)
+            if key is not None and key in graph._nodes:
+                lights[key] = lights.get(key, 0.0) + weight
+    for key in lights:
+        if key.split(":", 1)[1] in question_lemmas:
+            lights[key] *= boost
+    glow = dict(lights)
+    for (src, dst, _deprel, _origin), weight in graph._edges.items():
+        for node, neighbour in ((src, dst), (dst, src)):
+            if node in lights and neighbour in lights:
+                share = weight / graph._nodes[neighbour].edges
+                glow[node] += lights[neighbour] * share
+    if graph._emit:
+        for key, value in glow.items():
+            graph._emit({"op": "style", "id": key,
+                         "glow": round(value, 6)})
+    return glow
 
 
 #: Strop custom vertikál (krok 2 handoveru). Platí na promované osy;

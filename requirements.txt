@@ -36,3 +36,7 @@ ufal.chu_liu_edmonds==1.0.3
 # schváleno 2026-08-03: koše jsou matice vah (float32, −1…+1) a maticové
 # počítání je přesně to, k čemu numpy je. Import je omezen na cb_field.
 numpy==2.4.6
+
+# viewBase2 (vizualizace znalostního grafu, krok I) se pořizuje ručně —
+# git URL by rozbila kontrolu tvaru řádků výše:
+#   .venv/bin/pip install 'viewbase @ git+https://github.com/alchy/viewBase2#subdirectory=python'
