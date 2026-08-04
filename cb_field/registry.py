@@ -22,7 +22,15 @@ from typing import Iterable, Iterator, Mapping
 import numpy as np
 
 #: Verze formátu souboru registru; neznámou verzi čtečka odmítne (§ 14).
-FORMAT_VERSION = 1
+#: v2 přidává verzi osy a uvolněné sloupce (krok 3 handoveru); v1 se
+#: čte dál — starší soubory žádné custom vertikály nemají.
+FORMAT_VERSION = 2
+READABLE_VERSIONS = (1, FORMAT_VERSION)
+
+#: Prefix custom vertikál — jediné osy, které soutěží o místo (limit
+#: v grafu, krok 2). Osy z UDPipe stojí vedle a set_custom_axes na ně
+#: nesmí sáhnout.
+CUSTOM_PREFIX = "CUSTOM="
 
 #: Datový typ vektorů a matic. float32 stačí na váhy v rozsahu −1…+1
 #: a matice jsou poloviční proti float64.
@@ -47,6 +55,16 @@ class VerticalRegistry:
         #: pytle v matching). Růst klíčů starou cache neruší (nové sloupce
         #: mají ve starých větách nulu); změna vazby ano.
         self.link_version = 0
+        #: Čítač změn OBSAZENÍ os (krok 3 handoveru): s limitem custom
+        #: vertikál se sloupce uvolňují a přeobsazují, takže číslo
+        #: sloupce už neznamená navždy totéž. Verzi nese každý, kdo si
+        #: sloupcová čísla pamatuje (cache matic vět, pytle faktů,
+        #: soubor na disku) — čtení s cizí verzí je chyba, ne hádání.
+        self.axis_version = 0
+        #: Uvolněné sloupce (díry po odebraných custom vertikálách),
+        #: vzestupně; přeobsadí je příští zápis osy. V _keys je díra
+        #: None — osa se nezkracuje, indexy za ní se nehýbou.
+        self._free: list[int] = []
         for key in keys:
             self.add(key)
         # Hierarchie kotev je součást jazyka systému, ne volitelný doplněk —
@@ -84,15 +102,24 @@ class VerticalRegistry:
         """Klíč podle pozičního argumentu: sloupec i → atribut=hodnota.
 
         Tudy se z uložené matice rekonstruuje, co který sloupec znamená.
+        Čtení uvolněného sloupce je hlasitá chyba: kdo se ptá na díru,
+        drží sloupcové číslo z jiné verze osy.
         """
         if not 0 <= i < len(self._keys):
             raise IndexError(
                 f"sloupec {i} v registru není (má {len(self._keys)} vertikál)")
+        if self._keys[i] is None:
+            raise ValueError(
+                f"sloupec {i} je uvolněná custom vertikála (osa verze "
+                f"{self.axis_version}) — číslo pochází z jiné verze osy")
         return self._keys[i]
 
     def keys(self) -> tuple:
-        """Všechny vertikály v pořadí indexů."""
-        return tuple(self._keys)
+        """Všechny vertikály v pořadí indexů; díra po uvolněné custom
+        vertikále je „UVOLNĚNO=<sloupec>" — zástupka bez systémového
+        prefixu, aby hromadné masky (startswith) mlčky nepasovaly."""
+        return tuple(k if k is not None else f"UVOLNĚNO={i}"
+                     for i, k in enumerate(self._keys))
 
     def __len__(self) -> int:
         return len(self._keys)
@@ -102,6 +129,80 @@ class VerticalRegistry:
 
     def __iter__(self) -> Iterator[str]:
         return iter(self._keys)
+
+    # --- custom osy (krok 3 handoveru) ----------------------------------
+
+    def set_custom_axes(self, target: Iterable[str]) -> dict:
+        """Zapíše CÍLOVÝ stav osy custom vertikál — stav proti stavu.
+
+        Jediné místo, kde se sloupce uvolňují a přeobsazují: kdo z
+        cílového stavu vypadl, uvolní sloupec (díra None) a odejde
+        I SE SVÝMI HRANAMI — vazby jsou klíčované jmény, přeobsazení
+        by je nerozbilo, jen by ukazovaly do neexistující osy. Nově
+        promovaní obsazují díry vzestupně, pak konec osy. Změna
+        obsazení zvedá axis_version — staré matice a pytle se tím
+        odmítnou, ne tiše přečtou.
+
+        Při chybě:
+            ValueError na klíč bez prefixu CUSTOM= — osy z UDPipe
+            do soutěže o místo nevstupují a zápis na ně nesmí sáhnout.
+        """
+        target = tuple(target)
+        for key in target:
+            if not key.startswith(CUSTOM_PREFIX):
+                raise ValueError(
+                    f"vertikála {key!r} není custom ({CUSTOM_PREFIX}…) — "
+                    f"cílový stav osy smí mluvit jen do custom vertikál")
+        wanted = set(target)
+        to_remove = [k for k in self._keys
+                     if k is not None and k.startswith(CUSTOM_PREFIX)
+                     and k not in wanted]
+        to_add = [k for k in target if k not in self._index]
+        removed = set(to_remove)
+        dead_links = [pair for pair in self._links
+                      if pair[0] in removed or pair[1] in removed]
+        for pair in dead_links:
+            del self._links[pair]
+        if dead_links:
+            self.link_version += 1
+        for key in to_remove:
+            i = self._index.pop(key)
+            self._keys[i] = None
+            self._free.append(i)
+        self._free.sort()
+        for key in to_add:
+            if self._free:
+                i = self._free.pop(0)
+                self._keys[i] = key
+            else:
+                i = len(self._keys)
+                self._keys.append(key)
+            self._index[key] = i
+        if to_remove or to_add:
+            self.axis_version += 1
+            self._matrix_cache = None
+        return {"pridano": len(to_add), "odebrano": len(to_remove),
+                "hran_odebrano": len(dead_links)}
+
+    def snapshot(self) -> dict:
+        """Úplný stav osy i vazeb — krok 1 promočního cyklu."""
+        return {"keys": list(self._keys), "index": dict(self._index),
+                "free": list(self._free), "links": dict(self._links),
+                "axis_version": self.axis_version,
+                "link_version": self.link_version}
+
+    def restore(self, snapshot: dict) -> None:
+        """Vrátí registr bit po bitu do stavu snapshotu — odvolání
+        promočního cyklu, který zhoršil měření. Vrací se i verze:
+        osa je po návratu TATÁŽ, takže cache z doby před cyklem
+        znovu platí a cache z cyklu selžou na verzi."""
+        self._keys = list(snapshot["keys"])
+        self._index = dict(snapshot["index"])
+        self._free = list(snapshot["free"])
+        self._links = dict(snapshot["links"])
+        self.axis_version = snapshot["axis_version"]
+        self.link_version = snapshot["link_version"]
+        self._matrix_cache = None
 
     # --- vazby mezi vertikálami -----------------------------------------
 
@@ -232,8 +333,16 @@ class VerticalRegistry:
             raise ValueError(
                 f"vektor má {len(vec)} sloupců, registr jen "
                 f"{len(self._keys)} — vznikl nad jiným registrem?")
-        return {self._keys[i]: round(float(w), 6)
-                for i, w in enumerate(vec) if w != 0.0}
+        out = {}
+        for i, w in enumerate(vec):
+            if w == 0.0:
+                continue               # nula v díře nic netvrdí
+            if self._keys[i] is None:
+                raise ValueError(
+                    f"vektor aktivuje uvolněný sloupec {i} — vznikl "
+                    f"nad jinou verzí osy (teď {self.axis_version})")
+            out[self._keys[i]] = round(float(w), 6)
+        return out
 
     # --- trvalost -------------------------------------------------------
 
@@ -244,7 +353,8 @@ class VerticalRegistry:
         tmp = path.with_suffix(path.suffix + ".tmp")
         tmp.write_text(
             json.dumps({"format_version": FORMAT_VERSION,
-                        "keys": self._keys,
+                        "axis_version": self.axis_version,
+                        "keys": self._keys,      # díra = null
                         "links": [[s, d, w, src] for (s, d), (w, src)
                                   in self._links.items()]},
                        ensure_ascii=False, indent=2) + "\n",
@@ -253,17 +363,39 @@ class VerticalRegistry:
         return path
 
     @classmethod
-    def load(cls, path: Path) -> "VerticalRegistry":
-        """Načte registr; cizí verze formátu je hlasitá chyba, ne hádání."""
+    def load(cls, path: Path,
+             expected_axis_version: int | None = None) -> "VerticalRegistry":
+        """Načte registr; cizí verze formátu je hlasitá chyba, ne hádání.
+
+        expected_axis_version: verze osy, se kterou volající drží
+        sloupcová čísla (uložené matice). Soubor s jinou verzí se
+        odmítne hlasitě — tichá záměna významu sloupců je přesně to,
+        co axis_version hlídá.
+        """
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         version = data.get("format_version")
-        if version != FORMAT_VERSION:
+        if version not in READABLE_VERSIONS:
             raise ValueError(
                 f"neznámá verze formátu registru {version!r}; "
-                f"tahle čtečka umí {FORMAT_VERSION}")
-        registry = cls(data["keys"], anchors=False)
+                f"tahle čtečka umí {READABLE_VERSIONS}")
+        axis_version = data.get("axis_version", 0)
+        if expected_axis_version is not None \
+                and axis_version != expected_axis_version:
+            raise ValueError(
+                f"registr v {path} má osu verze {axis_version}, "
+                f"čekána {expected_axis_version} — sloupcová čísla "
+                f"volajícího pocházejí z jiné osy")
+        registry = cls((), anchors=False)
+        for key in data["keys"]:
+            if key is None:            # díra po uvolněné custom vertikále
+                registry._free.append(len(registry._keys))
+                registry._keys.append(None)
+            else:
+                registry.add(key)
         for entry in data.get("links", []):
             src, dst, weight = entry[0], entry[1], entry[2]
             source = entry[3] if len(entry) > 3 else "axiom"
             registry.link(src, dst, weight, source=source)
+        registry.axis_version = axis_version
+        registry.link_version = 0      # čerstvá instance, žádné cache
         return registry

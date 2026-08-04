@@ -187,16 +187,22 @@ class SentenceField:
         teprve pak se vektorizuje — všechny řádky mají touž šířku
         a jednou přidělené sloupce se nikdy nepřečíslují.
 
-        Cache: obsah věty se po konstrukci nemění a sloupce se
-        nepřečíslovávají, takže jednou postavená matice platí navždy —
-        jen může být UŽŠÍ než aktuální registr (vyrostl jinými větami).
-        Konzument doplňuje šířku nulami (nula = žádná aktivace, § registr
-        spread). Bez cache stála přestavba matic celé měření: každá
-        otázka ji stavěla znovu pro všechny věty korpusu.
+        Cache: obsah věty se po konstrukci nemění a RŮST registru
+        sloupce nepřečíslovává, takže postavená matice smí být jen UŽŠÍ
+        než aktuální registr (konzument doplňuje šířku nulami — nula =
+        žádná aktivace, § registr spread). Bez cache stála přestavba
+        matic celé měření: každá otázka ji stavěla znovu pro všechny
+        věty korpusu.
+
+        ZMĚNA OBSAZENÍ osy (promoce, krok 3) ale sloupcům mění význam —
+        matice proto nese verzi osy a tohle je ta jediná funkce, která
+        ji při čtení porovná: cache z cizí verze se odmítne použít
+        a matice se přestaví z aktivací (ty jsou klíčované jmény,
+        přeobsazení je nerozbije).
         """
         cached = self._matrix_cache.get(representation)
-        if cached is not None:
-            return cached
+        if cached is not None and cached[0] == self.registry.axis_version:
+            return cached[1]
         for act in self.activations:
             for key in act.weights(representation):
                 self.registry.add(key)
@@ -204,7 +210,8 @@ class SentenceField:
             act.as_array(self.registry, representation, grow=False)
             for act in self.activations])
         built.setflags(write=False)      # sdílená cache se nemutuje
-        self._matrix_cache[representation] = built
+        self._matrix_cache[representation] = (self.registry.axis_version,
+                                             built)
         return built
 
     @property

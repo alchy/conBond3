@@ -192,6 +192,7 @@ def _fact_bags(corpus):
     u zdůraznění) a slova středu s normou pro kosinové členy skóre.
     """
     key = (len(corpus), corpus.registry.link_version,
+           corpus.registry.axis_version,
            corpus.r, getattr(corpus, "r_sentences", 0))
     cached = getattr(corpus, "_fact_cache", None)
     if cached is not None and cached[0] == key:
@@ -200,8 +201,11 @@ def _fact_bags(corpus):
     # přestavba všech pytlů po každé změně nesla celou cenu epochy.
     # Epocha běží nad pytli zmraženými při svém začátku (obnova jednou
     # na epochu); otázková strana šíří po ČERSTVÝCH vazbách vždy.
+    # Zmražení přežívá jen změny VAZEB — přeobsazení osy (axis_version)
+    # mění význam sloupců a pytle z jiné osy se použít nesmějí.
     if cached is not None and getattr(corpus, "_fact_cache_freeze",
-                                      False) and cached[0][0] == key[0]:
+                                      False) and cached[0][0] == key[0] \
+            and cached[0][2] == key[2]:
         return cached[1]
 
     matrices = [s.matrix(Representation.COMPLETE) for s in corpus]
