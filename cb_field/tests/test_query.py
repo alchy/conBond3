@@ -57,10 +57,15 @@ class TestOperaceMeziKosi(unittest.TestCase):
         self.assertEqual(len(aktivace), len(veta.tokens))
         # nejaktivnější řádek pole == nejlepší kandidát
         self.assertEqual(int(aktivace.argmax()), self.kam_pes.best.center)
-        # věta nese součet kladných aktivací svých středů
-        _v, soucet, _kandidati = sentence_activation(self.kam_pes)[0]
+        # věta nese PRŮMĚRNOU kladnou aktivaci svých středů — prostý
+        # součet by měřil délku věty, ne shodu (§ 21)
+        _v, prumer, kandidati = sentence_activation(self.kam_pes)[0]
         self.assertAlmostEqual(
-            soucet, float(aktivace[aktivace > 0].sum()), places=5)
+            prumer, float(aktivace[aktivace > 0].sum()) / len(kandidati),
+            places=5)
+        # surový součet jde vyžádat, ale není výchozí
+        _v, soucet, _k = sentence_activation(self.kam_pes, mean=False)[0]
+        self.assertGreater(soucet, prumer)
         # skupina slov je okno nad týmž polem
         _v, od, do, sila = span(self.kam_pes, width=2)[0]
         self.assertEqual(do - od, 2)

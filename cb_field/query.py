@@ -88,14 +88,23 @@ def OR(left: MatchResult, right: MatchResult, theta: float = THETA,
     return _rebuild(scores, source, theta, epsilon)
 
 
-def sentence_activation(result: MatchResult) -> list:
-    """Aktivace po VĚTÁCH: součet kladných aktivací jejích kandidátů.
+def sentence_activation(result: MatchResult, mean: bool = True) -> list:
+    """Aktivace po VĚTÁCH: kladné aktivace kandidátů, NORMALIZOVANĚ.
 
     Odpověď nemusí být jediný střed (J. 2026-08-04) — aktivace se smí
     cílit na větu nebo skupinu slov. Věta je koš jako každý jiný, jen
-    širší, takže se sčítá týmž způsobem, jakým koš sčítá své řádky.
-    Záporné příspěvky se nesčítají: věta nemá být trestána za to, že
-    obsahuje i slova mimo odpověď (to řeší NOT na úrovni výrazu).
+    širší. Záporné příspěvky se nezapočítávají: věta nemá být trestána
+    za to, že obsahuje i slova mimo odpověď (to řeší NOT na úrovni
+    výrazu).
+
+    Normalizace délkou je nutná, ne kosmetická: prostý součet měří
+    počet slov, ne shodu. Naměřeno na „Kde byl pokřtěn Ježíš?" —
+    nejaktivnější věta vyšla dlouhá pasáž o znesvěcující ohavnosti
+    (52,1) jen proto, že má nejvíc tokenů; věta s odpovědí byla níž.
+    Je to táž chyba, jakou u skóre kandidáta opravil kosinus.
+
+    mean=False vrátí surový součet (mohutnost aktivace ve větě), když
+    ho volající vědomě chce — normalizovaný je výchozí.
 
     Vrací [(věta, aktivace, [kandidáti sestupně])] seřazené sestupně.
     """
@@ -108,6 +117,8 @@ def sentence_activation(result: MatchResult) -> list:
     out = []
     for sentence, activation, candidates in per_sentence.values():
         candidates.sort(key=lambda c: -c.score)
+        if mean and candidates:
+            activation /= len(candidates)
         out.append((sentence, activation, candidates))
     out.sort(key=lambda row: -row[1])
     return out
