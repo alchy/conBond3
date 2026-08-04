@@ -33,19 +33,24 @@ REPORT_KORPUSY = MODULE_DIR / "docs" / "mereni-propojeni-korpusy.md"
 
 
 def build_complex_corpus(parser, r: int = 1, r_sentences: int = 0):
-    """Korpus komplexních textů (zákon/fyzika/spisovatelé) — viz
-    measure_corpora; potřebuje pořízené soubory (fetch-korpusy.sh).
+    """Korpus komplexních textů z fixovaných JSON souborů.
 
-    Souvislý text: věty jednoho souboru jsou si sousedy, takže do koše
-    smí přitéct kontext (r_sentences).
+    Čte data-persistent/korpus/korpus-*.json v pořadí jmen (pořadová,
+    významově prázdná — docs/korpus-json.md); hranice bloku je hranice
+    dokumentu pro r_sentences. Otisk rekonstrukce ověřen 2026-08-04:
+    2 912 vět, 16 074 hran, 5 695 lemmat — shodné s dřívějším ingestem
+    txt po doménách.
     """
-    from cb_field.measure_corpora import DOMAINS, build, ingest
-    sentences = []
-    for names in DOMAINS.values():
-        for name in names:
-            parsed, _errors, _digests = ingest(parser, (name,))
-            sentences.extend((name, s) for s in parsed)
-    corpus, _skipped = build(sentences, r=r, r_sentences=r_sentences)
+    from cb_field.corpusfile import add_to_corpus, load_corpus_file
+    folder = MODULE_DIR / "data-persistent" / "korpus"
+    paths = sorted(folder.glob("korpus-*.json"))
+    if not paths:
+        sys.exit(f"chybí fixované korpusy v {folder}\n"
+                 f"pořídíš: ./cb_field/scripts/fetch-korpusy.sh a pak "
+                 f"./run-python cb_field/scripts/preved-korpusy-json.py")
+    corpus = Corpus(r=r, r_sentences=r_sentences)
+    for path in paths:
+        add_to_corpus(corpus, load_corpus_file(path), parser)
     return corpus
 
 
