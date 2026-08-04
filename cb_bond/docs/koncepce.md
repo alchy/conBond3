@@ -223,3 +223,35 @@ sítě (a fixace) → dialog s člověkem. Vyhledávač i úložiště se před�
 parametrem, takže jádro samo na síť nesahá a testy ji nepotřebují.
 Co se jednou fixovalo, platí z disku — síť se volá jen při PRVNÍM
 setkání se slovem.
+
+## 16 · Promoce: pořadí kroků je podstata, ne detail
+
+    1. before = measure          4. corpus.regenerate()   ← TEPRVE TEĎ
+    2. snap = registry.snapshot()   koše nesou CUSTOM=
+    3. selekt → set_custom_axes   5. retrain  6. after  7. horší? → restore
+
+Krok 4 **před** krokem 5 je celá transparentnost promoce: koše si
+aktivaci `CUSTOM=` přidají samy nahlédnutím do osy, takže učení už
+vidí hotový stav. Kdyby se trénovalo dřív, učilo by se nad osou, která
+ještě neexistuje — a stejnou aktivaci dostane transparentně i otázka
+a dialogová věta, protože ji dělá stavba pole, ne zvláštní kód.
+
+**Beze změny osy se nepřeučuje ani neměří podruhé.** Trénink i měření
+jsou drahé a neměly by co nového vidět; cyklus proto vrátí
+`retrained=False`. Odtud plyne, že s růstem korpusu řídne sám od sebe
+(naměřená stabilizace výměn 38 % → 16 % na přírůstek).
+
+**Stačí JEDNA horší metrika.** Promoce, která zvedne přesnost a srazí
+dosah, není zlepšení — je to výměna, o které nikdo nerozhodl. Shoda
+projde: vratná je promoce pořád.
+
+**Návrat je bit po bitu.** Snapshot nese vazby, obsazení i verzi; klíče
+se nevracejí, protože osa je append-only a přečíslování indexů by
+zneplatnilo všechny matice, které si někdo drží. Naměřeno na 2 912
+větách: po vráceném cyklu je otisk registru shodný (32 vazeb, prázdné
+obsazení, verze 0) a v koších nezbyla ani jedna `CUSTOM=` aktivace.
+
+**Co promoce sama o sobě dělá.** Bez učení klesla přesnost 0,3333 →
+0,30 a cyklus se vrátil — což souhlasí s referencí, kde je C−B = 0
+(„sloty si zatím nevydělaly na přesnost"). Proto zadání zavádí užitek
+otázkám jako vážený člen selektu; to je páka, kterou se to má zlomit.

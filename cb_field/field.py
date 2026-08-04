@@ -119,6 +119,11 @@ class SentenceField:
         self.activations = tuple(
             Activations.from_row(row, question=self.question)
             for row in self.rows)
+        # Slovní vrstva se doplní nahlédnutím do osy: co má custom slot,
+        # rozsvítí i CUSTOM=. Děje se to při stavbě pole, takže regenerate()
+        # po promoci stačí a otázka i dialogová věta to dostanou stejně.
+        for act in self.activations:
+            act.promote(self.registry)
         self.baskets = tuple(
             FieldBasket(self, center) for center in range(len(self.tokens)))
 

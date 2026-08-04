@@ -128,3 +128,27 @@ Veřejné API modulu. Co tady není, je vnitřek a smí se změnit
 | co | jak |
 |---|---|
 | přejímka kroku 8 | `./run-python cb_bond/scripts/prejimka-dialog.py` — přehraje celý průběh o dálnici |
+
+## PromotionCycle (promotion.py)
+
+| metoda | co dělá / na čem visí |
+|---|---|
+| `PromotionCycle(measure, retrain, limit=328)` | měřič i přeučení parametrem (§ 3) — cyklus neví, čím se měří ani jak se učí |
+| `run(corpus, graph)` | `CycleOutcome(accepted, before, after, axis_changes, retrained)` |
+
+| co | jak |
+|---|---|
+| přejímka kroku 6 | `./run-python cb_bond/scripts/prejimka-promoce.py` |
+
+## VerticalRegistry — custom sloty (cb_field)
+
+| metoda | proč |
+|---|---|
+| `set_custom_axes(keys)` | přepíše obsazení na CÍLOVÝ STAV; vrací `{pridano, odebrano, hran_odebrano}`. Uvolněný slot přijde i o vazby — hrana do neobsazeného slotu ukazuje do prázdna |
+| `axis_version` | verze OBSAZENÍ; roste jen při skutečné výměně, takže „nezvedla se" znamená „není co přeučovat" |
+| `custom_axes` / `is_custom(key)` | co má dnes pojmenovaný neuron |
+| `snapshot()` / `restore(snap)` | vratnost bit po bitu (vazby, obsazení, verze); klíče zůstávají — osa je append-only |
+
+Soubor registru je od těchto změn `format_version` **2**: nese navíc
+`custom_axes` a `axis_version`. Bez nich by se registr načetl bez
+vstupní vrstvy a pole by tiše přestala aktivovat `CUSTOM=`.

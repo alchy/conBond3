@@ -86,6 +86,34 @@ class TestSentenceField(unittest.TestCase):
         # po růstu registru mají matice obou vět touž šířku (společné osy)
         self.assertEqual(f1.matrix().shape[1], f2.matrix().shape[1])
 
+    def test_promovane_slovo_aktivuje_CUSTOM_osu(self):
+        # Transparentní promoce: pole nahlédne do osy a aktivaci si
+        # přidá SAMO — nikdo ji do koše nedrátuje zvenčí.
+        reg = VerticalRegistry()
+        reg.set_custom_axes(["AUX:být"])
+
+        field = SentenceField(VETA, registry=reg)
+
+        self.assertIn("CUSTOM=AUX:být", field.complete[1])
+        self.assertEqual(field.complete[1]["CUSTOM=AUX:být"],
+                         field.complete[1]["WORD=AUX:být"])
+
+    def test_CUSTOM_je_slovni_vrstva_v_METADATA_nesviti(self):
+        reg = VerticalRegistry()
+        reg.set_custom_axes(["AUX:být"])
+
+        field = SentenceField(VETA, registry=reg)
+
+        self.assertNotIn("CUSTOM=AUX:být", field.metadata[1])
+
+    def test_nepromovane_slovo_CUSTOM_osu_nedostane(self):
+        reg = VerticalRegistry()
+        reg.set_custom_axes(["NOUN:pes"])
+
+        field = SentenceField(VETA, registry=reg)
+
+        self.assertNotIn("CUSTOM=AUX:být", field.complete[1])
+
     def test_complete_reprezentace_pridava_slova(self):
         field = SentenceField(VETA)
         meta = field.matrix()

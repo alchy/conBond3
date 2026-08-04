@@ -22,7 +22,9 @@ from typing import Iterable, Iterator, Mapping
 import numpy as np
 
 #: Verze formátu souboru registru; neznámou verzi čtečka odmítne (§ 14).
-FORMAT_VERSION = 1
+#: v2 přidala obsazení custom slotů a jeho verzi — bez nich by se registr
+#: načetl bez vstupní vrstvy a pole by tiše přestala aktivovat CUSTOM=.
+FORMAT_VERSION = 2
 
 #: Datový typ vektorů a matic. float32 stačí na váhy v rozsahu −1…+1
 #: a matice jsou poloviční proti float64.
@@ -42,6 +44,14 @@ class VerticalRegistry:
         #: Vážené vazby mezi vertikálami: (od, do) → váha. Jeden mechanismus
         #: pro hierarchii kotev, mosty otázka↔odpověď i budoucí synonymii.
         self._links: dict = {}
+        #: Obsazení custom slotů — pojmenovaných neuronů vstupní vrstvy.
+        #: Drží se jako uspořádaná n-tice klíčů „UPOS:lemma"; osa k nim
+        #: nese vertikály „CUSTOM=UPOS:lemma".
+        self._custom: tuple = ()
+        #: Verze OBSAZENÍ (ne osy jako takové): roste jen při skutečné
+        #: výměně slotů. Nese ji cache matic i soubor — čtení s cizí verzí
+        #: je hlasitá chyba, ne tichá záměna významu.
+        self._axis_version = 0
         for key in keys:
             self.add(key)
         # Hierarchie kotev je součást jazyka systému, ne volitelný doplněk —
@@ -51,6 +61,76 @@ class VerticalRegistry:
         if anchors:
             from cb_field.service import seed_anchor_links
             seed_anchor_links(self)
+
+    # --- custom sloty (vstupní vrstva NN) --------------------------------
+
+    @property
+    def axis_version(self) -> int:
+        """Verze obsazení custom slotů; roste jen při skutečné výměně."""
+        return self._axis_version
+
+    @property
+    def custom_axes(self) -> tuple:
+        """Klíče „UPOS:lemma", které dnes mají pojmenovaný neuron."""
+        return self._custom
+
+    def is_custom(self, key: str) -> bool:
+        """Má tohle slovo („UPOS:lemma") slot?"""
+        return key in set(self._custom)
+
+    def set_custom_axes(self, keys) -> dict:
+        """Přepíše obsazení slotů na daný CÍLOVÝ STAV; vrátí změny.
+
+        Nepředává se přírůstek, ale celý cílový stav — promoce je
+        vratná a kdo vypadne z limitu, musí slot uvolnit. S ním mizí
+        i jeho vazby: naučená hrana do slotu, který už nikdo neobsazuje,
+        by ukazovala do prázdna.
+
+        Klíče v ose ZŮSTÁVAJÍ (append-only, princip 3); uvolňuje se
+        obsazení a vazby, ne sloupec.
+
+        Beze změny obsazení se verze NEZVEDNE — a volající podle toho
+        pozná, že nemá co přeučovat.
+        """
+        cil = tuple(dict.fromkeys(keys))
+        stary, novy = set(self._custom), set(cil)
+        pridano, odebrano = novy - stary, stary - novy
+        if not pridano and not odebrano:
+            return {"pridano": 0, "odebrano": 0, "hran_odebrano": 0}
+
+        hran = 0
+        for klic in odebrano:
+            osa = f"CUSTOM={klic}"
+            for src, dst in [dvojice for dvojice in self._links
+                             if osa in dvojice]:
+                del self._links[(src, dst)]
+                hran += 1
+        for klic in pridano:
+            self.add(f"CUSTOM={klic}")
+
+        self._custom = cil
+        self._axis_version += 1
+        return {"pridano": len(pridano), "odebrano": len(odebrano),
+                "hran_odebrano": hran}
+
+    # --- vratnost --------------------------------------------------------
+
+    def snapshot(self) -> dict:
+        """Odolná kopie stavu, ze které jde vrátit bit po bitu.
+
+        Kopírují se vazby, obsazení i verze. Klíče se nekopírují — osa
+        roste dál i po návratu (append-only); rollback ruší VZTAHY, ne
+        sloupce, protože přečíslování indexů by zneplatnilo všechny
+        matice, které si někdo drží.
+        """
+        return {"links": dict(self._links), "custom": self._custom,
+                "axis_version": self._axis_version}
+
+    def restore(self, snapshot) -> None:
+        """Vrátí stav ze snapshotu — vazby, obsazení i verzi."""
+        self._links = dict(snapshot["links"])
+        self._custom = tuple(snapshot["custom"])
+        self._axis_version = int(snapshot["axis_version"])
 
     # --- osa x ----------------------------------------------------------
 
@@ -225,7 +305,9 @@ class VerticalRegistry:
             json.dumps({"format_version": FORMAT_VERSION,
                         "keys": self._keys,
                         "links": [[s, d, w] for (s, d), w
-                                  in self._links.items()]},
+                                  in self._links.items()],
+                        "custom_axes": list(self._custom),
+                        "axis_version": self._axis_version},
                        ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8")
         os.replace(tmp, path)
@@ -243,4 +325,8 @@ class VerticalRegistry:
         registry = cls(data["keys"], anchors=False)
         for src, dst, weight in data.get("links", []):
             registry.link(src, dst, weight)
+        # Obsazení se nastaví přímo, ne přes set_custom_axes: to by
+        # zvedlo verzi a načtený registr by se rozešel s tím uloženým.
+        registry._custom = tuple(data.get("custom_axes", ()))
+        registry._axis_version = int(data.get("axis_version", 0))
         return registry

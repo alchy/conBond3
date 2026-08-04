@@ -5,6 +5,7 @@ potřebovat běžící službu (§ 13). Hodnoty odpovídají skutečným výstup
 UDPipe z 2026-08-03 (věty „Šla kočka…", „Kde je Petr…", „Pět psů… 125…").
 """
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -53,6 +54,112 @@ PES = Token(id=2, form="pes", lemma="pes", upos="NOUN",
             feats={"Animacy": "Anim", "Case": "Nom", "Gender": "Masc",
                    "Number": "Sing"},
             head=1, deprel="nsubj", deps=None, misc=None)
+
+
+class TestSouborV2(unittest.TestCase):
+
+    def test_ulozeny_registr_nese_obsazeni_i_verzi(self):
+        reg = VerticalRegistry(anchors=False)
+        reg.link("A", "B", 0.5)
+        reg.set_custom_axes(["NOUN:rok"])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            cesta = reg.save(Path(tmp) / "registr.json")
+            data = json.loads(cesta.read_text(encoding="utf-8"))
+            self.assertEqual(data["format_version"], 2)
+            self.assertEqual(data["custom_axes"], ["NOUN:rok"])
+            self.assertEqual(data["axis_version"], 1)
+
+            zpet = VerticalRegistry.load(cesta)
+            self.assertEqual(zpet.custom_axes, ("NOUN:rok",))
+            self.assertEqual(zpet.axis_version, 1)
+            self.assertEqual(zpet.keys(), reg.keys())
+
+
+class TestCustomSloty(unittest.TestCase):
+    """Pojmenované neurony vstupní vrstvy — obsazení, verze, vratnost."""
+
+    def test_obsazeni_pripise_osy_a_zvedne_verzi(self):
+        reg = VerticalRegistry(anchors=False)
+        self.assertEqual(reg.axis_version, 0)
+
+        zmeny = reg.set_custom_axes(["NOUN:rok", "VERB:mít"])
+
+        self.assertEqual(reg.axis_version, 1)
+        self.assertIn("CUSTOM=NOUN:rok", reg)
+        self.assertEqual(zmeny["pridano"], 2)
+        self.assertEqual(zmeny["odebrano"], 0)
+
+    def test_stejne_obsazeni_verzi_NEZVEDNE(self):
+        # bez změny osy se nemá co přeučovat (naměřená stabilizace
+        # 38 → 16 % výměn na přírůstek korpusu)
+        reg = VerticalRegistry(anchors=False)
+        reg.set_custom_axes(["NOUN:rok"])
+
+        zmeny = reg.set_custom_axes(["NOUN:rok"])
+
+        self.assertEqual(reg.axis_version, 1)
+        self.assertEqual((zmeny["pridano"], zmeny["odebrano"]), (0, 0))
+
+    def test_uvolneny_slot_nenecha_za_sebou_hrany(self):
+        reg = VerticalRegistry(anchors=False)
+        reg.set_custom_axes(["NOUN:rok"])
+        reg.link("QLEM=ADV:kdy", "CUSTOM=NOUN:rok", 0.5)
+
+        zmeny = reg.set_custom_axes(["VERB:mít"])
+
+        self.assertEqual(zmeny["odebrano"], 1)
+        self.assertEqual(zmeny["hran_odebrano"], 1)
+        self.assertIsNone(reg.get_link("QLEM=ADV:kdy", "CUSTOM=NOUN:rok"))
+        # klíč v ose zůstane — osa je append-only (princip 3)
+        self.assertIn("CUSTOM=NOUN:rok", reg)
+        self.assertNotIn("NOUN:rok", reg.custom_axes)
+
+    def test_is_custom_rekne_jestli_ma_slovo_slot(self):
+        reg = VerticalRegistry(anchors=False)
+        reg.set_custom_axes(["NOUN:rok"])
+
+        self.assertTrue(reg.is_custom("NOUN:rok"))
+        self.assertFalse(reg.is_custom("PROPN:Hrabal"))
+
+
+class TestSnapshot(unittest.TestCase):
+
+    def test_restore_vrati_stav_BIT_PO_BITU(self):
+        reg = VerticalRegistry(anchors=False)
+        reg.link("A", "B", 0.5)
+        reg.set_custom_axes(["NOUN:rok"])
+        snap = reg.snapshot()
+
+        reg.set_custom_axes(["VERB:mít", "ADJ:nový"])
+        reg.link("A", "B", -0.9)
+        reg.link("C", "D", 0.3)
+        reg.restore(snap)
+
+        self.assertEqual(reg.custom_axes, ("NOUN:rok",))
+        self.assertAlmostEqual(reg.get_link("A", "B"), 0.5, places=6)
+        self.assertIsNone(reg.get_link("C", "D"))
+        self.assertEqual(reg.axis_version, 1)   # včetně verze
+
+    def test_snapshot_je_odolny_proti_pozdejsim_zmenam(self):
+        reg = VerticalRegistry(anchors=False)
+        reg.link("A", "B", 0.5)
+        snap = reg.snapshot()
+
+        reg.link("A", "B", 0.1)
+        reg.restore(snap)
+
+        self.assertAlmostEqual(reg.get_link("A", "B"), 0.5, places=6)
+
+    def test_klice_pridane_po_snapshotu_zustanou(self):
+        # osa je append-only: rollback ruší vazby a obsazení, ne klíče
+        reg = VerticalRegistry(anchors=False)
+        snap = reg.snapshot()
+        reg.add("NOVA=osa")
+
+        reg.restore(snap)
+
+        self.assertIn("NOVA=osa", reg)
 
 
 class TestCteniAMazaniVazeb(unittest.TestCase):

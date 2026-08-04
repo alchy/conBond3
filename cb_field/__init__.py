@@ -40,8 +40,9 @@ from cb_field.viewer import Visualizer, visualize
 #: Verze modulu; roste s každou změnou chování. Objektové ukládání košů
 #: zahozeno v 0.1.0 ve prospěch maticové cesty; 0.2.0 otázková strana;
 #: 0.5.0 třída SentenceField jako pracovní úroveň (věta → pole → matice);
-#: 0.6.0 Corpus a fixovaný korpus v JSON (krok 1 stavby cb_bond).
-__version__ = "0.6.0"
+#: 0.6.0 Corpus a fixovaný korpus v JSON (krok 1 stavby cb_bond);
+#: 0.7.0 custom sloty registru + CUSTOM= aktivace pole (krok 3 § 3).
+__version__ = "0.7.0"
 
 __all__ = [
     "Corpus",

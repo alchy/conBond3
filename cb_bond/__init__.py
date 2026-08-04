@@ -38,6 +38,7 @@ from cb_bond.dialog import (  # noqa: E402
     Reply,
     Responder,
 )
+from cb_bond.promotion import CycleOutcome, PromotionCycle  # noqa: E402
 from cb_bond.relations import RelationMiner, kmen  # noqa: E402
 from cb_bond.matcher import (  # noqa: E402
     LinkOperator,
@@ -69,5 +70,7 @@ __all__ = [
     "DefinitionResolver",
     "QuestionExpander",
     "Expansion",
+    "PromotionCycle",
+    "CycleOutcome",
     "__version__",
 ]

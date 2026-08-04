@@ -8,7 +8,7 @@ s váženými vazbami a kukátko (viewer) na prohlížení.
 Vývojářský průvodce s ukázkami je v kořeni: `README-FIELD.md`.
 Návrhová rozhodnutí a pasti: `docs/`.
 
-## Stav: mockup (verze 0.6.0)
+## Stav: mockup (verze 0.7.0)
 
 Vědomě zatím **není** plný modul podle README-MODULES § 2: chybí
 konfigurace se schématem, logování přes cb-logger, REST API (`api.py`),
@@ -25,7 +25,7 @@ usadí. Co už platí: čistá doménová logika bez cest a HTTP (`service.py`,
 | `CorpusFile`, `CorpusBlock`, `CorpusQuestion` | přečtená fixace: bloky (odstavce) a otázky mířící na index věty |
 | `SentenceField` | pracovní úroveň: `from_text` / `from_sentence`, pohledy `metadata`/`complete`/`array`, `baskets`, `matrix()`, `show()` |
 | `FieldBasket` | koš pole s touž trojicí pohledů; `array` má pevný tvar 2r+1 řádků |
-| `VerticalRegistry` | append-only osa sloupců: `add`, `key(i)`, `vectorize`/`unvectorize`, `link`/`links`/`spread`, `save`/`load` |
+| `VerticalRegistry` | append-only osa sloupců: `add`, `key(i)`, `vectorize`/`unvectorize`, `link`/`get_link`/`unlink`/`links`/`spread`, custom sloty (`set_custom_axes`, `axis_version`, `custom_axes`, `is_custom`), vratnost (`snapshot`/`restore`), `save`/`load` |
 | `Activations` | vážené aktivace slova: `get`/`set`, `weights(representation)`, `as_array` |
 | `Representation` | `METADATA` (bezeslovná, primární) / `COMPLETE` (+`WORD=`) |
 | `MetaValue`, `Basket`, `build_baskets`, `expand_token`, `expand_basket`, `activations`, `is_question`, `seed_anchor_links` | nižší (ladicí) vrstvy |
@@ -64,7 +64,7 @@ Až vznikne konfigurace modulu, prahy se přestěhují do ní.
 
 | soubor | formát | verze |
 |---|---|---|
-| registr vertikál (`save`/`load`) | JSON: `format_version`, `keys[]`, `links[[od,do,váha]]` | 1 — cizí verze se odmítá |
+| registr vertikál (`save`/`load`) | JSON: `format_version`, `keys[]`, `links[[od,do,váha]]`, `custom_axes[]`, `axis_version` | 2 — cizí verze se odmítá |
 | fixovaný korpus (`corpusfile`) | JSON: `format_version`, `language`, `blocks[{topic,text,sentences}]`, `questions[{text,sentence,answer_lemma,answerable}]`; otázkový soubor navíc `corpus` | 1 — cizí verze se odmítá |
 | `run/current.json` | soukromá přepravka viewer↔stránka; žije a umírá s kukátkem | neverzuje se |
 
@@ -84,7 +84,7 @@ Až vznikne konfigurace modulu, prahy se přestěhují do ní.
 ## Testy
 
 ```
-./run-python -m unittest discover -s cb_field -t .    # 59 testů
+./run-python -m unittest discover -s cb_field -t .    # 70 testů
 ```
 
 Zmražená data přímo v testech (skutečné výstupy UDPipe z 2026-08-03);

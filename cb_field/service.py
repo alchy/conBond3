@@ -421,6 +421,24 @@ class Activations:
         self._meta = dict(meta)
         self._word = {word_key: word_weight} if word_key else {}
 
+    def promote(self, registry) -> None:
+        """Rozsvítí CUSTOM= osu, má-li slovo řádku slot v registru.
+
+        Transparentní promoce: aktivaci si řádek přidá SÁM nahlédnutím
+        do osy, nikdo ji do koše nedrátuje zvenčí. Váha je táž jako
+        u WORD= — je to totéž slovo, jen v pojmenovaném neuronu.
+
+        CUSTOM= žije ve SLOVNÍ vrstvě: v METADATA nesvítí, protože ta
+        musí zůstat bezeslovná (jinak by se do učení dostalo slovo
+        jinudy než promocí — invariant 1).
+        """
+        for klic, vaha in list(self._word.items()):
+            if not klic.startswith("WORD="):
+                continue
+            slovo = klic.split("=", 1)[1]
+            if registry.is_custom(slovo):
+                self._word[f"CUSTOM={slovo}"] = vaha
+
     @classmethod
     def from_row(cls, row: dict, question: bool = False) -> "Activations":
         """Postaví aktivace z rozvinutého řádku (expand_token).
