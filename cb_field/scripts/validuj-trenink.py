@@ -15,6 +15,12 @@ Kritéria (zodpověditelné):
   4. otázka je tázací (parser pozná otazník a tázací slovo).
 Nezodpověditelné: odpoved_lemma musí být null a žádná věta nesmí nést
 všechna obsahová lemmata otázky (to by ji dělalo zodpověditelnou).
+
+Přepínač --mezivetne přidá pátou podmínku (pravidlo J. 2026-08-04:
+*„fakta nejsou jednovětá s utrženým tématem"*): podnět a odpověď nesmí
+stát v TÉŽE větě. Otázka, kterou lze zodpovědět z jedné věty, učí
+systém tvar, jaký v souvislém textu není — navazovat přes hranici věty
+se na ní nenaučí.
 """
 
 import json
@@ -46,6 +52,7 @@ def main() -> None:
     from cb_udpipe import UdpipeClient
     from cb_field.measure_corpora import DOMAINS, ingest
 
+    across_sentences = "--mezivetne" in sys.argv[1:]
     candidates = [json.loads(line) for line
                   in Path(sys.argv[1]).read_text(encoding="utf-8").splitlines()
                   if line.strip()]
@@ -88,6 +95,14 @@ def main() -> None:
             # je) — shoda slov s nesouvisející větou z 2 912 o otázce
             # nic neříká a zahazovala by dobré parafráze.
             targets = [o for s, o in sentence_lemmas if answer in s]
+            if across_sentences:
+                # věta, která nese odpověď I podnět, dělá otázku
+                # jednovětou — přesně to, co se nemá učit
+                jednoveta = [o for s, o in sentence_lemmas
+                             if answer in s and (q_overlap & o)]
+                if jednoveta:
+                    drop("jednovětá: podnět i odpověď v téže větě")
+                    continue
             overlap = max((len(q_overlap & o) for o in targets), default=0)
             if q_overlap and overlap / len(q_overlap) > 0.5:
                 drop(f"opisuje cílovou větu "
