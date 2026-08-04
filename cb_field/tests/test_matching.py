@@ -57,7 +57,8 @@ class TestPropojeni(unittest.TestCase):
         self.assertAlmostEqual(
             nejlepsi.score,
             nejlepsi.meet_score + nejlepsi.cover_score
-            + nejlepsi.fit_score + nejlepsi.topic_score
+            + nejlepsi.fit_score
+            + nejlepsi.topic_score
             + nejlepsi.given_score,
             places=3)
 

@@ -104,8 +104,15 @@ W_CONTEXT = 0.5
 
 #: Vertikály vstupující do párování. Strukturní tvar (UPOS/DEPREL/feats)
 #: patří šablonám; v součinech pytlů by přehlušil obsah i kotvy
-#: (naměřeno v baseline 4a).
-MATCH_PREFIXES = ("WORD=", "LEM=", "QLEM=", "ANCHOR=", "QANCHOR=")
+#: (naměřeno v baseline 4a). Výjimkou je Polarity: negace je LOGICKÁ
+#: vazba, ne tvar — bez ní lemma „jet" nerozliší „jela" od „nejela"
+#: a věta tvrdící opak vyhraje (§ 17). Je to OSA, ne pravidlo: váhu jí
+#: dá učení samo (J. 2026-08-04: „negaci se naučí systém sám na
+#: ukázkách"). Ruční člen shody polarity jsem zkusil a zahodil —
+#: dával bonus za souhlas a tím přebíjel pořadí uvnitř věty
+#: (typ „kdy" spadl 7/7 → 1/7); osa sama dá bez učení 0,97 a s ním 1,00.
+MATCH_PREFIXES = ("WORD=", "LEM=", "QLEM=", "ANCHOR=", "QANCHOR=",
+                  "Polarity=")
 
 
 @dataclass
