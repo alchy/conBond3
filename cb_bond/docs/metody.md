@@ -108,3 +108,23 @@ Veřejné API modulu. Co tady není, je vnitřek a smí se změnit
 |---|---|
 | `get_link(src, dst)` | váha vazby, nebo **None** — nula je platná váha (naučená bezvýznamnost), „vazba tu není" je jiná skutečnost |
 | `unlink(src, dst)` | odstraní vztah, klíče nechá (osa je append-only); potřebuje promoce při uvolnění slotu |
+
+## Responder · DefinitionResolver · QuestionExpander (dialog.py)
+
+| metoda | co dělá / na čem visí |
+|---|---|
+| `Responder(matcher, graph, expander=None)` | dialogová vrstva; expander je volitelný |
+| `gaps(question)` | osy s **přesnou nulou** — mezery ve znalosti |
+| `reply(question, *, expand=False)` | `Reply(best, outcome, missing)`; odpovídá VŽDY, i když hlásí `needs_context` |
+| `append_context(text, parser, source="dialog")` | věta uživatele standardní cestou do korpusu i grafu |
+| `DefinitionResolver(corpus, graph, parser, *, lookup, store)` | `resolve(word_key)` → `corpus` / `dictionary` / `dialogue`; offline-first |
+| `QuestionExpander(resolver, miner)` | `expand(question)` → `Expansion(definitions, derivations)` |
+
+| objekt | co to je |
+|---|---|
+| `Reply` | `best`, `outcome` (answer/ask/needs_context/silent), `missing`, `lemma` |
+| `Expansion` | `definitions` `{osa: odkud}`, `derivations` (počet) |
+
+| co | jak |
+|---|---|
+| přejímka kroku 8 | `./run-python cb_bond/scripts/prejimka-dialog.py` — přehraje celý průběh o dálnici |

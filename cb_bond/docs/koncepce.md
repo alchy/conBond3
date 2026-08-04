@@ -191,3 +191,35 @@ Plošné nasazení dalo 11 268 vazeb a stálo baseline 3,3 bodu: vazby
 mezi vším, co si je náhodou podobné, jsou šum. Proto `around=` —
 těží se jen kolem slov otázky a její expanze. Naměřeno pro
 {dálnice, kámen, rychlost}: 10 vazeb místo tisíců.
+
+## 14 · Systém odpovídá vždycky a při mezeře se zeptá
+
+`reply()` vrací nejlepšího kandidáta i tehdy, když hlásí
+`needs_context`. Mlčet naslepo je horší než odpovědět a přiznat, oč se
+rozhodnutí opírá — člověk pak vidí, kde se láme.
+
+**Mezera je přesná nula, ne práh.** Osa, kterou korpus zná jen slabě,
+má tanh(0,7) = 0,604; osa, kterou nezná vůbec, má 0,000. Mezi tím je
+propast, ne škála, takže se mezera pozná bez kalibrace a nedá se
+„skoro" splnit. (Práh detekce mezery je v zadání mezi zavrženými
+cestami — tohle je důvod.)
+
+**Ptá se na JEDNU věc.** Naměřený průběh nad biblicko-fyzikálním
+korpusem: být 1,000 · omezený 0,604 · rychlost 0,604 · na 1,000 ·
+dálnice 0,000. Jediná mezera je *dálnice*; *rychlost* systém zná
+z fyziky, takže se na ni neptá.
+
+**Dialogová věta jde standardní cestou.** Táž stavba pole, týž
+registr, týž graf — liší se jen zdroj hrany (`dialog`), aby šlo
+poznat, odkud fakt přišel. Naměřeno: věta uživatele přidá do grafu
+9 hran (dálnice→silnice nsubj, rychlost→stanovený, 130→stanovený…)
+a pokrytí *dálnice* stoupne z 0,000 na 0,604, čímž se východisko
+překlopí na `answer`.
+
+## 15 · Opatřování definic je offline-first
+
+Pořadí je dané principem 7: korpus → úložiště na disku → slovník ze
+sítě (a fixace) → dialog s člověkem. Vyhledávač i úložiště se předávají
+parametrem, takže jádro samo na síť nesahá a testy ji nepotřebují.
+Co se jednou fixovalo, platí z disku — síť se volá jen při PRVNÍM
+setkání se slovem.
