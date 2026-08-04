@@ -132,6 +132,18 @@ class TestCleny(unittest.TestCase):
         self.assertAlmostEqual(float(np.linalg.norm(okno)), 1.0, places=5)
         self.assertAlmostEqual(float(np.linalg.norm(stred)), 1.0, places=5)
 
+    def test_okno_dozniva_pres_celou_vetu_bez_hrany(self):
+        # harmonická váha existuje proto, aby okno NEMĚLO hranu; ořez
+        # na ±r by ji vrátil (naměřeno: stojí bod na etalonu)
+        corpus = _korpus(KRESTA)
+        matcher = Matcher(corpus, spread_depth=0)
+
+        okno, _ = matcher.candidate_vectors(0, 0)   # střed na kraji věty
+
+        # osa vzdáleného slova (Jan, poslední token) v okně svítí
+        daleka = corpus.registry.index("WORD=PROPN:Jan")
+        self.assertGreater(float(okno[daleka]), 0.0)
+
     def test_pokryti_radi_VETY_ne_tokeny(self):
         # cover je mohutnost věty, ne kosinus: všichni kandidáti téže věty
         # mají týž člen, různé věty různý

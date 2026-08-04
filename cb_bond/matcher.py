@@ -344,21 +344,22 @@ class Matcher:
     def candidate_vectors(self, sentence: int, token: int) -> tuple:
         """(okno, střed) kandidáta — obojí saturované a JEDNOTKOVÉ.
 
-        Okno je harmonicky vážené: řádek ve vzdálenosti `o` od středu
-        přispívá vahou 1/(1+|o|), takže sousedství doznívá, místo aby
-        končilo hranou. Střed se saturuje a normuje ZVLÁŠŤ, protože
-        zdůraznění středu je vlastní člen skóre, ne násobek uvnitř okna
-        — jinak by se trestaly středy s bohatou morfologií.
+        Okno je harmonicky vážené přes CELOU větu: řádek ve vzdálenosti
+        `o` od středu přispívá vahou 1/(1+|o|). Váha doznívá, takže okno
+        nemá hranu — ořezat ho na ±r by tu hranu vrátilo a smysl
+        harmonického vážení zmizel (naměřeno: ořez na ±1 stojí bod
+        na etalonu, 10/30 proti 11/30).
+
+        Střed se saturuje a normuje ZVLÁŠŤ, protože zdůraznění středu je
+        vlastní člen skóre, ne násobek uvnitř okna — jinak by se trestaly
+        středy s bohatou morfologií.
         """
         self._priprav()
         pole = self.corpus[sentence]
         radky = pole.complete
         okno: dict[str, float] = {}
-        for offset in range(-pole.r, pole.r + 1):
-            j = token + offset
-            if not 0 <= j < len(radky):
-                continue
-            vaha = 1.0 / (1.0 + abs(offset))
+        for j in range(len(radky)):
+            vaha = 1.0 / (1.0 + abs(j - token))
             for klic, hodnota in semantic_bag((radky[j],)).items():
                 okno[klic] = okno.get(klic, 0.0) + vaha * hodnota
         okno_v = _jednotkovy(saturate(self._vektor(okno), self._links,

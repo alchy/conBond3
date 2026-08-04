@@ -69,10 +69,10 @@ Ablace ukázala, že to bylo hledání na špatném místě — nosné jsou
 
 | konfigurace | reference | tady |
 |---|---|---|
-| plné skóre | 14/30 | 10/30 |
-| bez tématu (topic=0) | 12/30 | 10/30 |
+| plné skóre | 14/30 | 11/30 |
+| bez tématu (topic=0) | 12/30 | 11/30 |
 | bez zdůraznění středu (center=1) | 9/30 | 8/30 |
-| bez pokrytí (cover=0) | 7/30 | 2/30 |
+| bez pokrytí (cover=0) | 7/30 | 4/30 |
 | bez postihu daného (given=0) | **0/30** | **0/30** |
 | jen setkání | **0/30** | **0/30** |
 
@@ -81,9 +81,13 @@ Obě nulové hodnoty sedí přesně, a jsou to ty nejtvrdší: **bez postihu
 otázky.** Proto se žádná varianta setkání nemohla k referenci
 přiblížit — chyba byla jinde, než kam mířilo hledání.
 
-**Co po doplnění kroku 3b zbývá.** Přesnost stoupla z 3/30 na 10/30
-proti referenčním 14/30. Šest z deseti zbývajících chyb je „pořadí 1"
-— správná odpověď je těsně druhá (např. „Kolem čeho obíhá Země?":
-měsíc 2,25 před slunce 2,13). Rozdíl je tedy v měřítku členů, ne
-v jejich skladbě. Poznámka k parametrům: s oknem `r=2` vychází 11/30,
-ale referenční konfigurace je `r=1`, takže kód zůstává u ní.
+**Co po doplnění kroku 3b zbývá.** Přesnost stoupla z 3/30 na 11/30
+proti referenčním 14/30. Šest chyb je „pořadí 1" — správná odpověď
+těsně druhá (např. „Kolem čeho obíhá Země?": měsíc 2,25 před slunce
+2,13). Rozdíl je tedy v měřítku členů, ne v jejich skladbě.
+
+Poslední zavřená mezera byla vlastní nedůslednost: harmonická váha
+1/(1+|o|) existuje proto, aby okno NEMĚLO hranu, ale ořezával jsem ho
+na ±r, čímž se hrana vrátila. Okno přes celou větu dá 11/30 místo
+10/30. Ořez na ±3 dá totéž co celá věta — dozvuk za třetí pozicí už
+váží málo, ale hrana tam být nesmí.
