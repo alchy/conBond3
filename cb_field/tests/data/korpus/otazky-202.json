@@ -4,78 +4,365 @@
   "corpus": "korpus-202.json",
   "blocks": [],
   "questions": [
-    {"text": "Kdo je podle úvodní definice tvůrcem hudby jakožto organizovaného systému zvuků?", "sentence": 0, "answer_lemma": "člověk", "answerable": true},
-    {"text": "Jak se lidově říká osobě, která hudbu provozuje?", "sentence": 2, "answer_lemma": "muzikant", "answerable": true},
-    {"text": "Jakým jménem se označuje vědní obor zkoumající hudbu a její společenské souvislosti?", "sentence": 5, "answer_lemma": "muzikologie", "answerable": true},
-    {"text": "Který hudební styl vytlačil na počátku dvacátého století vážnou hudbu z hlavního proudu?", "sentence": 13, "answer_lemma": "jazz", "answerable": true},
-
-    {"text": "Která vlastnost tónu je vedle výšky, délky a síly jeho čtvrtou základní charakteristikou?", "sentence": 15, "answer_lemma": "barva", "answerable": true},
-    {"text": "Jaký hudební interval, například c–d, odpovídá druhému významu slova tón?", "sentence": 16, "answer_lemma": "sekunda", "answerable": true},
-    {"text": "Jak se nazývá grafický symbol pro tón, který se zapisuje do osnovy?", "sentence": 18, "answer_lemma": "nota", "answerable": true},
-    {"text": "Jaký hudební interval odpovídá zdvojnásobení frekvence tónu vnímanému lidským uchem?", "sentence": 250, "answer_lemma": "oktáva", "answerable": true},
-
-    {"text": "Který prvek vedle rytmu a melodie patří k základním prvkům definujícím hudební projev?", "sentence": 21, "answer_lemma": "harmonie", "answerable": true},
-    {"text": "Kdo podle definice rytmicky uspořádává sled tónů do melodie?", "sentence": 19, "answer_lemma": "skladatel", "answerable": true},
-
-    {"text": "Co obecně znamená slovo harmonie, mimo jiné jedním z uvedených synonym?", "sentence": 23, "answer_lemma": "soulad", "answerable": true},
-    {"text": "Jak se nazývá opak harmonie, označující nepříjemný souzvuk?", "sentence": 26, "answer_lemma": "disharmonie", "answerable": true},
-    {"text": "Z jakého jazyka pochází slovo harmonie?", "sentence": 106, "answer_lemma": "řečtina", "answerable": true},
-    {"text": "Kdo je podle textu autorem konceptu harmonie?", "sentence": 107, "answer_lemma": "Pythagor", "answerable": true},
-
-    {"text": "Jak se nazývá pravidelné střídání nebo opakování zvuku či částí nějakého děje?", "sentence": 28, "answer_lemma": "rytmus", "answerable": true},
-    {"text": "Co se pravidelně střídá spolu se dnem a nocí jako příklad přírodního rytmu?", "sentence": 29, "answer_lemma": "období", "answerable": true},
-
-    {"text": "Jak obecně nazýváme zařízení sloužící k vydávání tónů a zvuků užívaných v hudbě?", "sentence": 32, "answer_lemma": "nástroj", "answerable": true},
-    {"text": "Čím vzniká tón u samozvučných, idiofonních nástrojů?", "sentence": 179, "answer_lemma": "chvění", "answerable": true},
-    {"text": "Z čeho se nejčastěji vyrábí blána u blanozvučných nástrojů?", "sentence": 254, "answer_lemma": "kůže", "answerable": true},
-    {"text": "Mezi kolika pevnými body je u strunných nástrojů napjata struna?", "sentence": 316, "answer_lemma": "dva", "answerable": true},
-
-    {"text": "Jakým jiným jednoslovným názvem se běžně označuje klavír, klávesový úderový strunný nástroj?", "sentence": 37, "answer_lemma": "piano", "answerable": true},
-    {"text": "Jak se jinak nazývá velký klavír určený zejména pro koncertní účely?", "sentence": 41, "answer_lemma": "křídlo", "answerable": true},
-    {"text": "Jak se méně obvykle označuje mužský hráč na klavír, vedle běžnějšího klavíristy?", "sentence": 43, "answer_lemma": "pianista", "answerable": true},
-
-    {"text": "Kolika strunami jsou housle standardně vybaveny?", "sentence": 44, "answer_lemma": "čtyři", "answerable": true},
-    {"text": "Čím jsou u okrajů spojeny desky ozvučné skříně houslí?", "sentence": 188, "answer_lemma": "lub", "answerable": true},
-    {"text": "Jaké dřevo se obvykle používá na výrobu horní desky houslí?", "sentence": 190, "answer_lemma": "smrkový", "answerable": true},
-
-    {"text": "Jak se nazývá početnější hudební instrumentální těleso, kde jsou hlavní nástroje obsazeny víc než jedním hráčem?", "sentence": 49, "answer_lemma": "orchestr", "answerable": true},
-    {"text": "Kdo obvykle řídí velké hudební těleso na rozdíl od menších uskupení jako duo nebo kvarteto?", "sentence": 50, "answer_lemma": "dirigent", "answerable": true},
-    {"text": "Jak se jinak často označuje symfonický orchestr sdružující přes sto hráčů?", "sentence": 333, "answer_lemma": "filharmonie", "answerable": true},
-
-    {"text": "Kým jsou v opeře ztvárňovány dramatické role?", "sentence": 51, "answer_lemma": "zpěvák", "answerable": true},
-    {"text": "Ve které zemi mají počátek dějiny opery koncem šestnáctého století?", "sentence": 125, "answer_lemma": "Itálie", "answerable": true},
-    {"text": "Kde se obvykle koná operní představení?", "sentence": 53, "answer_lemma": "dům", "answerable": true},
-    {"text": "Jaká konkrétní hudební složka je podle textu především určující pro odlišení opery od činohry či baletu?", "sentence": 266, "answer_lemma": "zpěv", "answerable": true},
-
-    {"text": "Mezi jakou skupinou obyvatel na jihu USA jazz na počátku dvacátého století vznikl?", "sentence": 74, "answer_lemma": "komunita", "answerable": true},
-    {"text": "Co bylo podle jedné z hypotéz populární v New Orleans a mohlo dát jméno slovu jazz?", "sentence": 77, "answer_lemma": "parfém", "answerable": true},
-    {"text": "Ve kterém roce vydal William H. Krell první psaný instrumentální ragtime?", "sentence": 212, "answer_lemma": "1897", "answerable": true},
-    {"text": "Jak se nazývá hráč na bicí nástroje, kterým byl v bebopu Max Roach?", "sentence": 595, "answer_lemma": "bubeník", "answerable": true},
-
-    {"text": "Ve které obci se narodil Antonín Dvořák?", "sentence": 79, "answer_lemma": "Nelahozeves", "answerable": true},
-    {"text": "Kolik dětí měli celkem manželé František a Anna Dvořákovi?", "sentence": 216, "answer_lemma": "devět", "answerable": true},
-    {"text": "Který významný skladatel hudebního romantismu doporučil Dvořáka berlínskému nakladateli?", "sentence": 366, "answer_lemma": "Brahms", "answerable": true},
-    {"text": "Jakou profesí byl Josef Jan Kovařík, který Dvořáka doprovázel při jeho pobytu v USA?", "sentence": 494, "answer_lemma": "houslista", "answerable": true},
-
-    {"text": "Ve kterém městě se narodil Bedřich Smetana?", "sentence": 83, "answer_lemma": "Litomyšl", "answerable": true},
-    {"text": "V kolika letech Bedřich Smetana zcela ohluchl?", "sentence": 89, "answer_lemma": "padesát", "answerable": true},
-    {"text": "Kdo byl hlavním hudebním vzorem Bedřicha Smetany?", "sentence": 91, "answer_lemma": "Liszt", "answerable": true},
-    {"text": "Jakým hudebním útvarem je Smetanovo dílo Z mého života, e moll č. 1?", "sentence": 93, "answer_lemma": "kvartet", "answerable": true},
-
-    {"text": "Ve kterém roce byla založena pražská konzervatoř, jejímž ředitelem byl Jan Bedřich Kittl?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Kolik oper celkem zkomponoval Giuseppe Verdi za svou kariéru?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Jaké je rodné jméno dirigenta Herberta von Karajana?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Kolik centimetrů měří žíně běžného houslového smyčce?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "V jaké tónině je zkomponována Beethovenova Pátá symfonie?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Kolik ocenění od zahraničních akademií získal Antonín Dvořák za svého života?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Na které datum připadá Mezinárodní den hudby?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Kolik strun má standardní koncertní harfa?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Kolik hodin trvá kompletní provedení Wagnerovy tetralogie Prsten Nibelungův?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Který skladatel napsal hudbu k baletu Labutí jezero?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Kolik dětí měli Bedřich Smetana a jeho první manželka Kateřina Kolářová?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "V jaké budově sídlí Česká filharmonie?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Kdo navrhl budovu vídeňské Státní opery?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Kolikanásobně vyšší je aukční cena houslí od Antonia Stradivariho oproti běžným studentským houslím?", "sentence": null, "answer_lemma": null, "answerable": false},
-    {"text": "Kolik hudebníků tvořilo kapelu Original Dixieland Jass Band při své první nahrávce?", "sentence": null, "answer_lemma": null, "answerable": false}
+    {
+      "text": "Kdo je podle úvodní definice tvůrcem hudby jakožto organizovaného systému zvuků?",
+      "sentence": 0,
+      "answer_lemma": "člověk",
+      "answerable": true
+    },
+    {
+      "text": "Jak se lidově říká osobě, která hudbu provozuje?",
+      "sentence": 2,
+      "answer_lemma": "muzikant",
+      "answerable": true
+    },
+    {
+      "text": "Jakým jménem se označuje vědní obor zkoumající hudbu a její společenské souvislosti?",
+      "sentence": 5,
+      "answer_lemma": "muzikologie",
+      "answerable": true
+    },
+    {
+      "text": "Který hudební styl vytlačil na počátku dvacátého století vážnou hudbu z hlavního proudu?",
+      "sentence": 13,
+      "answer_lemma": "jazz",
+      "answerable": true
+    },
+    {
+      "text": "Která vlastnost tónu je vedle výšky, délky a síly jeho čtvrtou základní charakteristikou?",
+      "sentence": 15,
+      "answer_lemma": "barva",
+      "answerable": true
+    },
+    {
+      "text": "Jaký hudební interval, například c–d, odpovídá druhému významu slova tón?",
+      "sentence": 16,
+      "answer_lemma": "sekunda",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá grafický symbol pro tón, který se zapisuje do osnovy?",
+      "sentence": 18,
+      "answer_lemma": "nota",
+      "answerable": true
+    },
+    {
+      "text": "Jaký hudební interval odpovídá zdvojnásobení frekvence tónu vnímanému lidským uchem?",
+      "sentence": 250,
+      "answer_lemma": "oktáva",
+      "answerable": true
+    },
+    {
+      "text": "Který prvek vedle rytmu a melodie patří k základním prvkům definujícím hudební projev?",
+      "sentence": 21,
+      "answer_lemma": "harmonie",
+      "answerable": true
+    },
+    {
+      "text": "Kdo podle definice rytmicky uspořádává sled tónů do melodie?",
+      "sentence": 19,
+      "answer_lemma": "skladatel",
+      "answerable": true
+    },
+    {
+      "text": "Co obecně znamená slovo harmonie, mimo jiné jedním z uvedených synonym?",
+      "sentence": 23,
+      "answer_lemma": "soulad",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá opak harmonie, označující nepříjemný souzvuk?",
+      "sentence": 26,
+      "answer_lemma": "disharmonie",
+      "answerable": true
+    },
+    {
+      "text": "Z jakého jazyka pochází slovo harmonie?",
+      "sentence": 106,
+      "answer_lemma": "řečtina",
+      "answerable": true
+    },
+    {
+      "text": "Kdo je podle textu autorem konceptu harmonie?",
+      "sentence": 107,
+      "answer_lemma": "Pythagor",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá pravidelné střídání nebo opakování zvuku či částí nějakého děje?",
+      "sentence": 28,
+      "answer_lemma": "rytmus",
+      "answerable": true
+    },
+    {
+      "text": "Co se pravidelně střídá spolu se dnem a nocí jako příklad přírodního rytmu?",
+      "sentence": 29,
+      "answer_lemma": "období",
+      "answerable": true
+    },
+    {
+      "text": "Jak obecně nazýváme zařízení sloužící k vydávání tónů a zvuků užívaných v hudbě?",
+      "sentence": 32,
+      "answer_lemma": "nástroj",
+      "answerable": true
+    },
+    {
+      "text": "Čím vzniká tón u samozvučných, idiofonních nástrojů?",
+      "sentence": 179,
+      "answer_lemma": "chvění",
+      "answerable": true
+    },
+    {
+      "text": "Z čeho se nejčastěji vyrábí blána u blanozvučných nástrojů?",
+      "sentence": 254,
+      "answer_lemma": "kůže",
+      "answerable": true
+    },
+    {
+      "text": "Mezi kolika pevnými body je u strunných nástrojů napjata struna?",
+      "sentence": 316,
+      "answer_lemma": "dva",
+      "answerable": true
+    },
+    {
+      "text": "Jakým jiným jednoslovným názvem se běžně označuje klavír, klávesový úderový strunný nástroj?",
+      "sentence": 37,
+      "answer_lemma": "piano",
+      "answerable": true
+    },
+    {
+      "text": "Jak se jinak nazývá velký klavír určený zejména pro koncertní účely?",
+      "sentence": 41,
+      "answer_lemma": "křídlo",
+      "answerable": true
+    },
+    {
+      "text": "Jak se méně obvykle označuje mužský hráč na klavír, vedle běžnějšího klavíristy?",
+      "sentence": 43,
+      "answer_lemma": "pianista",
+      "answerable": true
+    },
+    {
+      "text": "Kolika strunami jsou housle standardně vybaveny?",
+      "sentence": 44,
+      "answer_lemma": "čtyři",
+      "answerable": true
+    },
+    {
+      "text": "Čím jsou u okrajů spojeny desky ozvučné skříně houslí?",
+      "sentence": 188,
+      "answer_lemma": "lub",
+      "answerable": true
+    },
+    {
+      "text": "Jaké dřevo se obvykle používá na výrobu horní desky houslí?",
+      "sentence": 190,
+      "answer_lemma": "smrkový",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá početnější hudební instrumentální těleso, kde jsou hlavní nástroje obsazeny víc než jedním hráčem?",
+      "sentence": 49,
+      "answer_lemma": "orchestr",
+      "answerable": true
+    },
+    {
+      "text": "Kdo obvykle řídí velké hudební těleso na rozdíl od menších uskupení jako duo nebo kvarteto?",
+      "sentence": 50,
+      "answer_lemma": "dirigent",
+      "answerable": true
+    },
+    {
+      "text": "Jak se jinak často označuje symfonický orchestr sdružující přes sto hráčů?",
+      "sentence": 333,
+      "answer_lemma": "filharmonie",
+      "answerable": true
+    },
+    {
+      "text": "Kým jsou v opeře ztvárňovány dramatické role?",
+      "sentence": 51,
+      "answer_lemma": "zpěvák",
+      "answerable": true
+    },
+    {
+      "text": "Ve které zemi mají počátek dějiny opery koncem šestnáctého století?",
+      "sentence": 125,
+      "answer_lemma": "Itálie",
+      "answerable": true
+    },
+    {
+      "text": "Kde se obvykle koná operní představení?",
+      "sentence": 53,
+      "answer_lemma": "dům",
+      "answerable": true
+    },
+    {
+      "text": "Jaká konkrétní hudební složka je podle textu především určující pro odlišení opery od činohry či baletu?",
+      "sentence": 266,
+      "answer_lemma": "zpěv",
+      "answerable": true
+    },
+    {
+      "text": "Mezi jakou skupinou obyvatel na jihu USA jazz na počátku dvacátého století vznikl?",
+      "sentence": 74,
+      "answer_lemma": "komunita",
+      "answerable": true
+    },
+    {
+      "text": "Co bylo podle jedné z hypotéz populární v New Orleans a mohlo dát jméno slovu jazz?",
+      "sentence": 77,
+      "answer_lemma": "parfém",
+      "answerable": true
+    },
+    {
+      "text": "Ve kterém roce vydal William H. Krell první psaný instrumentální ragtime?",
+      "sentence": 212,
+      "answer_lemma": "1897",
+      "answerable": true
+    },
+    {
+      "text": "Jak se nazývá hráč na bicí nástroje, kterým byl v bebopu Max Roach?",
+      "sentence": 595,
+      "answer_lemma": "bubeník",
+      "answerable": true
+    },
+    {
+      "text": "Ve které obci se narodil Antonín Dvořák?",
+      "sentence": 79,
+      "answer_lemma": "Nelahozeves",
+      "answerable": true
+    },
+    {
+      "text": "Kolik dětí měli celkem manželé František a Anna Dvořákovi?",
+      "sentence": 216,
+      "answer_lemma": "devět",
+      "answerable": true
+    },
+    {
+      "text": "Který významný skladatel hudebního romantismu doporučil Dvořáka berlínskému nakladateli?",
+      "sentence": 366,
+      "answer_lemma": "Brahms",
+      "answerable": true
+    },
+    {
+      "text": "Jakou profesí byl Josef Jan Kovařík, který Dvořáka doprovázel při jeho pobytu v USA?",
+      "sentence": 494,
+      "answer_lemma": "houslista",
+      "answerable": true
+    },
+    {
+      "text": "Ve kterém městě se narodil Bedřich Smetana?",
+      "sentence": 83,
+      "answer_lemma": "Litomyšl",
+      "answerable": true
+    },
+    {
+      "text": "V kolika letech Bedřich Smetana zcela ohluchl?",
+      "sentence": 89,
+      "answer_lemma": "padesát",
+      "answerable": true
+    },
+    {
+      "text": "Kdo byl hlavním hudebním vzorem Bedřicha Smetany?",
+      "sentence": 91,
+      "answer_lemma": "Liszt",
+      "answerable": true
+    },
+    {
+      "text": "Jakým hudebním útvarem je Smetanovo dílo Z mého života?",
+      "sentence": 93,
+      "answer_lemma": "kvartet",
+      "answerable": true
+    },
+    {
+      "text": "Ve kterém roce byla založena pražská konzervatoř, jejímž ředitelem byl Jan Bedřich Kittl?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik oper celkem zkomponoval Giuseppe Verdi za svou kariéru?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Jaké je rodné jméno dirigenta Herberta von Karajana?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik centimetrů měří žíně běžného houslového smyčce?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "V jaké tónině je zkomponována Beethovenova Pátá symfonie?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik ocenění od zahraničních akademií získal Antonín Dvořák za svého života?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Na které datum připadá Mezinárodní den hudby?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik strun má standardní koncertní harfa?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik hodin trvá kompletní provedení Wagnerovy tetralogie Prsten Nibelungův?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Který skladatel napsal hudbu k baletu Labutí jezero?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik dětí měli Bedřich Smetana a jeho první manželka Kateřina Kolářová?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "V jaké budově sídlí Česká filharmonie?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kdo navrhl budovu vídeňské Státní opery?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolikanásobně vyšší je aukční cena houslí od Antonia Stradivariho oproti běžným studentským houslím?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    },
+    {
+      "text": "Kolik hudebníků tvořilo kapelu Original Dixieland Jass Band při své první nahrávce?",
+      "sentence": null,
+      "answer_lemma": null,
+      "answerable": false
+    }
   ]
 }
