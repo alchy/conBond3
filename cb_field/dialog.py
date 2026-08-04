@@ -102,6 +102,38 @@ def reply(question: SentenceField, corpus: Corpus,
                  missing=gaps)
 
 
+def expand_question(question: SentenceField, corpus: Corpus,
+                    graph: FactGraph, parser, lookup=None,
+                    store=None) -> dict:
+    """Sebe-rozšíření otázky (krok B návrhu) — operační vstup.
+
+    Pro jmenné dané osy otázky (NOUN/PROPN) se opatří definice
+    (korpus → slovník → dialog; ensure_definition) a derivace se
+    párují CÍLENĚ kolem kmenů slov otázky — plošné nasazení derivací
+    je zavržené měřením (−3,3 b baseline). Samotné rozšíření koše pak
+    dělá šíření po nových vazbách (jen matice).
+
+    lookup/store se předávají ensure_definition (None lookup =
+    slovník se přeskočí, zbývá dialog); vrací {"definice": {osa:
+    zdroj}, "derivaci": počet nových vazeb}.
+    """
+    from cb_field.relations import (derivation_links, ensure_definition,
+                                    wikipedia_definition)
+    definitions = {}
+    lemmas = set()
+    for key in given_axes(question):
+        upos, lemma = key[len("WORD="):].split(":", 1)
+        lemmas.add(lemma)
+        if upos in ("NOUN", "PROPN"):
+            definitions[key] = ensure_definition(
+                key, corpus, graph, parser,
+                lookup=lookup if lookup is not None
+                else wikipedia_definition,
+                store=store)
+    added = derivation_links(graph, corpus.registry, around=lemmas)
+    return {"definice": definitions, "derivaci": added}
+
+
 def append_context(text: str, corpus: Corpus, graph: FactGraph,
                    parser) -> SentenceField:
     """Připojí větu od uživatele — stejnou cestou jako každý text,

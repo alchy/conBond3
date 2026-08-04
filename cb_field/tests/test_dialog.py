@@ -9,7 +9,7 @@ import unittest
 
 from cb_field.corpus import Corpus
 from cb_field.dialog import Reply, append_context, axis_coverage, \
-    fact_gaps, reply
+    expand_question, fact_gaps, reply
 from cb_field.field import SentenceField
 from cb_field.graph import FactGraph
 from cb_field.tests.test_graph import KREST, _Sentence
@@ -114,7 +114,31 @@ class TestReply(unittest.TestCase):
         self.assertEqual(answer.missing, [])
 
 
-class TestAppendContext(unittest.TestCase):
+class TestExpandQuestion(unittest.TestCase):
+
+    def test_expanze_doplni_definice_a_cilene_derivace(self):
+        # otázka o křtu: definice se opatří pro jmenné osy (dálnice
+        # v korpusu není → lookup), derivace se párují JEN kolem
+        # kmenů otázky a expanze — nic plošného
+        corpus = Corpus(r=1)
+        corpus.add_sentence(_Sentence(KREST))
+        graph = FactGraph()
+        graph.add_sentence(_Sentence(KREST))
+        question = _question(corpus)
+        looked = []
+        outcome = expand_question(
+            question, corpus, graph, _Parser(KREST),
+            lookup=lambda term: looked.append(term) or None)
+        # jmenné dané osy otázky šly do opatřování definic
+        self.assertIn("Ježíš", looked)
+        self.assertEqual(outcome["definice"]["WORD=PROPN:Ježíš"],
+                         "dialog")     # lookup nic nevrátil
+        # derivace se párovaly jen kolem kmenů otázky (cíleně) —
+        # okolí je v outcome a nic plošného se nepřidalo
+        self.assertIn("derivaci", outcome)
+        derivace = [1 for _s, _d, _w, src in corpus.registry.links()
+                    if src == "derivace"]
+        self.assertEqual(len(derivace), outcome["derivaci"])
 
     def test_veta_uzivatele_jde_stejnou_cestou_se_zdrojem_dialog(self):
         corpus = Corpus(r=1)
