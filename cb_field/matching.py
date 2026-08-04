@@ -284,7 +284,15 @@ def match(question: SentenceField, corpus: Corpus,
             given = float(w_given * (q_words[cidx] @ cvals)
                           / c_denominator) if c_denominator else 0.0
             score = meet + cover + topic + given
-            order = np.argsort(-np.abs(contributions))[:top_nodes]
+            # top-K bez plného řazení: po Hebbovi mají rozšířené pytle
+            # tisíce os a argsort × 58k kandidátů stál hodiny (naměřeno
+            # samplem); argpartition je O(n)
+            magnitude = -np.abs(contributions)
+            if len(contributions) > top_nodes:
+                part = np.argpartition(magnitude, top_nodes)[:top_nodes]
+            else:
+                part = np.arange(len(contributions))
+            order = part[np.argsort(magnitude[part])]
             candidates.append(Candidate(
                 sentence=sentence, center=center, score=score,
                 meet_score=round(meet, 6), cover_score=round(cover, 6),
