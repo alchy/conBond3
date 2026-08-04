@@ -10,9 +10,9 @@ nic nemění. Odsouhlasené kroky se sem zapisují postupně (J.).
    stupně a poměru · *odsouhlaseno 2026-08-04*
 2. **Promoce do custom vertikál** — `promote_verticals()`, limit 328,
    kritérium různých²/hran, vratná · *odsouhlaseno 2026-08-04*
-3. Verze osy a invalidace — ošetření přeobsazeného sloupce
-4. Přeučení po promoci — s odvoláním kola, které uškodí
-5. Detekce mezery a dialog — „nemám rychlost, doplň kontext"
+3. **Promoční cyklus** — invalidace, přeučení a odvolání jako jedna
+   atomická operace · *odsouhlaseno 2026-08-04*
+4. Detekce mezery a dialog — „nemám rychlost, doplň kontext"
 6. Odpověď jako věta — zapojit úroveň, která už měřením funguje
 7. Náhled — které uzly se rozsvítily
 
@@ -184,3 +184,57 @@ je jmen jen **18 (5 %)**, zbytek jsou nositelé tvaru.
 Dělení rozpočtu mezi **slova** a **typy vztahů**. V jedné soutěži slova
 typy přehlasují počtem, ačkoli typ je cennější (platí pro celý druh
 otázek). Buď pevné dělení (např. 200/128), nebo násobek pro typy.
+
+---
+
+## Krok 3 · Promoční cyklus (invalidace + přeučení + odvolání)
+
+Původně jsem to navrhoval jako dva kroky (technická invalidace zvlášť,
+přeučení zvlášť). **J. to sloučil, a má pravdu**: promoce bez přeučení
+nechá systém v horším stavu, než v jakém byl — dostane nové osy, na
+kterých nemá naučeno nic, zatímco stará váha platila pro jinou
+reprezentaci. A hlavně: odvolání promoce potřebuje měření, které dává
+smysl teprve po přeučení. Jinak by se odvolávalo podle čísla z
+mezistavu.
+
+Cyklus je proto **atomický**: buď projde celý, nebo se nestalo nic.
+
+    1. snapshot osy i vazeb
+    2. promote_verticals() → cílový stav osy
+    3. zápis os · axis_version++ · invalidace všeho, co drží sloupce
+    4. přeučení nad novými osami
+    5. měření (přesnost × NEVÍM-správnost × recall v dosahu)
+    6. horší než před cyklem → návrat na snapshot, jinak přijmout
+
+### Invalidace: nejnebezpečnější místo návrhu
+
+Dnes je registr append-only, sloupec znamená navždy totéž a matice vět
+se na ta čísla cachují. S limitem 328 se sloupce uvolňují
+a přeobsazují, takže stará matice ukazuje na sloupec, který mezitím
+znamená něco jiného. **Neprojeví se to pádem, jen tichou záměnou
+významu** — systém bude vypadat, že funguje, a bude se plynule
+zhoršovat.
+
+Proto `registry.axis_version` — čítač změn OBSAZENÍ os, vedle dnešního
+`link_version` (změny vazeb). Verzi nese každý, kdo si pamatuje
+sloupcová čísla: cache matic vět, cache pytlů faktů v párování, uložený
+registr na disku. Čtení cache jde jedinou funkcí, která verzi porovná,
+aby na to nešlo v novém kódu zapomenout; `load()` odmítne soubor s cizí
+verzí osy hlasitě, ne tiše.
+
+**Naučené hrany jsou zvláštní případ.** V registru jsou uložené podle
+klíčů (`_links[(src, dst)]`), ne indexů, takže je přeobsazení sloupce
+nerozbije — jen jim zmizí osa, do které ukazovaly. Uvolněná vertikála
+proto musí odejít i se svými hranami, jinak zůstanou viset do
+neexistujících os. Je to jediné místo, kde promoce **maže naučené**,
+a patří do testu.
+
+### Přejímací kritérium
+
+- test: postavit korpus, promovat, uvolnit sloupec — stará matice se
+  musí odmítnout použít (ne vrátit špatná data);
+- test: po uvolnění vertikály nezůstanou v registru hrany, které na ni
+  ukazují;
+- test: cyklus, který zhorší měření, vrátí registr bit po bitu do
+  stavu před sebou (snapshot + `unlink`);
+- regrese: bez promoce se nesmí změnit žádné dnešní číslo.
