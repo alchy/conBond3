@@ -497,3 +497,36 @@ rozsvítí, ale vybírat má graf (vzor, role, vazby), ne součet v pytli.
 Zvýšení W_FIT ani W_CENTER nepomohlo (0/33 při obou), protože oba jen
 převáží členy uvnitř téhož součtu; výběr potřebuje jinou operaci, ne
 jinou váhu — konjunkci vzoru, ne sumu.
+
+## 21 · Kontext vět rozšiřuje dosah, ale ne výběr (2026-08-04)
+
+Nová trénovací sada (120 otázek, z toho 12 mezivětných) poprvé dala
+druhému r co obsluhovat. Nejdřív bylo nutné opravit metriku:
+`reach_report` prohlížel jen okno slov uvnitř věty, takže mezivětná
+otázka byla „mimo dosah" z definice a vliv r_sentences nešlo změřit
+(vracel identická čísla pro r_věta 0/1/2 — vada měření, ne mechaniky).
+
+Po opravě, korpusy r_slovo=2:
+
+| r_věta | sada | v top 3 | mimo dosah | **vada** |
+|---|---|---|---|---|
+| 0 | mezivětné (4) | 0 | 4 | 0 |
+| 1 | mezivětné (4) | 0 | 3 | **1** |
+| 0 | jednovětné (71) | 4 | 39 | 28 |
+| 1 | jednovětné (71) | 5 | **14** | **52** |
+
+**Mechanismus dosahu funguje**: přítok sousední věty snížil „mimo
+dosah" z 39 na 14, tedy ve 25 případech podnět do koše skutečně
+dorazil. **Výběr ale ne**: vady vzrostly z 28 na 52 — skoro každá
+otázka, kterou kontext přivedl do dosahu, hned propadla mimo top 3.
+Čistý zisk v top 3 je jediná otázka (4 → 5).
+
+Diagnóza je táž jako v § 20, jen doložená z druhé strany: koš dostane
+podnět, ale spolu s ním celý zbytek sousední věty, a součet v pytli
+mezi tím nerozliší. Rozšiřovat dosah bez schopnosti vybírat vyrábí
+kandidáty, ne odpovědi.
+
+Poznámka k tvrdosti sady: jednovětné otázky z TRÉNOVACÍ sady jsou
+mnohem tvrdší než etalon (28 vad proti 4), protože sítko z nich
+vyhodilo všechno, co opisuje větu — zbyly samé parafráze. Etalon
+dosud lichotil.
