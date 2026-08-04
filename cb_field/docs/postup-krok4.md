@@ -535,3 +535,30 @@ Poznámka k tvrdosti sady: jednovětné otázky z TRÉNOVACÍ sady jsou
 mnohem tvrdší než etalon (28 vad proti 4), protože sítko z nich
 vyhodilo všechno, co opisuje větu — zbyly samé parafráze. Etalon
 dosud lichotil.
+
+## 22 · Věta jako odpověď funguje — chyběla normalizace (2026-08-04, J.)
+
+Při ukázce aktivací pro „Kde byl pokřtěn Ježíš?" se ukázalo, že
+`sentence_activation` sčítala kladné aktivace věty bez normalizace,
+takže měřila POČET SLOV, ne shodu: nejaktivnější vyšla dlouhá pasáž
+o znesvěcující ohavnosti (52,1), věta s odpovědí nikde. J.: *„součet
+přes věty musí být normalizovaný."*
+
+Po dělení počtem kandidátů (průměrná kladná aktivace):
+
+| aktivace | věta |
+|---|---|
+| **1,46** | V těch dnech přišel Ježíš z Nazareta … a byl v **Jordánu** pokřtěn |
+| 1,45 | Ježíš jim řekl: „Kalich, který já piji…" |
+| 0,93 | Když byl Jan uvězněn, přišel Ježíš do Galileje |
+
+**Správná věta je první.** Úroveň „odpověď je věta" tedy funguje —
+dosud jen vypadala rozbitě kvůli vadné agregaci. Je to táž chyba,
+jakou u skóre kandidáta opravil kosinus (§ 12), jen o patro výš;
+poučení: každá agregace přes různě velké celky se musí normalizovat,
+jinak měří velikost.
+
+Co zůstává: výběr UVNITŘ věty. V té správné větě stojí „Jordánu"
+(2,088) a „Galileji" (2,068) prakticky stejně — obojí je místo v téže
+větě a součet je nerozliší. Tady je konjunkce podnět × typ pořád
+nutná; nově ale víme, že se řeší na jednom patře, ne na obou.
