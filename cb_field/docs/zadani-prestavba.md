@@ -361,9 +361,82 @@ kandidát Jordán ve větě o křtu):
     naměřeno: hloubka se s učením a promocí skládá NADADITIVNĚ
     (B 0,30 · D 0,33 · E 0,467); k=3 už rozmělňuje
 
-**Přejímka (bitově):** 2 912 vět, k=1, bez učení → přesnost 0,3667 ·
-mlčení 0 · dosah 10/19/1; coverage křtu: 1,000/0,604/0,885; mrtvá
-osa (dálnice bez definice) = PŘESNÁ 0 — propast, ne škála.
+### Krok 3b · Skládání pytlů a normalizace členů (KRITICKÉ)
+
+Tohle je místo, kde přestavba nejsnáz mine chování reference —
+doplněno 2026-08-05 po nálezu při stavbě cb_bond (rebuild dostal
+6/30 tam, kde reference dává 14/30). Členy skóre nepočítají nad
+TÝMŽ vektorem: každý má svou reprezentaci a svou normalizaci.
+
+**Pytel otázky (jeden na celou otázku, ne na token):**
+
+    q_raw  = question.matrix(COMPLETE).sum(axis=0)   # SOUČET VŠECH ŘÁDKŮ
+    q_raw *= semantic_mask        # jen MATCH_PREFIXES → strukturní osy
+                                  # (UPOS=, DEPREL=, Case=…) VYPADNOU
+    q_sat  = saturate(q_raw, L, k)          # tanh(v + v·L), k kroků
+    q_norm = ‖q_sat‖
+    q_words = q_raw * word_mask   # POZOR: ze SUROVÉHO, ne saturovaného;
+                                  # WORD= bez PUNCT
+    q_anchor = q_sat * anchor_mask          # ze SATUROVANÉHO
+
+**Pytel kandidáta (na každý token věty):**
+
+    rows[i] = matrix[i] * semantic_mask     # maska PŘED vším ostatním
+    window_bag = Σ rows[center+o] / (1 + |o|)  pro o ∈ ⟨−r, r⟩  (+ kontext vět)
+    window = saturate(window_bag, L, k) / ‖·‖      ← JEDNOTKOVÝ vektor
+    center = saturate(rows[center], L, k) / ‖·‖    ← JEDNOTKOVÝ, ZVLÁŠŤ
+    combined = window + (W_CENTER − 1)·center
+
+**Z toho plyne identita, kterou musí přestavba zachovat:**
+
+    meet = q_sat · combined / ‖q_sat‖
+         = cos(q̃, window) + (W_CENTER − 1) · cos(q̃, center)
+
+Obě části jsou jednotkové, proto dělení JEN normou otázky dá součet
+dvou kosinů. Kdo místo toho spočítá cos(q̃, window + 2·center) nad
+surovým pytlem, trestá středy s bohatou morfologií (norma roste
+o vše, co střed nese) — přesně chyba, kvůli které je zdůraznění
+středu vlastní člen, ne násobek.
+
+**Kde který člen žije** (nejčastější zdroj odchylky):
+
+| člen | vektor otázky | vektor kandidáta | normalizace |
+|---|---|---|---|
+| meet | q_sat (saturovaný) | combined (dva jednotkové) | ÷ ‖q_sat‖ |
+| cover | dané osy (indexy) | tanh(spread(CELÁ VĚTA + kontext)) | žádná — je to MOHUTNOST, ne kosinus: min přes dané osy |
+| topic | q_raw × word_mask | Σ rows × word_mask (surové) | plný kosinus |
+| given | q_raw × word_mask | rows[center] × word_mask (surové) | plný kosinus, váha −3 |
+| fit | q_sat × anchor_mask | jednotkový střed × anchor_mask | plný kosinus, váha 0 |
+
+`cover` je stejné pro všechny kandidáty jedné věty — je to VĚTNÝ
+člen, který řadí věty; `meet`/`given` řadí tokeny uvnitř. Dané osy
+= WORD= klíče těch řádků otázky, které nemají QLEM= (bez PUNCT).
+
+**Ablace na referenci (2 912 vět, k=1, top-1 lemma bez řezu):**
+
+| konfigurace | přesnost |
+|---|---|
+| plné skóre | **14/30 = 0,4667** |
+| bez tématu (w_topic=0) | 12/30 |
+| bez zdůraznění středu (W_CENTER=1) | 9/30 |
+| bez pokrytí (w_cover=0) | 7/30 |
+| **bez postihu daného (w_given=0)** | **0/30** |
+| **jen setkání (cover/given/topic=0)** | **0/30** |
+
+Čtení: **samotné setkání nemá žádnou hodnotu.** Bez postihu −3 za
+střed, jehož slovo otázka sama uvádí, vyhrává vždy ozvěna otázky —
+proto ladění členu „setkání" nikdy nedožene referenci. Nosné jsou
+`given` (rozhoduje o všem) a `cover` (řadí věty).
+
+**Pozor na definici metriky:** přejímkové číslo 0,3667 je SPRÁVNĚ
+podle evaluate — tedy top-1 lemma A ZÁROVEŇ outcome „odpoved"
+(θ/ε řez). Totéž bez řezu je 0,4667 (14/30); rozdíl 3 otázky padnou
+do DOTAZ/NEVÍM. Přestavba musí porovnávat stejně gatovaná čísla.
+
+**Přejímka (bitově):** 2 912 vět, k=1, bez učení → přesnost 0,3667
+(s řezem) / 0,4667 (top-1 bez řezu) · mlčení 0 · dosah 10/19/1;
+coverage křtu: 1,000/0,604/0,885; mrtvá osa (dálnice bez definice)
+= PŘESNÁ 0 — propast, ne škála.
 
 ## Krok 4 · AnswerField (čtení pole)
 
