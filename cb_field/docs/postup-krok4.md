@@ -514,12 +514,17 @@ Po opravě, korpusy r_slovo=2:
 | 1 | mezivětné (4) | 0 | 3 | **1** |
 | 0 | jednovětné (71) | 4 | 39 | 28 |
 | 1 | jednovětné (71) | 5 | **14** | **52** |
+| 2 | mezivětné (4) | 0 | 2 | 2 |
+| 2 | jednovětné (71) | 6 | **10** | **55** |
 
 **Mechanismus dosahu funguje**: přítok sousední věty snížil „mimo
 dosah" z 39 na 14, tedy ve 25 případech podnět do koše skutečně
 dorazil. **Výběr ale ne**: vady vzrostly z 28 na 52 — skoro každá
 otázka, kterou kontext přivedl do dosahu, hned propadla mimo top 3.
-Čistý zisk v top 3 je jediná otázka (4 → 5).
+Čistý zisk v top 3 je jedna otázka na krok (4 → 5 → 6), zatímco dosah
+se rozšíří o desítky (39 → 14 → 10 mimo dosah) a vady rostou s ním
+(28 → 52 → 55). Poměr je tedy zhruba 1 : 25 ve prospěch kandidátů,
+kteří se do hry dostanou a hned propadnou.
 
 Diagnóza je táž jako v § 20, jen doložená z druhé strany: koš dostane
 podnět, ale spolu s ním celý zbytek sousední věty, a součet v pytli
