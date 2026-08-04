@@ -3,7 +3,8 @@
 import unittest
 
 from cb_field import Corpus, SentenceField, VerticalRegistry
-from cb_field.learning import _semantic_bag, contrastive_step, hebb
+from cb_field.learning import _semantic_bag, contrastive_step, hebb, \
+    sentence_hit, split_etalon
 from cb_field.tests.test_templates import (BEZELA, DO, KOCKA, LESA, PARKU,
                                            PES, SEL, TECKA)
 
@@ -93,6 +94,52 @@ class TestCustomOsyVUceni(unittest.TestCase):
         self.assertIsNotNone(edge)
         self.assertGreater(edge[0], 0)
         self.assertEqual(edge[1], "etalon")
+
+
+class TestValidacniSada(unittest.TestCase):
+    """Zobecnění (J. 2026-08-04): 30 % otázek se při učení nepoužije
+    a měří se na nich loss; rozdělení je deterministické (semínko)
+    a vrstvené — zodpověditelné i nezodpověditelné v témž poměru."""
+
+    def _entries(self):
+        return ([{"otazka": f"Z{i}?", "odpoved_lemma": "x",
+                  "zodpoveditelna": True} for i in range(7)]
+                + [{"otazka": f"N{i}?", "odpoved_lemma": None,
+                    "zodpoveditelna": False} for i in range(3)])
+
+    def test_rozdeleni_je_deterministicke_a_vrstvene(self):
+        train, valid = split_etalon(self._entries(), share=0.3, seed=328)
+        train2, valid2 = split_etalon(self._entries(), share=0.3,
+                                      seed=328)
+        self.assertEqual(valid, valid2)          # totéž semínko, týž los
+        self.assertEqual(len(train) + len(valid), 10)
+        texts = {e["otazka"] for e in train} \
+            & {e["otazka"] for e in valid}
+        self.assertEqual(texts, set())           # disjunktní
+        self.assertEqual(sum(1 for e in valid if e["zodpoveditelna"]), 2)
+        self.assertEqual(sum(1 for e in valid
+                             if not e["zodpoveditelna"]), 1)
+
+    def test_jine_seminko_jiny_los(self):
+        _t1, valid1 = split_etalon(self._entries(), share=0.3, seed=1)
+        _t2, valid2 = split_etalon(self._entries(), share=0.3, seed=2)
+        self.assertNotEqual([e["otazka"] for e in valid1],
+                            [e["otazka"] for e in valid2])
+
+
+class TestVetaVKandidatech(unittest.TestCase):
+
+    def test_uspech_optimalizace_je_veta_v_kandidatech(self):
+        # úspěch posílení: validní věta je mezi kandidátními větami
+        from cb_field.matching import match
+        from cb_field.tests.test_matching import (KAM, OTAZNIK, PES2,
+                                                  SEL2, _scena)
+        corpus = _scena()
+        question = SentenceField((KAM, SEL2, PES2, OTAZNIK), r=1,
+                                 registry=corpus.registry)
+        result = match(question, corpus)
+        self.assertTrue(sentence_hit(result, "les"))     # věta s lesem
+        self.assertFalse(sentence_hit(result, "kočka"))  # v korpusu není
 
 
 if __name__ == "__main__":

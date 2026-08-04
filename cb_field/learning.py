@@ -49,6 +49,42 @@ ETA_CONTRAST = 0.01
 #: (marže všude splněna), nebo odvoláním epochy, která zhoršila loss.
 MAX_EPOCHS = 10
 
+#: Zobecnění se měří na odložené sadě (J. 2026-08-04): 30 % otázek se
+#: při učení nepoužije a loss na nich řídí odvolání epochy. Rozdělení
+#: je deterministické (semínko — § 13, žádná náhoda bez semínka)
+#: a vrstvené po zodpověditelnosti.
+VALIDATION_SHARE = 0.3
+SPLIT_SEED = 328
+
+
+def split_etalon(entries, share: float = VALIDATION_SHARE,
+                 seed: int = SPLIT_SEED) -> tuple:
+    """(trénink, validace) — vrstveně po zodpověditelnosti, se semínkem."""
+    import random
+    rng = random.Random(seed)
+    train, valid = [], []
+    for answerable in (True, False):
+        stratum = [e for e in entries
+                   if bool(e["zodpoveditelna"]) == answerable]
+        rng.shuffle(stratum)
+        held_out = round(len(stratum) * share)
+        valid.extend(stratum[:held_out])
+        train.extend(stratum[held_out:])
+    return train, valid
+
+
+def sentence_hit(result, expected_lemma, top: int = 3) -> bool:
+    """Úspěch posílení (J. 2026-08-04): VALIDNÍ VĚTA je mezi kandidáty
+    — v top větách podle větné aktivace leží token s očekávaným
+    lemmatem. Cíl je vybrat kandidátní věty s odpovědí; token je jen
+    jemnější čtení téhož pole."""
+    from cb_field.query import sentence_activation
+    for sentence, _activation, _cands in sentence_activation(result)[:top]:
+        if any(t.lemma == expected_lemma for t in sentence.tokens):
+            return True
+    return False
+
+
 #: Relativní marže (krok 3 refaktoru, J. 2026-08-03): o kolik má správná
 #: vést nad nejlepším špatným, vyjádřeno podílem soupeřova skóre — na
 #: absolutní čísla se neváže. 0,2 je přenesená proporce staré absolutní
@@ -308,11 +344,16 @@ def train_on_etalon(corpus, etalon_entries, parser,
     Bez zodpověditelných otázek v sadě se mlčení učit nemá proti čemu.
     """
     from cb_field.field import SentenceField
-    stats = {"epoch": 0, "kroku": 0, "hran": 0, "epochy": []}
+    # Zobecnění: 30 % otázek stranou, loss na nich řídí odvolání epochy
+    # (J. 2026-08-04). Malá sada bez validační části se řídí tréninkovým
+    # lossem jako dřív.
+    train_entries, valid_entries = split_etalon(etalon_entries)
+    stats = {"epoch": 0, "kroku": 0, "hran": 0, "epochy": [],
+             "trenink": len(train_entries), "validace": len(valid_entries)}
     adam_state = {}                    # momenty (m, v, t) na hranu
-    previous_loss = None
-    answerable = [e for e in etalon_entries if e["zodpoveditelna"]]
-    silent = [e for e in etalon_entries if not e["zodpoveditelna"]]
+    previous_watch = None
+    answerable = [e for e in train_entries if e["zodpoveditelna"]]
+    silent = [e for e in train_entries if not e["zodpoveditelna"]]
     from cb_field.matching import _fact_bags
     for epoch in range(max_epochs):
         snapshot = {(s, d): (w, src)
@@ -321,6 +362,7 @@ def train_on_etalon(corpus, etalon_entries, parser,
         loss_sum = 0.0
         correct_now = 0
         seen = 0
+        train_hits = 0                 # věta s odpovědí mezi kandidáty
         correct_scores = []            # reference pro učení mlčení
         edges_before = stats["hran"]
         # Epocha běží nad pytli faktů zmraženými při jejím začátku
@@ -338,6 +380,8 @@ def train_on_etalon(corpus, etalon_entries, parser,
             winner = result.best
             expected = entry["odpoved_lemma"]
             seen += 1
+            if sentence_hit(result, expected):
+                train_hits += 1        # úspěch posílení: věta v kandidátech
             correct = next((c for c in result.candidates
                             if c.token.lemma == expected), None)
             if correct is not None:
@@ -411,37 +455,80 @@ def train_on_etalon(corpus, etalon_entries, parser,
                     corpus.registry, q_bag, {}, winner_bag, eta,
                     state=adam_state)
                 corrections += 1
+        # Validační průchod (bez gradientu): loss a věta-v-kandidátech
+        # na 30 % otázek, které učení nevidělo — měří ZOBECNĚNÍ.
+        valid_loss_sum = 0.0
+        valid_seen = 0
+        valid_hits = 0
+        valid_answerable = 0
+        for entry in valid_entries:
+            question = SentenceField.from_text(
+                entry["otazka"], parser, r=corpus.r,
+                registry=corpus.registry)
+            result = match(question, corpus)
+            if entry["zodpoveditelna"]:
+                expected = entry["odpoved_lemma"]
+                valid_answerable += 1
+                if sentence_hit(result, expected):
+                    valid_hits += 1
+                correct = next((c for c in result.candidates
+                                if c.token.lemma == expected), None)
+                rival = next((c for c in result.candidates
+                              if c.token.lemma != expected), None)
+                if correct is None or rival is None:
+                    continue
+                valid_seen += 1
+                margin = MARGIN_RATIO * abs(rival.score)
+                valid_loss_sum += max(0.0,
+                                      margin + rival.score - correct.score)
+            elif reference is not None and result.best is not None:
+                valid_seen += 1
+                margin = MARGIN_RATIO * abs(reference)
+                valid_loss_sum += max(0.0,
+                                      margin + result.best.score
+                                      - reference)
         corpus._fact_cache_freeze = False
 
         stats["epoch"] = epoch + 1
         stats["kroku"] += corrections
         loss = loss_sum / max(seen + quiet_seen, 1)
+        valid_loss = (valid_loss_sum / max(valid_seen, 1)
+                      if valid_entries else None)
         hit = correct_now / max(seen, 1)
         stats["epochy"].append(
             {"epocha": epoch + 1, "loss": round(loss, 3),
+             "loss_valid": (round(valid_loss, 3)
+                            if valid_loss is not None else None),
              "trefy": f"{correct_now}/{seen}", "trefy_podil": round(hit, 2),
+             "veta_trenink": f"{train_hits}/{seen}",
+             "veta_validace": f"{valid_hits}/{valid_answerable}",
              "ticho": f"{quiet_now}/{quiet_seen}",
              "korekci": corrections,
              "hran": stats["hran"] - edges_before})
-        print(f"    epocha {epoch + 1}: loss {loss:7.3f} · trefy "
-              f"{correct_now}/{seen} ({hit:.2f}) · ticho "
-              f"{quiet_now}/{quiet_seen} · korekcí {corrections} "
+        print(f"    epocha {epoch + 1}: loss {loss:7.3f} · valid "
+              f"{'—' if valid_loss is None else format(valid_loss, '.3f')}"
+              f" · věta T {train_hits}/{seen} · věta V "
+              f"{valid_hits}/{valid_answerable} · trefy "
+              f"{correct_now}/{seen} · ticho {quiet_now}/{quiet_seen} "
+              f"· korekcí {corrections} "
               f"· hran {stats['hran'] - edges_before}", flush=True)
         if corrections == 0:
             break
         # Druhé kritérium konvergence: relativní marže nemusí být pro
         # všechny otázky splnitelná najednou (korekce nespadnou na 0)
         # a další epochy pak rozvracejí, co jiné otázky postavily —
-        # naměřeno: U-křivka s minimem u ~5. epochy a divergencí dál.
-        # Epocha, která loss zhoršila, se ODVOLÁ (vazby zpět na stav
-        # před ní) a trénink končí na minimu, ne za ním.
-        if previous_loss is not None and loss >= previous_loss:
+        # naměřeno: U-křivka s minimem a divergencí dál. Epocha, která
+        # zhoršila VALIDAČNÍ loss (zobecnění, J. 2026-08-04; bez
+        # validační části tréninkový), se ODVOLÁ a trénink končí na
+        # minimu, ne za ním.
+        watch = valid_loss if valid_loss is not None else loss
+        if previous_watch is not None and watch >= previous_watch:
             _restore_links(corpus.registry, snapshot)
             stats["epochy"][-1]["odvolana"] = True
-            print(f"    epocha {epoch + 1} odvolána (loss se zhoršil) "
-                  f"— vazby vráceny", flush=True)
+            print(f"    epocha {epoch + 1} odvolána (validační loss "
+                  f"se zhoršil) — vazby vráceny", flush=True)
             break
-        previous_loss = loss
+        previous_watch = watch
     return stats
 
 
