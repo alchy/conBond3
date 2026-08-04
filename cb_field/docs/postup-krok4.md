@@ -396,3 +396,20 @@ Závěr k tezi: na testbedu drží. Ze šesti typů jsou čtyři konzistentní
 a oba rozptyly ukazují na chybějící mechaniku (negace, konkurence
 vztažného „kde"), ne na malou bázi — přesně to falzifikační kritérium
 mělo odhalit.
+
+**Zpřesnění J. (tamtéž):** determinismus platí **podmíněně** — *„pokud
+jsou nalezeny vzory předkládání faktů, pak pokud jsme na nějakém
+takovém vzoru učeni, je to deterministické."* Konstantní výsledek se
+tedy nemá čekat od typu otázky samotného, ale od **dvojice
+(typ otázky × vzor předkládání faktu)**. Vzory předkládání jsou
+šablony z kroku 2 (`templates.py`: signatura, kanonizace, TemplateBank),
+takže obě patra se tu potkávají: query basket drží typ otázky, šablona
+drží tvar faktu, a učení je nad jejich dvojicí.
+
+Odtud plyne i výklad obou rozptylů výš: „Kde bydlí Petr?" prohrálo
+s větou *jiného vzoru* (vztažná věta s „kde" uvnitř nominální fráze),
+na kterém systém učen nebyl — dvojice (typ kde × vzor vztažné věty)
+prostě neexistuje. Není to náhoda ani šum; je to nepokrytá buňka
+mřížky typ × vzor. Měřit se proto má pokrytí té mřížky, ne jen
+úspěšnost po typech — a T2 (podíl faktů sdílejících šablonu) je 0,34
+při r=1, takže dvě třetiny faktů dnes žádný sdílený vzor nemají.
