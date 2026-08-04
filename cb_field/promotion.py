@@ -50,6 +50,13 @@ def promotion_cycle(corpus: Corpus, graph: FactGraph,
     changes = registry.set_custom_axes(
         tuple(CUSTOM_PREFIX + node
               for node in promote_verticals(graph, limit)))
+    # Krok G (J. 2026-08-04): trénink se váže na ZMĚNU osy — týž
+    # cílový stav (rovnost stavů, žádný práh) nic nemění, nepřeučuje
+    # se ani neměří podruhé. S počtem faktů se osa stabilizuje
+    # (naměřeno: výměny 38 % → 16 % na přírůstek), přeučování řídne.
+    if not (changes["pridano"] or changes["odebrano"]):
+        return {"prijato": True, "pred": before, "po": before,
+                "osy": changes, "preuceni": False}
     # Transparentní chování systému (J. 2026-08-04): po selektu
     # vertikál do custom slotů se přegeneruje celý korpus — každý koš
     # nese aktivaci promovaných os sám. TEPRVE POTOM jde učení.
@@ -62,4 +69,4 @@ def promotion_cycle(corpus: Corpus, graph: FactGraph,
         registry.restore(snapshot)
         corpus.regenerate()            # koše zpět bez aktivace
     return {"prijato": not worse, "pred": before, "po": after,
-            "osy": changes}
+            "osy": changes, "preuceni": True}

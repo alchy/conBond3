@@ -226,6 +226,25 @@ class TestPromocniCyklus(unittest.TestCase):
         self.assertFalse(any("CUSTOM=" in key for row in corpus[0].complete
                              for key in row))
 
+    def test_beze_zmeny_osy_se_nepreucuje(self):
+        # krok G návrhu: s počtem faktů se osa stabilizuje a trénink
+        # se váže na ZMĚNU cílového stavu (rovnost stavů, žádný práh)
+        corpus, graph = self._setup()
+        trainings = []
+        measures = iter([{"presnost": 0.5}, {"presnost": 0.6},
+                         {"presnost": 0.6}])
+        promotion_cycle(corpus, graph,
+                        measure=lambda c: next(measures),
+                        retrain=lambda c: trainings.append(1))
+        self.assertEqual(len(trainings), 1)
+        # týž graf → týž cílový stav → žádné přeučení ani měření po něm
+        outcome = promotion_cycle(corpus, graph,
+                                  measure=lambda c: next(measures),
+                                  retrain=lambda c: trainings.append(1))
+        self.assertTrue(outcome["prijato"])
+        self.assertFalse(outcome["preuceni"])
+        self.assertEqual(len(trainings), 1)
+
     def test_novy_text_dostava_aktivaci_uz_pri_vstupu(self):
         # transparentnost: věta přidaná PO promoci nese aktivaci sama —
         # stavba pole se dívá do osy, žádná zvláštní větev pro dialog
