@@ -113,6 +113,19 @@ class TestPropojeni(unittest.TestCase):
                             for k in konce))
 
 
+class TestCustomOsaVParovani(unittest.TestCase):
+
+    def test_custom_osa_prochazi_parovaci_maskou(self):
+        # aktivovaná promovaná osa musí projít sémantickou maskou do
+        # pytlů faktů i otázky — jinak by ji koše nesly zbytečně
+        from cb_field import VerticalRegistry
+        from cb_field.matching import _semantic_indices
+        registry = VerticalRegistry(anchors=False)
+        registry.set_custom_axes(("CUSTOM=NOUN:pes",))
+        mask = _semantic_indices(registry, len(registry))
+        self.assertEqual(mask[registry.index("CUSTOM=NOUN:pes")], 1.0)
+
+
 class TestHloubkaSireni(unittest.TestCase):
     """k kroků šíření s tanh mezi kroky — hloubka jako parametr (NN)."""
 

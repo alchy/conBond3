@@ -3,7 +3,7 @@
 import unittest
 
 from cb_field import Corpus, SentenceField, VerticalRegistry
-from cb_field.learning import contrastive_step, hebb
+from cb_field.learning import _semantic_bag, contrastive_step, hebb
 from cb_field.tests.test_templates import (BEZELA, DO, KOCKA, LESA, PARKU,
                                            PES, SEL, TECKA)
 
@@ -57,13 +57,38 @@ class TestKontrastivniKrok(unittest.TestCase):
 
     def test_axiom_se_neuci(self):
         registry = VerticalRegistry()          # kotevní axiomy od narození
-        changed = contrastive_step(
+        contrastive_step(
             registry, {"QANCHOR=space": 0.7}, {"ANCHOR=space": 0.7}, {},
             eta=0.2)
-        self.assertEqual(changed, 0)
+        # šíření rozdílu smí stavět DALŠÍ hrany (rozdíl teče po
+        # axiomech do sousedních kotev), ale axiom sám zůstává axiom
         self.assertEqual(
             registry.get_link("QANCHOR=space", "ANCHOR=space"),
             (1.0, "axiom"))
+
+
+class TestCustomOsyVUceni(unittest.TestCase):
+    """Promovaná osa vstupuje do učení AKTIVACÍ řádku (J. 2026-08-04):
+    po selektu vertikál do custom slotů se koše přepočítají a surový
+    učicí pytel nese osu jako každou jinou — transparentně, bez
+    zvláštní větve. Šíření pytlů maticí zavrženo měřením (22,9M hran,
+    0,43 → 0,17)."""
+
+    def test_aktivovana_custom_osa_dostava_gradient(self):
+        registry = VerticalRegistry(anchors=False)
+        registry.set_custom_axes(("CUSTOM=NOUN:pes",))
+        field = SentenceField((SEL, PES, DO, LESA, TECKA), r=1,
+                              registry=registry)
+        bag = _semantic_bag(field, range(len(field.tokens)))
+        self.assertEqual(bag["CUSTOM=NOUN:pes"], bag["WORD=NOUN:pes"])
+        self.assertNotIn("CUSTOM=NOUN:les", bag)   # nepromovaný osu nemá
+        changed = contrastive_step(registry, {"QLEM=ADV:kde": 0.7},
+                                   bag, {}, eta=0.2)
+        self.assertGreater(changed, 0)
+        edge = registry.get_link("QLEM=ADV:kde", "CUSTOM=NOUN:pes")
+        self.assertIsNotNone(edge)
+        self.assertGreater(edge[0], 0)
+        self.assertEqual(edge[1], "etalon")
 
 
 if __name__ == "__main__":

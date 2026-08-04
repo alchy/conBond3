@@ -122,6 +122,7 @@ class SentenceField:
             Activations.from_row(row, question=self.question)
             for row in self.rows)
         self._transfer_preposition_directions()
+        self._activate_custom_verticals()
         self.baskets = tuple(
             FieldBasket(self, center) for center in range(len(self.tokens)))
         self._matrix_cache: dict = {}
@@ -151,6 +152,24 @@ class SentenceField:
                     self.activations[head].graft(
                         f"{side}={direction}", DEFAULT_WEIGHT)
                     break
+
+    def _activate_custom_verticals(self) -> None:
+        """Promovaná osa se aktivuje přímo v řádku — transparentně.
+
+        Chování systému po selektu vertikál do custom slotů (J.
+        2026-08-04): koš nese aktivaci sám, ne přes most v matici.
+        Stavba pole se dívá do osy registru, takže ji stejnou cestou
+        dostane korpus při přegenerování, otázka i věta z dialogu —
+        žádná zvláštní větev. Váha zrcadlí slovní vertikálu řádku
+        a jde do slovní vrstvy: METADATA zůstává bezeslovná.
+        """
+        for token, act in zip(self.tokens, self.activations):
+            key = f"CUSTOM={token.upos}:{token.lemma}"
+            if key in self.registry:
+                word_key = f"WORD={token.upos}:{token.lemma}"
+                weights = act.weights(Representation.COMPLETE)
+                act.graft(key, weights.get(word_key, DEFAULT_WEIGHT),
+                          word=True)
 
     @classmethod
     def from_sentence(cls, sentence, r: int = 2,

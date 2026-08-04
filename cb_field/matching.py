@@ -133,8 +133,11 @@ def saturate(vector, links, steps: int = SPREAD_STEPS):
 #: ukázkách"). Ruční člen shody polarity jsem zkusil a zahodil —
 #: dával bonus za souhlas a tím přebíjel pořadí uvnitř věty
 #: (typ „kdy" spadl 7/7 → 1/7); osa sama dá bez učení 0,97 a s ním 1,00.
+#: CUSTOM= jsou promované osy: po selektu do custom slotů je nese
+#: každý koš přímou aktivací (přegenerování korpusu, J. 2026-08-04),
+#: takže do párování vstupují jako každá jiná osa.
 MATCH_PREFIXES = ("WORD=", "LEM=", "QLEM=", "ANCHOR=", "QANCHOR=",
-                  "Polarity=")
+                  "Polarity=", "CUSTOM=")
 
 
 class ScoreDecomposition:

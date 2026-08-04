@@ -30,14 +30,6 @@ from cb_field.corpus import Corpus
 from cb_field.graph import PROMOTION_LIMIT, FactGraph, promote_verticals
 from cb_field.registry import CUSTOM_PREFIX
 
-#: Váha mostu WORD=x → CUSTOM=x. Most je zapojení promované osy:
-#: aktivace slova po něm stéká šířením do custom sloupce, takže osu
-#: vidí párování i budoucí učení — bez mostu je sloupec mrtvý (nic ho
-#: neemituje). Identita (1,0) schválně: most je struktura, ne naučená
-#: váha; zapisuje se celý cílový stav při každém cyklu a odvolání
-#: cyklu ho vrací se vším ostatním.
-BRIDGE_WEIGHT = 1.0
-
 
 def promotion_cycle(corpus: Corpus, graph: FactGraph,
                     measure: Callable[[Corpus], dict],
@@ -55,17 +47,19 @@ def promotion_cycle(corpus: Corpus, graph: FactGraph,
     registry = corpus.registry
     before = measure(corpus)
     snapshot = registry.snapshot()
-    promoted = promote_verticals(graph, limit)
     changes = registry.set_custom_axes(
-        tuple(CUSTOM_PREFIX + node for node in promoted))
-    for node in promoted:
-        registry.link(f"WORD={node}", CUSTOM_PREFIX + node,
-                      BRIDGE_WEIGHT, source="promoce")
+        tuple(CUSTOM_PREFIX + node
+              for node in promote_verticals(graph, limit)))
+    # Transparentní chování systému (J. 2026-08-04): po selektu
+    # vertikál do custom slotů se přegeneruje celý korpus — každý koš
+    # nese aktivaci promovaných os sám. TEPRVE POTOM jde učení.
+    corpus.regenerate()
     retrain(corpus)
     after = measure(corpus)
     worse = any(after[key] < before[key]
                 for key in before if key in after)
     if worse:
         registry.restore(snapshot)
+        corpus.regenerate()            # koše zpět bez aktivace
     return {"prijato": not worse, "pred": before, "po": after,
             "osy": changes}

@@ -187,28 +187,31 @@ class TestPromocniCyklus(unittest.TestCase):
                                   retrain=lambda c: None)
         self.assertTrue(outcome["prijato"])
 
-    def test_prijaty_cyklus_zapise_mosty_word_custom(self):
-        # zapojení custom os: aktivace WORD=x stéká šířením po mostu
-        # do CUSTOM=x — bez mostu je promovaný sloupec mrtvý
+    def test_prijaty_cyklus_aktivuje_kose_transparentne(self):
+        # po selektu vertikál do custom slotů se přegeneruje celý
+        # korpus a koše nesou aktivaci samy (J.) — žádný most v matici
         corpus, graph = self._setup()
         measures = iter([{"presnost": 0.5}, {"presnost": 0.6}])
         promotion_cycle(corpus, graph,
                         measure=lambda c: next(measures),
                         retrain=lambda c: None)
-        link = corpus.registry.get_link("WORD=VERB:přijít",
-                                        "CUSTOM=VERB:přijít")
-        self.assertEqual(link, (1.0, "promoce"))
+        field = corpus[0]
+        row = next(i for i, t in enumerate(field.tokens)
+                   if t.lemma == "přijít")
+        self.assertIn("CUSTOM=VERB:přijít", field.complete[row])
+        # METADATA zůstává bezeslovná — promovaná osa je slovní vrstva
+        self.assertNotIn("CUSTOM=VERB:přijít", field.metadata[row])
 
-    def test_odvolany_cyklus_mosty_uklidi(self):
+    def test_odvolany_cyklus_vrati_kose_bez_aktivace(self):
         corpus, graph = self._setup()
+        before = corpus[0].complete
         measures = iter([{"presnost": 0.5}, {"presnost": 0.4}])
         promotion_cycle(corpus, graph,
                         measure=lambda c: next(measures),
                         retrain=lambda c: None)
-        self.assertIsNone(corpus.registry.get_link(
-            "WORD=VERB:přijít", "CUSTOM=VERB:přijít"))
+        self.assertEqual(corpus[0].complete, before)
 
-    def test_vertikala_vypadla_z_limitu_ztraci_i_most(self):
+    def test_vertikala_vypadla_z_limitu_ztraci_aktivaci(self):
         corpus, graph = self._setup()
         measures = iter([{"presnost": 0.5}, {"presnost": 0.6},
                          {"presnost": 0.6}, {"presnost": 0.6}])
@@ -220,8 +223,21 @@ class TestPromocniCyklus(unittest.TestCase):
                         measure=lambda c: next(measures),
                         retrain=lambda c: None)
         self.assertNotIn("CUSTOM=VERB:přijít", corpus.registry)
-        self.assertIsNone(corpus.registry.get_link(
-            "WORD=VERB:přijít", "CUSTOM=VERB:přijít"))
+        self.assertFalse(any("CUSTOM=" in key for row in corpus[0].complete
+                             for key in row))
+
+    def test_novy_text_dostava_aktivaci_uz_pri_vstupu(self):
+        # transparentnost: věta přidaná PO promoci nese aktivaci sama —
+        # stavba pole se dívá do osy, žádná zvláštní větev pro dialog
+        corpus, graph = self._setup()
+        measures = iter([{"presnost": 0.5}, {"presnost": 0.6}])
+        promotion_cycle(corpus, graph,
+                        measure=lambda c: next(measures),
+                        retrain=lambda c: None)
+        field = corpus.add_sentence(_Sentence(KREST))
+        row = next(i for i, t in enumerate(field.tokens)
+                   if t.lemma == "přijít")
+        self.assertIn("CUSTOM=VERB:přijít", field.complete[row])
 
 
 if __name__ == "__main__":

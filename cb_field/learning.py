@@ -77,6 +77,10 @@ ADAM_EPS = 1e-8
 #: TYP („řeka → místo"), a typ už platí pro celý druh otázek. Vyhodit
 #: slova z učení úplně byl můj přehmat: pak se vazba řeka→místo nemohla
 #: naučit vůbec a musel ji dodávat zvláštní mechanismus.
+#: CUSTOM= (promované osy) jsou v MATCH_PREFIXES: po promoci je
+#: aktivační průchod zapíše přímo do řádků pole (J. 2026-08-04 —
+#: „projde se znovu text a identifikovaná pole se aktivují; teprve
+#: potom jde učení"), takže je surový pytel nese jako každou jinou osu.
 LEARN_PREFIXES = MATCH_PREFIXES
 
 #: Útlum synonymní hrany (slovo↔slovo). NENÍ to zákaz ani filtr —
@@ -90,12 +94,19 @@ SYNONYM_DAMPING = 0.1
 
 
 def _semantic_bag(sentence, rows, center=None, prefixes=None) -> dict:
-    """{vertikála: váha} přes dané řádky, jen párovací vertikály.
+    """{vertikála: váha} přes dané řádky, jen učicí vertikály — SUROVÉ.
 
     center: řádek se zdůrazněním W_CENTER — týž profil, jaký má koš
     kandidáta v match(). Gradient se musí počítat nad touž geometrií,
     kterou optimalizuje: bez zdůraznění se odpověď ležící v okně obou
     kandidátů v rozdílu pytlů vyruší a most na ni nikdy nevznikne.
+
+    Pytle jsou SUROVÉ schválně: šíření pytlů maticí před gradientem
+    je zavržené měřením (2026-08-04: po tanh(v + v·L) na obou stranách
+    22,9M hran, přesnost 0,43 → 0,17, dosah 10 → 5 — společný kontext
+    se rozlije po poli dřív, než ho subtrakce stihne vyrušit).
+    Promované osy do pytle vstupují AKTIVACÍ řádků (promoční cyklus),
+    ne šířením.
     """
     allowed = LEARN_PREFIXES if prefixes is None else prefixes
     bag = {}

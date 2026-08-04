@@ -499,17 +499,21 @@ class Activations:
                 return
         raise KeyError(f"vertikála {key!r} v aktivacích není")
 
-    def graft(self, key: str, weight: float) -> None:
-        """Naroubuje kotvu při stavbě pole (přenos po hraně, P2).
+    def graft(self, key: str, weight: float, word: bool = False) -> None:
+        """Naroubuje vertikálu při stavbě pole (přenos po hraně, P2).
 
         Na rozdíl od set() smí klíč založit — je to stavba řádku, ne
         ladění: takhle jádro dostává směr od své předložky. Rozsah vah
         hlídá stejně.
+
+        word=True roubování do SLOVNÍ vrstvy (jen COMPLETE): tudy se
+        aktivují promované CUSTOM= osy — nesou lemma, takže do
+        bezeslovné METADATA reprezentace nepatří.
         """
         if not WEIGHT_MIN <= weight <= WEIGHT_MAX:
             raise ValueError(f"váha {weight} je mimo rozsah "
                              f"{WEIGHT_MIN} … {WEIGHT_MAX}")
-        self._meta[key] = weight
+        (self._word if word else self._meta)[key] = weight
 
     # --- pohledy --------------------------------------------------------
 

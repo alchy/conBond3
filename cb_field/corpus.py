@@ -67,6 +67,21 @@ class Corpus:
         return [self.add_sentence(s, document=marker)
                 for s in parser.parse(text=text).sentences]
 
+    def regenerate(self) -> None:
+        """Přestaví všechna pole z jejich tokenů proti aktuální ose.
+
+        Chování systému po selektu vertikál do custom slotů (J.
+        2026-08-04): přegeneruje se celý korpus a identifikované
+        vertikály se pro každý koš nově přepočítají — teprve potom
+        se pouští trénink. Parsování se neopakuje (tokeny zůstávají),
+        přepočítávají se aktivace, koše a matice; dokumentové markery
+        se zachovávají.
+        """
+        self.fields = [
+            SentenceField(field.tokens, r=self.r, registry=self.registry,
+                          source=field.source)
+            for field in self.fields]
+
     def __len__(self) -> int:
         return len(self.fields)
 
