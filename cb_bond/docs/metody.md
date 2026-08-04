@@ -209,3 +209,4 @@ novější osou a sloupce navíc by se tiše zahodily.
 | co | jak |
 |---|---|
 | přejímka § 5/S2 | `./run-python cb_bond/scripts/prejimka-spektrum.py` |
+| rozklad skóre na příkladech | `./run-python cb_bond/scripts/rozklad-skore.py [kolik]` — návod ke čtení v `docs/rozklad-skore.md` |

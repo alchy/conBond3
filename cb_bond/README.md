@@ -7,6 +7,7 @@ proč — rozkladem skóre po pojmenovaných členech a vysvícením v grafu.
 Zadání celé stavby (deset kroků, zmražené přejímky, páky systému):
 `docs/zadani.md`. Návrhová rozhodnutí a pasti: `docs/`.
 Co se model naučil: `docs/trenink-vah.md`.
+Z čeho se skládá odpověď: `docs/rozklad-skore.md`.
 
 ## Stav: krok 2 z deseti (verze 0.1.0)
 
@@ -93,7 +94,8 @@ Přejímka na skutečném korpusu (potřebuje UDPipe a data mimo git):
 Diagnostika učení (nic nemění, jen vypisuje):
 
 ```
-./run-python cb_bond/scripts/trenink-vah.py     # co se model naučil
+./run-python cb_bond/scripts/trenink-vah.py     # natrénuje a ukáže váhy
+./run-python cb_bond/scripts/rozklad-skore.py  # čím se rozhodla odpověď
 ```
 
 Porovnají naměřené se zmraženými hodnotami § 6 zadání a skončí

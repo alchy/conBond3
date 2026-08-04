@@ -198,3 +198,18 @@ varianta podle tvrzení — týž princip jako u členů `topic` a `given`.
 Širší shortlist pomáhá učení víc než přesnosti: top-200 zdvojnásobí
 počet otázek, ze kterých se dá učit (20 → 38 z 85), a větné čtení
 zvedne o bod (21 → 22/30), ale přesnost@1 se nehne a běh je 3× delší.
+
+
+## Učení není v rozkladu skóre vidět
+
+Člen `fit` počítá doslova `W_FIT · 0.0` — je to prázdné místo. Naučené
+váhy vstupují do skóre **vazbami registru**, které mění `spread`, a ten
+stojí uvnitř `meet` i `cover`. Příspěvek učení se tam smíchá s tím, co
+tam bylo od začátku.
+
+Je to jediné místo, kde systém poruší vlastní zásadu „každé rozhodnutí
+jde rozložit po pojmenovaných členech". Spočítat to jde jako rozdíl
+`meet(všechny vazby) − meet(jen axiomy)`, ale stojí to druhou saturaci
+na kandidáta, tedy zhruba dvojnásobek času `match()`. Než se to doplní,
+je potřeba každý rozklad číst s vědomím, že naučené hrany jsou schované
+v `meet` a `cover`.
