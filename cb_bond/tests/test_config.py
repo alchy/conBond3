@@ -110,16 +110,16 @@ class TestCesty(unittest.TestCase):
 class TestOtisk(unittest.TestCase):
 
     def test_otisk_se_meni_s_obsahem(self):
-        prvni = cfg.load()["fingerprint"]
+        prvni = cfg.load()["_meta"]["fingerprint"]
         with tempfile.TemporaryDirectory() as tmp:
             cesta = _zapis(Path(tmp),
                            lambda d: d["module"]["matching"].update(top_k=99))
-            druhy = cfg.load(cesta)["fingerprint"]
+            druhy = cfg.load(cesta)["_meta"]["fingerprint"]
 
         self.assertNotEqual(prvni, druhy)
 
     def test_otisk_je_stabilni(self):
-        self.assertEqual(cfg.load()["fingerprint"], cfg.load()["fingerprint"])
+        self.assertEqual(cfg.load()["_meta"]["fingerprint"], cfg.load()["_meta"]["fingerprint"])
 
 
 class TestPaky(unittest.TestCase):
