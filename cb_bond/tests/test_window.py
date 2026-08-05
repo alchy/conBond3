@@ -43,10 +43,16 @@ class _Okno:
     def __init__(self):
         self.zapsano = []
         self.otevrena = []
+        self.callbacky = {}
         self.jas = None
 
     def open_terminal(self, window, on_input=None):
         self.otevrena.append(window.window_id)
+        # callback si SCHOVEJ — atrapa, která ho zahodí, promění test
+        # v ozdobu: přesně takhle prošla vada, kdy `_na_vstup` čekala
+        # řetězec, zatímco viewbase posílá objekt události s `.line`
+        if on_input is not None:
+            self.callbacky[window.window_id] = on_input
 
     def terminal_write(self, window_id, text):
         self.zapsano.append((window_id, text))
@@ -125,6 +131,33 @@ class TestPrepisOken(unittest.TestCase):
         self.assertIn("říci", self.okno.texty(DIALOG_ID))
         self.assertIn("[přijít]", self.okno.texty(SENTENCES_ID))
         self.assertIn("WORD=ADJ:pokřtěný", self.okno.texty(AXES_ID))
+
+    def test_vstup_z_okna_dorazi_do_sluzby(self):
+        """Callback dostává OBJEKT události s `.line`, ne řetězec.
+
+        Zapsáno po chybě: `_na_vstup` volala `.strip()` na
+        `SimpleNamespace`, viewbase výjimku handleru spolkl (zaloguje,
+        server běží dál) a okno mlčelo bez jediné stopy.
+        """
+        import types
+        self.okna.attach()
+
+        self.okno.callbacky[DIALOG_ID](
+            types.SimpleNamespace(window_id=DIALOG_ID,
+                                  line="Kde byl pokřtěn Ježíš?"))
+
+        self.assertEqual(self.sluzba.dotazy,
+                         [("Kde byl pokřtěn Ježíš?", 5)])
+        self.assertIn("říci", self.okno.texty(DIALOG_ID))
+
+    def test_prazdny_radek_z_okna_se_PRESKOCI(self):
+        import types
+        self.okna.attach()
+
+        self.okno.callbacky[DIALOG_ID](
+            types.SimpleNamespace(window_id=DIALOG_ID, line="   "))
+
+        self.assertEqual(self.sluzba.dotazy, [])
 
     def test_dotaz_jde_do_sluzby_s_dohodnutym_poctem_vet(self):
         self.okna.attach()

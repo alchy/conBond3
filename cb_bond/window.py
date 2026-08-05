@@ -168,13 +168,19 @@ class BondWindows:
         lemmata = {osa["axis"].split(":", 1)[-1] for osa in odpoved["axes"]}
         self.mirror.illuminate(self.service.graph, vahy, lemmata)
 
-    def _na_vstup(self, text: str) -> None:
+    def _na_vstup(self, event) -> None:
         """Obsluha řádku z dialogového okna.
 
-        Chyba se **napíše do okna**, ne jen na konzoli: člověk, který
+        Dostává **objekt události** s `window_id` a `line`, ne řetězec.
+        Zapsáno po chybě: brala se sem přímo věta a volalo se na ní
+        `.strip()`, což na `SimpleNamespace` spadne — a viewbase výjimku
+        handleru spolkne (zaloguje si ji a běží dál), takže okno mlčelo
+        bez jediné stopy.
+
+        Chyba se proto **píše do okna**, ne jen na konzoli: člověk, který
         sedí u prohlížeče, jinak vidí, že se nestalo nic, a neví proč.
         """
-        radek = (text or "").strip()
+        radek = (getattr(event, "line", "") or "").strip()
         if not radek:
             return
         try:
