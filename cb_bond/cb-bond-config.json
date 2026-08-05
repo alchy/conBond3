@@ -1,0 +1,85 @@
+{
+  "config_version": 1,
+  "service": {
+    "host": "127.0.0.1",
+    "port": 42400,
+    "view_port": 42401,
+    "request_timeout_s": 30,
+    "max_request_bytes": 1048576
+  },
+  "runtime": {
+    "pid_file": "run/service.pid",
+    "port_file": "run/service.port",
+    "stop_timeout_s": 20,
+    "self_log": {
+      "path": "run/self.log",
+      "max_bytes": 1048576,
+      "keep": 3
+    }
+  },
+  "logging": {
+    "endpoint": "http://127.0.0.1:42100",
+    "level": "info",
+    "methods": []
+  },
+  "dependencies": {
+    "start_on_boot": true,
+    "services": [
+      {"name": "cb-logger", "control": "cb-logger.py",
+       "endpoint": "http://127.0.0.1:42100"},
+      {"name": "cb-udpipe", "control": "cb-udpipe.py",
+       "endpoint": "http://127.0.0.1:42200"}
+    ]
+  },
+  "module": {
+    "data_root": "/Users/j/Projects/conBondCorpus",
+    "corpus": {
+      "directory": "corpus",
+      "patterns": ["korpus-1*.json"],
+      "question_patterns": ["otazky-*.json"],
+      "radius": 1,
+      "sentence_radius": 0
+    },
+    "matching": {
+      "spread_depth": 1,
+      "top_k": 50,
+      "theta": 0.0,
+      "epsilon": 0.0,
+      "graph_recall_depth": 2,
+      "spectral_k": 0,
+      "weights": {
+        "center": 2.0,
+        "cover": 1.0,
+        "topic": 1.0,
+        "given": -3.0,
+        "fit": 0.0,
+        "spectral": 0.0
+      }
+    },
+    "reading": {
+      "sigma": 1.5
+    },
+    "training": {
+      "learning_rate": 0.001,
+      "margin": 0.2,
+      "tolerance": 0.01,
+      "max_epochs": 6,
+      "validation_share": 0.3
+    },
+    "promotion": {
+      "limit": 328,
+      "usage_weight": 0.0
+    },
+    "relations": {
+      "min_stem": 5,
+      "min_stem_share": 0.75,
+      "dictionary_dir": "cb_bond/persistent-dictionary"
+    },
+    "state": {
+      "registry_dir": "cb_bond/persistent-registry",
+      "load_on_start": true,
+      "save_on_accept": true
+    },
+    "seed": 328
+  }
+}

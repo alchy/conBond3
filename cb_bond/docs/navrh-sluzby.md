@@ -261,16 +261,47 @@ vrstva z kroku 8 nedala vyzkoušet jinak než skriptem.
 
 ---
 
-## 7 · Logování
+## 7 · Logování — hlasitě, do loggeru i na konzoli
+
+**Rozhodnutí J.:** logovat extenzivně, a to na obě strany. Do cb-loggeru
+strukturovaně (pro pozdější rozbor), na konzoli lidsky (pro člověka, který
+se právě dívá). Obojí má říct **co se děje a proč**, ne jen že se něco děje.
+
+Platí to hlavně pro dlouhé operace — `corpus parse` nad 12 258 větami běží
+minuty a mlčící proces vypadá jako zaseknutý (naměřeno na `trenink-vah.py`,
+kde to bylo přesně tak).
+
+```
+$ ./cb-bond.py corpus build
+cb-bond    datový kořen /Users/j/Projects/conBondCorpus
+           37 souborů korpusu · 12 258 vět
+           stavím pole (r=1)…            2 912/12 258   14 s
+           …
+           graf: 5 781 uzlů · 16 074 hran
+           těžím definice…               94 vazeb
+           načítám registr registry-3.json (axis_version 3)
+           přegeneruji koše proti ose…   12 258 vět     8 s
+cb-bond    hotovo, stav uložen do persistent-registry/registry-3.json
+```
+
+Tentýž průběh jde do loggeru jako záznamy s `trace` jednoho běhu, takže se
+z něj dá zpětně složit, co se dělo — a `duration_ms` u každého kroku řekne,
+kde se čas ztratil.
+
+### Co se loguje
+
+
 
 Každá metoda `BondService` udělá jeden záznam s povinnou čtveřicí
 (component/method/input/output) plus `trace`, který se razí **na vstupu dotazu**
 a protáhne se přes párování, čtení i dialog. Klient se předává parametrem (§ 3),
 takže služba jde spustit i bez loggeru (jen bez logu).
 
-Co bych logoval na `info`: `ask` (otázka, výsledek, výchozko, doba), `build`
-(otisk korpusu), `train`, `promote`. Na `debug`: rozklad skóre po členech —
-to je objemné, ale při ladění právě to člověk chce.
+Na `info`: `ask` (otázka, výsledek, východisko, doba), každý krok `build`
+(stavba pole, graf, definice, načtení registru, přegenerování), `train`
+(epocha po epoše), `promote` (přijato/vráceno a proč), start a stop
+závislostí. Na `debug`: rozklad skóre po členech a naučené hrany — objemné,
+ale při ladění právě to člověk chce.
 
 ---
 
@@ -366,7 +397,7 @@ Všech pět otázek zodpovězeno; odpovědi zapracované výše i níže.
 | otázka | rozhodnutí |
 |---|---|
 | provozní korpus | `/Users/j/Projects/conBondCorpus` — **mimo repozitář** |
-| ukládání stavu | ANO, registr se ukládá (`persistent-*` v datovém adresáři) |
+| ukládání stavu | ANO, registr se ukládá; `build()` ho načte, přegeneruje koše a **ověří `axis_version`** — při neshodě to hlasitě řekne a stav NENAČTE |
 | start závislostí | **výchozí chování**: nejdřív logger, pak udpipe, pak teprve instanciace |
 | okna viewBase2 | **čtyři** — graf · dialog · top 5 vět · použité vertikály |
 | rozklad přes REST | ANO, `ask` ho vrací |
@@ -443,6 +474,19 @@ stav procesu a mají zmizet s ním).
 nesmí potkat (princip 3); jméno souboru to nese, takže se nedá načíst cizí stav
 omylem. `latest.json` ukazuje na poslední PŘIJATÝ — vrácený cyklus se neuloží.
 
+**Načtení stavu má závazné pořadí** (rozhodnuto):
+
+```
+build():  postav korpus  →  načti registr  →  corpus.regenerate()
+                         →  ověř axis_version souboru proti paměti
+                         →  neshoda? HLASITĚ říct a stav NENAČÍST
+```
+
+`regenerate()` je nutný, protože registr nese custom sloty, ale koše je musí
+aktivovat samy (transparentní promoce, § 16). Bez něj by registr sliboval
+`CUSTOM=` osy, které v polích nesvítí — a to je tichá neshoda, tedy nejhorší
+druh.
+
 ---
 
 ## 12 · Příkaz `corpus`
@@ -459,6 +503,10 @@ stavba korpusu je drahá a dnes ji dělá každý skript sám.
 
 `validate` je to, co dnes umí `./run-python -m cb_field.corpusfile` — patří sem,
 aby se člověk nemusel učit dvě cesty.
+
+Všechny čtyři **logují extenzivně** do loggeru i na konzoli (§ 7): co dělají,
+nad kolika soubory, jak dlouho a proč. Dlouhá mlčící operace vypadá jako
+zaseknutá — naměřeno.
 
 `parse` je oddělený schválně: naplnit cache je jednorázová drahá operace
 (12 258 vět), po které je `build` rychlý. Dnes to dělá první spuštění

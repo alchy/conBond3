@@ -1,0 +1,283 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Konfigurace modulu cb-bond",
+  "description": "Validuje se při startu (README-MODULES.md § 5). Neznámý klíč je chyba, ne tiché ignorování — obvykle je to překlep a tiše ignorovaný překlep znamená, že běží jiné nastavení, než si člověk myslí. Tahle konfigurace je navíc JEDINÉ místo, kde žijí páky systému (limit, k, σ, lr…); bez toho by táž konstanta stála na čtyřech místech a dvě měření by se lišila, aniž by šlo poznat čím.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["config_version", "service", "runtime", "logging",
+               "dependencies", "module"],
+  "properties": {
+    "config_version": {
+      "description": "Verze schématu konfigurace. Nekompatibilní změna ji zvýší a start selže s hláškou, co přenastavit.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "port", "view_port", "request_timeout_s",
+                   "max_request_bytes"],
+      "properties": {
+        "host": {
+          "description": "Vždy 127.0.0.1. Vystavení do sítě je vědomá změna, ne výchozí stav (§ 10 politiky).",
+          "type": "string"
+        },
+        "port": {
+          "description": "Základní port modulu — REST API. Rozsah cb-bondu je 42400–42499 (§ 5).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "view_port": {
+          "description": "Port oken viewBase2 (graf, dialog, top 5 vět, vertikály). Byl tu port 8080, tedy CIZÍ — mimo rozsah projektu; přesunuto do 424xx.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "request_timeout_s": {"type": "number", "minimum": 1},
+        "max_request_bytes": {"type": "integer", "minimum": 1024}
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pid_file", "port_file", "stop_timeout_s", "self_log"],
+      "properties": {
+        "pid_file": {
+          "description": "Zůstává V REPOZITÁŘI: PID není datum, je to stav procesu a má zmizet s ním.",
+          "type": "string"
+        },
+        "port_file": {
+          "description": "Skutečný port běžící služby. Když je v konfiguraci 0, přidělí ho systém a jinak by ho nikdo nezjistil.",
+          "type": "string"
+        },
+        "stop_timeout_s": {"type": "number", "minimum": 1},
+        "self_log": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "max_bytes", "keep"],
+          "properties": {
+            "path": {"type": "string"},
+            "max_bytes": {"type": "integer", "minimum": 1024},
+            "keep": {"type": "integer", "minimum": 0}
+          }
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["endpoint", "level", "methods"],
+      "properties": {
+        "endpoint": {
+          "description": "Kam se loguje. Logger je sdílený modul (§ 4) a cb-bond do něj loguje EXTENZIVNĚ — dlouhá mlčící operace vypadá jako zaseknutá (naměřeno).",
+          "type": "string"
+        },
+        "level": {"type": "string", "enum": ["info", "debug"]},
+        "methods": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_on_boot", "services"],
+      "properties": {
+        "start_on_boot": {
+          "description": "cb-bond je vrcholová služba: ve výchozím stavu zvedne, co běží pod ním, a teprve pak instanciuje jejich klienty.",
+          "type": "boolean"
+        },
+        "services": {
+          "description": "V POŘADÍ ZÁVISLOSTÍ. Logger první — udpipe do něj loguje už při vlastním startu, takže obrácené pořadí by první záznamy zahodilo.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "control", "endpoint"],
+            "properties": {
+              "name": {"type": "string"},
+              "control": {
+                "description": "Ovládací program cizí služby. Spouští se JÍM, ne importem jejího vnitřku — logika řízení patří tomu modulu (§ 4).",
+                "type": "string"
+              },
+              "endpoint": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data_root", "corpus", "matching", "reading", "training",
+                   "promotion", "relations", "state", "seed"],
+      "properties": {
+        "data_root": {
+          "description": "JEDINÁ absolutní cesta v konfiguraci. Kód a data jsou oddělené (rozhodnutí J. 2026-08-05, odchylka od § 19); všechno ostatní je relativní vůči tomuhle kořeni, takže se instalace přenese změnou jednoho řádku a nikdo si datový kořen nemůže vyrobit potichu za běhu.",
+          "type": "string"
+        },
+        "corpus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["directory", "patterns", "question_patterns",
+                       "radius", "sentence_radius"],
+          "properties": {
+            "directory": {"type": "string"},
+            "patterns": {"type": "array", "items": {"type": "string"}},
+            "question_patterns": {"type": "array",
+                                  "items": {"type": "string"}},
+            "radius": {
+              "description": "Poloměr okna košů ve SLOVECH. Nezaměňovat se spread_depth (skoky po vazbách) ani s graph_recall_depth (skoky po grafu).",
+              "type": "integer",
+              "minimum": 0
+            },
+            "sentence_radius": {
+              "description": "Přítok sousedních VĚT do koše; hranice bloku ho zastaví.",
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "matching": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["spread_depth", "top_k", "theta", "epsilon",
+                       "graph_recall_depth", "spectral_k", "weights"],
+          "properties": {
+            "spread_depth": {
+              "description": "Hloubka šíření po vazbách registru (páka k). k=1 je jednovrstvá síť, k=2 řetězí naučené hrany s vazbami faktů, k=3 už jen rozmělňuje.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "top_k": {"type": "integer", "minimum": 1},
+            "theta": {
+              "description": "Řez na mlčení. Jeden ze dvou jediných řezů v celé datové cestě, a stojí až nad hotovým pořadím.",
+              "type": "number"
+            },
+            "epsilon": {
+              "description": "Řez na dotaz: když jsou dva nejlepší kandidáti blíž než ε, systém se zeptá.",
+              "type": "number"
+            },
+            "graph_recall_depth": {
+              "description": "Skoky po grafu faktů při předvýběru vět. Naměřeno: 2 je provozní bod, třetí skok nepřidá nic.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "spectral_k": {
+              "description": "Kolik latentních os má spektrální člen (§ 5/S2). Nula = spektrum se vůbec nepočítá; SVD nad 12 tisíci větami nemá platit nikdo, kdo si o něj neřekl.",
+              "type": "integer",
+              "minimum": 0
+            },
+            "weights": {
+              "description": "Váhy členů skóre — páky, ne pravidla. Vypnout člen znamená dát mu nulu, ne odstranit větev v kódu.",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["center", "cover", "topic", "given", "fit",
+                           "spectral"],
+              "properties": {
+                "center": {"type": "number", "minimum": -10, "maximum": 10},
+                "cover": {"type": "number", "minimum": -10, "maximum": 10},
+                "topic": {"type": "number", "minimum": -10, "maximum": 10},
+                "given": {
+                  "description": "Postih za ozvěnu otázky. Naměřeno ablací: bez něj je přesnost 0/30, protože vyhraje vždycky slovo z otázky.",
+                  "type": "number", "minimum": -10, "maximum": 10
+                },
+                "fit": {"type": "number", "minimum": -10, "maximum": 10},
+                "spectral": {"type": "number", "minimum": -10, "maximum": 10}
+              }
+            }
+          }
+        },
+        "reading": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sigma"],
+          "properties": {
+            "sigma": {
+              "description": "Šířka gaussovského zvonu (páka σ). σ→0 degeneruje na token-argmax a vrátí se degenerát krátkých vět; σ velké rozmělní vrchol na průměr.",
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 10
+            }
+          }
+        },
+        "training": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["learning_rate", "margin", "tolerance", "max_epochs",
+                       "validation_share"],
+          "properties": {
+            "learning_rate": {
+              "description": "Naměřená křivka: nad 0,01 se první epocha odvolá a učení neproběhne vůbec. Provozní bod 0,001.",
+              "type": "number", "minimum": 0, "maximum": 1
+            },
+            "margin": {"type": "number", "minimum": 0, "maximum": 10},
+            "tolerance": {
+              "description": "O kolik relativně smí validační loss stoupnout, než se epocha odvolá. Bez tolerance odvolávalo i o 0,00006, tedy šum v poslední cifře, a systém se neučil vůbec.",
+              "type": "number", "minimum": 0, "maximum": 1
+            },
+            "max_epochs": {"type": "integer", "minimum": 1, "maximum": 100},
+            "validation_share": {"type": "number", "minimum": 0,
+                                 "maximum": 0.9}
+          }
+        },
+        "promotion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["limit", "usage_weight"],
+          "properties": {
+            "limit": {
+              "description": "Kapacita vstupní vrstvy — kolik slov světa smí mít pojmenovaný neuron (páka limit). Kapacita je TLAK k zobecnění, ne úspora.",
+              "type": "integer", "minimum": 1
+            },
+            "usage_weight": {
+              "description": "Váha užitku otázkám v selektu. Je to vážený člen, ne filtr: základ zůstává korpusový.",
+              "type": "number", "minimum": 0
+            }
+          }
+        },
+        "relations": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min_stem", "min_stem_share", "dictionary_dir"],
+          "properties": {
+            "min_stem": {
+              "description": "Nejkratší kmen pro derivační pár. Pod tím spojuje náhodné shody (naléhavý × náledí sdílí „nale\").",
+              "type": "integer", "minimum": 1
+            },
+            "min_stem_share": {
+              "description": "Kolik z kratšího lemmatu musí kmen pokrýt. Naměřená mez: pokřtít × pokřtěný leží na 71 %, tedy těsně pod dnešními 75 %.",
+              "type": "number", "minimum": 0, "maximum": 1
+            },
+            "dictionary_dir": {"type": "string"}
+          }
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["registry_dir", "load_on_start", "save_on_accept"],
+          "properties": {
+            "registry_dir": {
+              "description": "Kam se ukládá stav registru. Soubory nesou axis_version v názvu — promoce mění osu a stará matice se s ní nesmí potkat (princip 3).",
+              "type": "string"
+            },
+            "load_on_start": {
+              "description": "Načíst uložený stav při startu. Pořadí je závazné: postav korpus → načti registr → regenerate() → ověř axis_version; při neshodě to HLASITĚ řekni a stav NENAČTI.",
+              "type": "boolean"
+            },
+            "save_on_accept": {
+              "description": "Ukládat jen PŘIJATÝ stav promoce. Vrácený cyklus se neukládá vůbec.",
+              "type": "boolean"
+            }
+          }
+        },
+        "seed": {
+          "description": "Semínko pro všechno náhodné (validační los, truncated SVD, vylosované příklady). Determinismus je princip 8: dvě měření musejí porovnávat totéž.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
