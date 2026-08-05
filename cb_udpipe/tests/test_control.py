@@ -34,6 +34,7 @@ class ZakladControl(unittest.TestCase):
         cfg["module"]["upstream"]["model_dir"] = str(self.dir / "model")
         cfg["module"]["upstream"]["hf_home"] = str(self.dir / "hf")
         cfg["module"]["upstream"]["vendor_dir"] = str(self.dir / "vendor")
+        cfg["data_root"] = str(self.dir / "koren")
         for cesta, hodnota in zmeny.items():
             uzel = cfg
             klice = cesta.split(".")
@@ -90,6 +91,14 @@ class TestStatus(ZakladControl):
         _, out, _ = self.spust("status", "--config", self.konfigurace())
         self.assertIn("42200", out)
         self.assertIn("NEBĚŽÍ", out)
+
+    def test_uvadi_DATOVY_KOREN(self):
+        """Data leží mimo repozitář; bez vypsaného kořene člověk hledá
+        chybu v datech, která služba vůbec nečte (§ 19 politiky)."""
+        _, out, _ = self.spust("status", "--config", self.konfigurace())
+
+        self.assertIn("data", out)
+        self.assertIn(str(self.dir / "koren"), out)
 
     def test_uvadi_cestu_ke_konfiguraci(self):
         """Jinak člověk hledá chybu v běžící službě, zatímco běží s jiným

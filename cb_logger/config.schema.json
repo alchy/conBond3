@@ -6,6 +6,7 @@
   "additionalProperties": false,
   "required": [
     "config_version",
+    "data_root",
     "service",
     "runtime",
     "module"
@@ -319,6 +320,10 @@
           }
         }
       }
+    },
+    "data_root": {
+      "description": "JEDINÁ absolutní cesta v konfiguraci. Kód a data jsou oddělené (rozhodnutí J. 2026-08-05, odchylka od § 19); datové cesty jsou relativní vůči tomuhle kořeni, takže se instalace přenese změnou jednoho řádku a nikdo si datový kořen nemůže vyrobit potichu za běhu.",
+      "type": "string"
     }
   }
 }

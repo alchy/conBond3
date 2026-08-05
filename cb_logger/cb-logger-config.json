@@ -1,5 +1,6 @@
 {
   "config_version": 1,
+  "data_root": "/Users/j/Projects/conBondCorpus",
   "service": {
     "host": "127.0.0.1",
     "port": 42100,
@@ -23,17 +24,17 @@
   },
   "module": {
     "storage": {
-      "dir": "data-persistent",
+      "dir": "cb_logger/persistent-log",
       "rotate_max_bytes": 67108864,
       "retention_days": 30,
-      "objects_dir": "data-persistent/objects"
+      "objects_dir": "cb_logger/persistent-log/objects"
     },
     "routing": {
-      "default": "data-persistent/log.jsonl",
+      "default": "cb_logger/persistent-log/log.jsonl",
       "rules": []
     },
     "summary": {
-      "path": "data-persistent/summary.json",
+      "path": "cb_logger/persistent-log/summary.json",
       "flush_interval_s": 5
     },
     "watch": {
@@ -44,7 +45,7 @@
       "objects_port": 42102
     },
     "objects": {
-      "stream": "data-persistent/objects/objects.jsonl",
+      "stream": "cb_logger/persistent-log/objects/objects.jsonl",
       "max_object_bytes": 262144,
       "max_depth": 24
     }

@@ -244,6 +244,7 @@ def cmd_status(config: dict[str, Any], *, jako_json: bool) -> int:
         else:
             print(f"cb-logger    NEBĚŽÍ   měl by běžet na "
                   f"{config['service']['host']}:{port}")
+            print(f"             data     {config.get('data_root', '?')}")
             print(f"             config   {cesta_config}")
             if "note" in stav:
                 print(f"             pozn.    {stav['note']}")
@@ -296,6 +297,7 @@ def cmd_status(config: dict[str, Any], *, jako_json: bool) -> int:
               f"{watch['objects_port']}")
     else:
         print("             kukátka  vypnutá")
+    print(f"             data     {config.get('data_root', '?')}")
     print(f"             config   {cesta_config}")
     return EXIT_OK if zdravi else EXIT_FAILED
 

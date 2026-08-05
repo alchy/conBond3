@@ -42,9 +42,10 @@ graf z korpusu s duplicitami, dostane jiné skóre promoce.
 klasifikaci sjednotí „pro pořádek", rozejde graf s přejímkou o 121
 hran. Je to vědomý rozdíl (koncepce § 3), ne nedopatření.
 
-**Skript přejímky potřebuje data mimo git.** Korpusy 101–107 leží
-v `cb_field/data-persistent/korpus/` (licence, viz ZDROJ.md). Bez nich
-skript skončí s kódem 2 a řekne to — netváří se, že prošel.
+**Skript přejímky potřebuje data mimo repozitář.** Korpusy 101–107 leží
+v datovém kořeni (licence, viz ZDROJ.md); cestu dá `corpus_dir()` z
+konfigurace. Bez nich skript skončí s kódem 2 a řekne to — netváří se,
+že prošel.
 
 ## Krok 3: co sedí a co ne
 

@@ -10,7 +10,7 @@ Licenční dělení (co smí do gitu a co ne) je v kořenovém `ZDROJ.md`.
 ## Kde co leží
 
 ```
-cb_field/data-persistent/korpus/     35 souborů, 2,6 MB — MIMO git
+<data_root>/corpus/                  35 souborů, 2,6 MB — MIMO repozitář
     korpus-101…107.json    2 912 vět    Marek, fyzika, spisovatelé
     korpus-201.json          605 vět    vesmír (Wikipedie)
     korpus-202.json          600 vět    hudba (Wikipedie)
@@ -35,7 +35,7 @@ Etalon 40 do tréninku **nikdy**.
 
 ## Tvar souborů — co je ověřené
 
-Všech 1 532 bloků v `data-persistent/korpus/` **má pole `text`** (původní
+Všech 1 532 bloků v `<data_root>/corpus/` **má pole `text`** (původní
 odstavec). Krok 1 se tedy o přednost `text` před `sentences` opře vždycky;
 větev „blok bez textu" nastane jen u vlastních korpusů 001–003, kde pole
 `text` nemá ani jeden blok.

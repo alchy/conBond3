@@ -399,10 +399,22 @@ a je tady:**
 | modul | co poskytuje | smí importovat |
 |---|---|---|
 | `cb-logger` | `LogClient`, `Result`, `Level` | kdokoli |
+| `cb-config` | `load`, `validate`, `resolve_paths`, `fingerprint` | kdokoli |
 
 Rozšíření seznamu je změna téhle politiky, ne rozhodnutí jednoho modulu.
 Sdílený modul má tvrdší povinnost: **nesmí importovat nic z nesdílených modulů**,
 jinak vznikne cyklus.
+
+`cb-config` na seznam přibyl 5. 8. 2026 (rozhodnutí J.). Do té doby měl každý
+modul vlastní kopii načítání a validace konfigurace — tři kopie, 1 190 řádků,
+z toho skoro tisíc doslova stejných. Kopie tam byly úmyslně: seznam byl konečný
+a rozšířit ho znamenalo změnit politiku, což je přesně to, co se teď stalo.
+
+Proč se to u konfigurace vyplatilo, když jinde ne: je to **čistá funkce bez
+stavu, sítě a portu**, kterou potřebuje každý modul dřív, než cokoli udělá.
+Nemůže být službou — konfiguraci potřebuje i ke svému vlastnímu startu.
+Tři kopie navíc znamenaly tři místa, kde se mohla hláška rozejít; ta samá
+vada v nastavení dostávala v každém modulu jiné jméno.
 
 ### Zákaz cyklů
 
@@ -495,7 +507,12 @@ rozsahu vzestupně — nikdy z cizího.
 | `cb-logger` | 42100–42199 | **42100** REST API | 42101 kukátko na text · 42102 kukátko na objekty |
 | `cb-udpipe` | 42200–42299 | **42200** REST API | 42201 vlastní instance UDPipe |
 | `cb-field` | 42300–42399 | **42300** REST API | 42301 kukátko na pole (viewer) |
-| *volné* | 42400–42499 | 42400 | |
+| `cb-bond` | 42400–42499 | **42400** REST API | 42401 viewBase2 (graf a konzole) |
+| *volné* | 42500–42599 | 42500 | |
+
+*(Řádek `cb-bond` doplněn 5. 8. 2026. Graf faktů do té doby běžel na portu
+**8080**, tedy mimo rozsah projektu — přesně ta chyba, které tahle tabulka
+brání: cizí port na sdíleném stroji koliduje s čímkoli, co si ho vezme dřív.)*
 
 Rezerva se hodila hned u prvního modulu, a hned dvakrát: `cb-logger` potřebuje
 vedle REST API listener pro kukátko na textový log a **další** pro kukátko na
@@ -1464,10 +1481,57 @@ udělá člověk vědomě, ne vedlejší účinek prvního dotazu. *(V conBond2 
 bez tohohle sahal na HuggingFace do `~/.cache` a při prvním spuštění bez sítě
 spadl — tedy přesně ta závislost na okolí, které se zbavujeme.)*
 
-Do `.gitignore` patří cesta k datům, ne k celému `data-persistent/` — adresář
-sám v repozitáři zůstává s `.gitkeep`, aby po `git clone` existoval.
-* **Všechno běží z projektového adresáře.** Modul nesmí sahat mimo repozitář
-  ani do domovského adresáře — cesty jsou v konfiguraci a míří dovnitř.
+Do `.gitignore` patří celý datový adresář: v repozitáři po `git clone` žádný
+nevzniká, protože data leží pod `data_root` mimo něj (níže). Kořen si pořizuje
+fetch skript modulu.
+* **Modul nesmí sahat do domovského adresáře ani nikam, co si sám vymyslel.**
+  Cesty jsou v konfiguraci; kód žádnou nesestavuje za běhu.
+
+### Data leží mimo repozitář, pod jediným kořenem
+
+*(Změna 5. 8. 2026, rozhodnutí J. Do té doby platilo „modul nesmí sahat mimo
+repozitář" bez výjimky a data bydlela v `data-persistent/` uvnitř modulu.)*
+
+Trvalá data jsou v **jednom adresáři mimo repozitář**, členěném podle modulu:
+
+```
+/Users/j/Projects/conBondCorpus/       ← data_root, MIMO git
+    corpus/                            korpusy a otázky (sdílené, 37 souborů)
+    cb_logger/persistent-log/          záznamy
+    cb_udpipe/persistent-cache/        rozbory
+    cb_udpipe/persistent-models/       modely
+    cb_bond/persistent-registry/       registr os
+```
+
+Co to řeší: 1,1 GB dat v pracovní kopii znamenalo, že se repozitář nedal
+zkopírovat, zálohovat ani smazat nezávisle na tom, co se v něm naměřilo.
+Data přežívají kód a mají jiný životní cyklus.
+
+Původní pravidlo chránilo před tím, aby si modul potichu vyrobil cestu ven
+a rozešel se s vlastní konfigurací. To platí dál, jen jinak vymezené:
+
+* **`data_root` je jediná absolutní cesta v konfiguraci.** Všechno ostatní je
+  relativní vůči ní. Přenos instalace je pak změna jednoho řádku.
+* **Ven jde jen to, co jsou data.** PID, port a vendorovaný kód zůstávají
+  v modulu — stav procesu není datum a má zmizet s procesem.
+* **Rozvinutí cest je vyjmenované, ne uhodnuté.** Modul má dva seznamy klíčů
+  (`MODULE_PATH_KEYS`, `DATA_PATH_KEYS`) a každý svou základnu. Hádat podle
+  jména („končí na `_dir`, tak je to cesta") se rozejde s obsahem, jakmile
+  přibude klíč, který se tak jmenuje a cesta není.
+* **`status` musí `data_root` vypsat.** Jinak člověk hledá chybu v datech,
+  která služba vůbec nečte.
+
+### Schválené závislosti
+
+Standardní knihovna je výchozí stav, ne dogma. Závislost se schvaluje jmenovitě
+a zapisuje se sem i do `requirements.txt` s důvodem:
+
+| knihovna | kdo | proč |
+|---|---|---|
+| `jsonschema` | `cb-config` | Ručně psaný validátor uměl jen část Draft 7 a každé nové klíčové slovo ve schématu se muselo doplnit do kódu — jinak prošlo mlčky. Schváleno J. 5. 8. 2026. |
+
+Co se tím nemění: `service.py`, `api.py`, `client.py` a `control.py` dál stojí
+na standardní knihovně. Validace konfigurace běží **před** startem služby.
 
 ```
 conBond3/
@@ -1477,20 +1541,25 @@ conBond3/
 
     cb_logger/            modul logger
         cb-logger-config.json
-        data-persistent/
-        run/
+        config.schema.json
+        run/              PID a port — stav procesu, mizí s ním
         docs/
         tests/
         …
     cb_udpipe/            modul udpipe
     cb_<name>/            … jeden adresář na modul
 
+    cb_config/            sdílená knihovna, ne služba (bez cb-config.py)
+
     .venv/                jediné virtuální prostředí
     README-MODULES.md            tahle politika
 ```
 
 Kořen projektu tak na první pohled říká, co všechno je služba: každý
-`cb-*.py` je jedna a vedle něj stojí její adresář.
+`cb-*.py` je jedna a vedle něj stojí její adresář. Adresář bez ovládacího
+programu v kořeni je knihovna — nemá co obsluhovat.
+
+Trvalá data v tomhle stromu nejsou; leží pod `data_root` mimo repozitář (výše).
 
 ### Ukládání
 
