@@ -80,7 +80,7 @@ patří, aby to při dalším ingestu nikdo nemusel dohadovat.
 
 | co | kde | odkud | v gitu? |
 |---|---|---|---|
-| `korpus-101…107.json` (2 912 vět) | `cb_field/data-persistent/korpus/` | převod textů z `data-persistent/corpora/` (conBond2, `scripts/fetch-korpusy.sh`): Markovo evangelium, fyzika, spisovatelé | **ne** |
+| `korpus-101…107.json` (2 912 vět) | `<data_root>/corpus/` | převod textů z `data-persistent/corpora/` (conBond2, `scripts/fetch-korpusy.sh`): Markovo evangelium, fyzika, spisovatelé | **ne** |
 | `korpus-201.json` (605) · `korpus-202.json` (600) | tamtéž | Wikipedie — vesmír, hudba | **ne** |
 | `korpus-301…326.json` (8 141) | tamtéž | Nový zákon po knihách | **ne** |
 | `korpus-001…003.json` (295 vět) | `cb_field/tests/data/korpus/` | vlastní texty (doprava, příroda, dějiny) + 54 vlastních otázek | ano |

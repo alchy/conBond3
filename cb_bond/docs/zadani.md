@@ -557,7 +557,7 @@ Instalace VÝHRADNĚ `pip install 'viewbase @ git+https://github.com/
 alchy/viewBase2#subdirectory=python'`; verze frontendu se ověřuje
 otiskem bundle v index.html (starý projekt viewBase je k ledu —
 jiné API, jednou už podvrhl starou generaci). Spuštění:
-`./run-python -m cb_bond.graphview` (:8080).
+`./cb-bond.py start` → http://127.0.0.1:42401 (dříve `cb_bond.graphview` na :8080).
 
 ## Krok 10 · BenchmarkProtocol (měření)
 

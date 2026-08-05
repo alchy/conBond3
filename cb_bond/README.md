@@ -65,7 +65,7 @@ usadí — stejně jako u cb_field.
 |---|---|
 | `cb_field` | pole věty, registr vertikál, korpus |
 | `cb_udpipe` | rozbor věty — **předává se parametrem**, modul si klienta nevytváří |
-| `viewbase` (viewBase2) | jen `graphview.py`; jádro (`graph.py`, `mirror.py`) na něm NEZÁVISÍ — okno se předává parametrem |
+| `viewbase` (viewBase2) | jen `window.py` a start oken v `control.py`; jádro (`graph.py`, `mirror.py`) na něm NEZÁVISÍ — okno se předává parametrem. Bez něj služba běží dál, jen bez oken. |
 
 Na registru cb_fieldu smí cb_bond volat jen `link` / `unlink` /
 `get_link` / `spread` / `set_custom_axes` / `snapshot` / `restore`

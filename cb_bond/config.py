@@ -61,8 +61,9 @@ DATA_PATH_KEYS = (
     ("module", "state", "registry_dir"),
 )
 
-__all__ = ["load", "ConfigError", "MODULE_DIR", "DEFAULT_CONFIG_PATH",
-           "SCHEMA_PATH", "PORT_RANGE", "SUPPORTED_CONFIG_VERSION"]
+__all__ = ["load", "corpus_dir", "ConfigError", "MODULE_DIR",
+           "DEFAULT_CONFIG_PATH", "SCHEMA_PATH", "PORT_RANGE",
+           "SUPPORTED_CONFIG_VERSION"]
 
 
 def load(path: str | Path | None = None) -> dict[str, Any]:
@@ -89,6 +90,21 @@ def load(path: str | Path | None = None) -> dict[str, Any]:
         checks=[_check_ports, _check_data_root],
         path_specs=([(k, MODULE_DIR) for k in MODULE_PATH_KEYS]
                     + [(k, koren) for k in DATA_PATH_KEYS]))
+
+
+def corpus_dir(path: str | Path | None = None) -> Path:
+    """Adresář s korpusy podle konfigurace, absolutní.
+
+    Skripty přejímek se ptají tudy místo aby cestu měly napsanou v těle.
+    Dvanáct opsaných cest znamenalo dvanáct míst k opravě, až se data
+    přestěhovala mimo repozitář — a ony ukazovaly do prázdna.
+
+    Co odsud NEJDE, je vzor souborů: každá přejímka má svůj (`korpus-1*`
+    pro zmražených 2 912 vět, `korpus-*` pro celých 12 258) a je součástí
+    definice měření, ne nastavení. Kdyby se dal přenastavit, změnilo by se
+    tiše to, co čísla znamenají.
+    """
+    return Path(load(path)["module"]["corpus"]["directory"])
 
 
 # --- kontroly nad rámec schématu -----------------------------------------

@@ -8,8 +8,8 @@ naměřeno, mosty slovo↔slovo se mezi otázkami nepřenášejí.
 
 import unittest
 
-from cb_bond import (ContrastiveTrainer, Matcher, ValidationSplit,
-                     learning_bag, sentence_hit)
+from cb_bond import ContrastiveTrainer, Matcher
+from cb_bond.training import ValidationSplit, learning_bag, sentence_hit
 from cb_bond.tests.vzorky import (GRAVITACE, KRESTA, OTAZKA_KREST, SYNAGOGA,
                                   VEZENI)
 from cb_field import Corpus, SentenceField

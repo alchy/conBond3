@@ -5,14 +5,13 @@
 # Smazání tohoto adresáře musí být neškodné (MODULES.md § 2).
 cb_*/run/
 
-# Perzistentní data modulů. Adresář v repozitáři zůstává (.gitkeep),
-# obsah ne — jsou to logy a naměřená data konkrétního stroje.
-cb_*/data-persistent/*
-!cb_*/data-persistent/.gitkeep
+# Perzistentní data v repozitáři nejsou vůbec — od 5. 8. 2026 leží pod
+# `data_root` mimo něj (MODULES.md § 19). Vzor tu zůstává pro jistotu:
+# kdyby si někdo adresář založil znovu, nesmí se to dostat do gitu.
+cb_*/data-persistent/
 
 # Velká binární data: váhy, modely, embeddingy.
 # Nejsou v gitu schválně; pořizuje je fetch skript modulu (MODULES.md § 19).
-cb_*/data-persistent/models/
 cb_*/vendor/**/*.model
 models/
 *.model

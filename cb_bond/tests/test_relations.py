@@ -6,7 +6,8 @@
 
 import unittest
 
-from cb_bond import KnowledgeGraph, RelationMiner
+from cb_bond import KnowledgeGraph
+from cb_bond.relations import RelationMiner
 from cb_bond.relations import kmen
 from cb_bond.tests.vzorky import (ELEKTROMOTOR, GALAXIE, GRAVITACE, KRESTA,
                                   PELYNEK, SYNAGOGA, VEZENI)

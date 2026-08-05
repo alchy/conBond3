@@ -33,6 +33,7 @@ import time
 from pathlib import Path
 
 from cb_bond import ContrastiveTrainer, Matcher
+from cb_bond.config import corpus_dir
 from cb_field.corpusfile import build_corpus
 from cb_udpipe import UdpipeClient
 
@@ -92,7 +93,7 @@ def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     kolik = int(argv[0]) if argv else 10
 
-    korpus = Path("cb_field/data-persistent/korpus")
+    korpus = corpus_dir()
     paths = sorted(korpus.glob("korpus-1*.json"))
     if not paths:
         print(f"chybí korpusy v {korpus} — viz ZDROJ.md", file=sys.stderr)

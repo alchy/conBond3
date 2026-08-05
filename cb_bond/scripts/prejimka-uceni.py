@@ -18,7 +18,9 @@ import json
 import sys
 from pathlib import Path
 
-from cb_bond import ContrastiveTrainer, Matcher, sentence_hit
+from cb_bond import ContrastiveTrainer, Matcher
+from cb_bond.training import sentence_hit
+from cb_bond.config import corpus_dir
 from cb_field import SentenceField
 from cb_field.corpusfile import build_corpus
 from cb_udpipe import UdpipeClient
@@ -33,7 +35,7 @@ def _radky(path):
 
 
 def main() -> int:
-    korpus = Path("cb_field/data-persistent/korpus")
+    korpus = corpus_dir()
     paths = sorted(korpus.glob("korpus-1*.json"))
     if not paths:
         print(f"chybí korpusy v {korpus} — viz ZDROJ.md", file=sys.stderr)

@@ -154,7 +154,7 @@ Soubor registru je od těchto změn `format_version` **2**: nese navíc
 `custom_axes` a `axis_version`. Bez nich by se registr načetl bez
 vstupní vrstvy a pole by tiše přestala aktivovat `CUSTOM=`.
 
-## GraphMirror (mirror.py) a graphview
+## GraphMirror (mirror.py) a okna (window.py)
 
 | metoda | co dělá / na čem visí |
 |---|---|
@@ -167,9 +167,9 @@ vstupní vrstvy a pole by tiše přestala aktivovat `CUSTOM=`.
 
 | co | jak |
 |---|---|
-| živý graf | `./run-python -m cb_bond.graphview "Kde byl pokřtěn Ježíš?"` (:8080) |
+| živý graf | `./cb-bond.py start` → http://127.0.0.1:42401 (čtyři okna) |
 | přejímka kroku 9 | `./run-python cb_bond/scripts/prejimka-zrcadlo.py` — proti SKUTEČNÉMU oknu, ne atrapě |
-| otisk frontendu | ověřuje `graphview.bundle_fingerprint()` při startu |
+| otisk frontendu | ověřuje `window.bundle_fingerprint()` při startu |
 
 ## ContrastiveTrainer (training.py)
 
@@ -272,7 +272,7 @@ neurčuje měření — měření jen ukáže, co která volba stojí.
 | **6** `PromotionCycle` | hotovo (rollback bit po bitu) | `run` → `CycleOutcome` | rameno C protokolu |
 | **7** `RelationMiner` | hotovo (94 definic) | `mine_definitions`, `mine_derivations` | `QuestionExpander`, `rozklad-skore.py` |
 | **8** `Responder` | hotovo (dialog o dálnici bit po bitu) | `gaps`, `reply`, `append_context` | dialogová cesta; `DefinitionResolver` pro doplnění |
-| **9** `GraphMirror` | hotovo (proti skutečnému oknu) | `emit`, `mirror`, `refresh`, `illuminate` | `graphview` (:8080) |
+| **9** `GraphMirror` | hotovo (proti skutečnému oknu) | `emit`, `mirror`, `refresh`, `illuminate` | okna služby (:42401) |
 | **10** `BenchmarkProtocol` | hotovo (A = 0,3667, C přijato) | `run`, `ThresholdCalibrator` | `protokol.py` |
 | **S1** dvoustupňové čtení | hotovo | `recall` + `match` jen v top-K | každé volání `match()` |
 | **S2** spektrální člen | hotovo (věta 21 → 22/30) | `SpectralMember`, `truncated_svd` | `Matcher(spectral_k=…)`, vypnutý nulou |

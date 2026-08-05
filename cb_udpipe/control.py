@@ -557,6 +557,7 @@ def cmd_status(config: dict[str, Any], *, jako_json: bool) -> int:
                   f"{config['service']['host']}:{port}")
             print(f"             UDPipe   {config['service']['host']}:"
                   f"{udpipe_port}")
+            print(f"             data     {config.get('data_root', '?')}")
             print(f"             config   {cesta}")
             if osirely is not None:
                 print(f"             pozn.    osiřelý run/service.pid "
@@ -585,6 +586,7 @@ def cmd_status(config: dict[str, Any], *, jako_json: bool) -> int:
         print(f"             tokenizér {zdravi.get('tokenizer', '?')}")
     else:
         print("             zdraví   služba neodpovídá na /v1/health")
+    print(f"             data     {config.get('data_root', '?')}")
     print(f"             config   {cesta}")
     return EXIT_OK
 

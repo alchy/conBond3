@@ -19,6 +19,7 @@ import time
 from pathlib import Path
 
 from cb_bond import (ArmResult, BenchmarkProtocol, ContrastiveTrainer,
+from cb_bond.config import corpus_dir
                      GraphRecall, KnowledgeGraph, Matcher, PromotionCycle,
                      ThresholdCalibrator, sentence_hit)
 from cb_field import SentenceField
@@ -38,7 +39,7 @@ def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     vzor = "korpus-*.json" if argv and argv[0] == "vse" else "korpus-1*.json"
 
-    korpus = Path("cb_field/data-persistent/korpus")
+    korpus = corpus_dir()
     paths = sorted(korpus.glob(vzor))
     if not paths:
         print(f"chybí korpusy v {korpus} — viz ZDROJ.md", file=sys.stderr)

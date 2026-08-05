@@ -12,7 +12,9 @@ ukazuje cílenou těžbu kolem slov jedné otázky, což je provozní režim.
 import sys
 from pathlib import Path
 
-from cb_bond import KnowledgeGraph, RelationMiner
+from cb_bond import KnowledgeGraph
+from cb_bond.relations import RelationMiner
+from cb_bond.config import corpus_dir
 from cb_field.corpusfile import build_corpus
 from cb_udpipe import UdpipeClient
 
@@ -25,7 +27,7 @@ VZORKY = [("gravitace", "síla"), ("foton", "částice"),
 
 
 def main() -> int:
-    korpus = Path("cb_field/data-persistent/korpus")
+    korpus = corpus_dir()
     paths = sorted(korpus.glob("korpus-*.json"))
     if not paths:
         print(f"chybí korpusy v {korpus} — viz ZDROJ.md", file=sys.stderr)

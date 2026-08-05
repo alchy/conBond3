@@ -45,6 +45,8 @@ class ZakladOvladani(unittest.TestCase):
         config["module"]["routing"]["default"] = str(adr / "log.jsonl")
         config["module"]["summary"]["path"] = str(adr / "summary.json")
         config["module"]["storage"]["dir"] = str(adr)
+        config["data_root"] = str(adr / "koren")
+        self.data_root = str(adr / "koren")
 
         self.cesta = adr / "cb-logger-config.json"
         self.cesta.write_text(
@@ -95,6 +97,14 @@ class StatusUvadiPortVzdy(ZakladOvladani):
     def test_status_uvadi_cestu_ke_konfiguraci(self):
         _, vystup = self.spust("status")
         self.assertIn(str(self.cesta), vystup)
+
+    def test_status_uvadi_DATOVY_KOREN(self):
+        # Data leží mimo repozitář; bez vypsaného kořene člověk hledá
+        # chybu v datech, která služba vůbec nečte (§ 19).
+        _, vystup = self.spust("status")
+
+        self.assertIn("data", vystup)
+        self.assertIn(self.data_root, vystup)
 
     def test_bezici_sluzba_uvadi_skutecny_port(self):
         self.spust("start")

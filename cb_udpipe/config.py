@@ -16,7 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from cb_config import ConfigError
+from cb_config import ConfigError, read_json
 from cb_config import check_schema_supported as _check_schema_supported
 from cb_config import load as _load_shared
 
@@ -46,21 +46,41 @@ PORT_KEYS = (
     ('module', 'upstream', 'port'),
 )
 
-#: Klíče, jejichž hodnota je cesta. Vyjmenované schválně: hádání podle
-#: jména („končí na _dir, tak je to cesta") by se rozešlo s obsahem, jakmile
-#: přibude klíč, který se tak jmenuje a cesta není.
-PATH_KEYS = (
+#: Cesty relativní vůči ADRESÁŘI MODULU. PID, port a vendorovaný
+#: kód nejsou data — zůstávají v repozitáři a mizí s ním.
+MODULE_PATH_KEYS = (
     ('runtime', 'pid_file'),
     ('runtime', 'port_file'),
     ('runtime', 'self_log', 'path'),
-    ('module', 'cache', 'dir'),
-    ('module', 'upstream', 'model_dir'),
-    ('module', 'upstream', 'hf_home'),
     ('module', 'upstream', 'vendor_dir'),
 )
 
+#: Cesty relativní vůči `data_root`, který leží MIMO repozitář
+#: (oddělení kódu od dat, rozhodnutí J. 2026-08-05). Vyjmenované
+#: schválně: hádání podle jména („končí na _dir, tak je to cesta")
+#: by se rozešlo s obsahem, jakmile přibude klíč, který se tak
+#: jmenuje a cesta není.
+DATA_PATH_KEYS = (
+    ('module', 'cache', 'dir'),
+    ('module', 'upstream', 'model_dir'),
+    ('module', 'upstream', 'hf_home'),
+)
+
+
 __all__ = ["load", "ConfigError", "MODULE_DIR", "DEFAULT_CONFIG_PATH",
            "SCHEMA_PATH", "SUPPORTED_CONFIG_VERSION", "PORT_RANGE"]
+
+
+def _data_root(path) -> Path:
+    """Datový kořen z konfigurace — čte se dřív, než se cesty rozvinou.
+
+    Musí se přečíst zvlášť: `resolve_paths` potřebuje základnu předem
+    a ta stojí uvnitř téhož souboru, který se teprve načítá.
+    """
+    surova = read_json(
+        Path(path if path is not None else DEFAULT_CONFIG_PATH).resolve(),
+        co="konfigurace")
+    return Path(str(surova.get("data_root", "/")))
 
 
 def load(path: str | Path | None = None) -> dict[str, Any]:
@@ -85,7 +105,8 @@ def load(path: str | Path | None = None) -> dict[str, Any]:
         SCHEMA_PATH,
         supported_version=SUPPORTED_CONFIG_VERSION,
         checks=[_check_ports],
-        path_specs=[(klice, MODULE_DIR) for klice in PATH_KEYS])
+        path_specs=([(k, MODULE_DIR) for k in MODULE_PATH_KEYS]
+                    + [(k, _data_root(path)) for k in DATA_PATH_KEYS]),)
 
 
 def _check_ports(config: dict[str, Any]) -> list[str]:

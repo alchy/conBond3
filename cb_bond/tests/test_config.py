@@ -107,6 +107,26 @@ class TestCesty(unittest.TestCase):
                          cfg.MODULE_DIR / "run")
 
 
+class TestKorpusovyAdresar(unittest.TestCase):
+    """Skripty se ptají konfigurace, kde korpusy leží — nehádají cestu."""
+
+    def test_corpus_dir_vraci_ROZVINUTOU_cestu(self):
+        # dřív měl každý skript cestu napsanou v těle; po přestěhování dat
+        # ven z repozitáře jich dvanáct ukazovalo do neexistujícího místa
+        adresar = cfg.corpus_dir()
+
+        self.assertTrue(adresar.is_absolute())
+        self.assertEqual(adresar,
+                         Path(cfg.load()["module"]["data_root"]) / "corpus")
+
+    def test_corpus_dir_respektuje_ZADANOU_konfiguraci(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cesta = _zapis(Path(tmp),
+                           lambda d: d["module"].update(data_root=tmp))
+
+            self.assertEqual(cfg.corpus_dir(cesta), Path(tmp) / "corpus")
+
+
 class TestOtisk(unittest.TestCase):
 
     def test_otisk_se_meni_s_obsahem(self):
