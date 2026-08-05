@@ -126,13 +126,23 @@ class TestValidace(_Zaklad):
 
         self.assertTrue(chyby)
 
-    def test_neznamy_klic_SCHEMATU_je_hlasita_chyba(self):
-        # nedostatečný validátor, který mlčí, je horší než žádný
-        vadne = dict(SCHEMA, patternProperties={"^x": {}})
+    def test_ROZBITE_schema_je_hlasita_chyba(self):
+        # Dřív se hlídalo, že schéma nepoužije klíč, kterému náš ručně
+        # psaný validátor nerozumí. S knihovnou ten problém zmizel —
+        # rozumí celému Draft 7 — a zůstala potřeba opačná: poznat, že je
+        # rozbité SCHÉMA, ne konfigurace. Bez toho se vada schématu
+        # projeví jako podivná hláška o konfiguraci, která je v pořádku.
+        vadne = dict(SCHEMA, type="objekt")     # takový typ neexistuje
 
         with self.assertRaises(ConfigError) as chyba:
             validate(PLATNA, vadne)
-        self.assertIn("patternProperties", str(chyba.exception))
+        self.assertIn("schéma", str(chyba.exception))
+
+    def test_klicove_slovo_navic_uz_NENI_problem(self):
+        # patternProperties ručnímu validátoru vadilo; knihovna ho umí
+        rozsirene = dict(SCHEMA, patternProperties={"^x": {"type": "string"}})
+
+        self.assertEqual(validate(PLATNA, rozsirene), [])
 
 
 class TestCesty(_Zaklad):

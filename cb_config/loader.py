@@ -5,15 +5,16 @@ nastartovala se špatnou konfigurací, je horší než služba, která
 nenastartovala. Chyba v nastavení se pak projeví až za hodinu uprostřed
 dávky, na místě, které s příčinou nesouvisí.
 
-Proč vlastní validátor místo knihovny `jsonschema`: kód modulů nesmí mít
-závislosti (README-MODULES.md § 19) a konfigurace se čte dřív, než cokoli
-jiného naběhne. Validátor zvládá jen tu část JSON Schema, kterou naše
-schémata používají, a na cokoli jiného **hlasitě upozorní** — nedostatečný
-validátor, který mlčí, je horší než žádný.
+Validaci dělá knihovna `jsonschema` — **schválená závislost** (§ 19,
+rozhodnutí J. 2026-08-05). Předtím tu stál ručně psaný validátor, protože
+moduly neměly mít závislosti; uměl ale jen část Draft 7 a každé nové
+klíčové slovo ve schématu se muselo doplnit do kódu, jinak by prošlo
+mlčky. Knihovna rozumí celému standardu a ten problém mizí.
 
-Implementace je PŘEVZATÁ z `cb_logger/config.py`, kde se osvědčila, ne
-napsaná znovu. Znění hlášek se drží doslova: sourozenci na ně mají testy
-a přeformulovat je při stěhování by znamenalo měnit dvě věci najednou.
+Co zůstalo vlastní: **překlad hlášek do češtiny** v domácím tvaru
+(politika § 17 chce chybové hlášky pro člověka česky) a stabilní pořadí
+řádků. Znění se drží doslova toho z `cb_logger`, protože na něm stojí
+testy sourozenců.
 """
 
 from __future__ import annotations
@@ -23,6 +24,8 @@ import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable, Iterable, Sequence
+
+import jsonschema
 
 
 class ConfigError(Exception):
@@ -137,239 +140,137 @@ def resolve_paths(config: dict,
     return vysledek
 
 
-#: schématu, ne konfigurace, a ohlásí se zvlášť (viz docstring modulu).
-SUPPORTED_SCHEMA_KEYWORDS = frozenset({
-    "$schema", "title", "description", "type", "properties", "required",
-    "additionalProperties", "items", "enum", "minimum", "maximum",
-    "exclusiveMinimum", "minProperties",
-})
-
-_JSON_TYPES: dict[str, tuple[type, ...]] = {
-    "object": (dict,),
-    "array": (list,),
-    "string": (str,),
-    "number": (int, float),
-    "integer": (int,),
-    "boolean": (bool,),
+#: Jak se anglická hláška z `jsonschema` píše česky. Klíčem je `validator`
+#: (klíčové slovo schématu, které selhalo), hodnotou funkce, která z chyby
+#: udělá domácí větu.
+#:
+#: Proč se překládá a nepředává se hláška knihovny: politika § 17 chce
+#: chybové hlášky pro člověka česky, a sourozenci na tenhle tvar mají
+#: testy. Co v tabulce není, projde v původním znění — neúplný překlad je
+#: pořád lepší než mlčení.
+_HLASKY = {
+    "type": lambda e: (
+        f"očekáván {_typ(e.validator_value)}, "
+        f"nalezeno {type(e.instance).__name__}"),
+    "required": lambda e: f"chybí povinný klíč {_chybejici(e)!r}",
+    "additionalProperties": lambda e: (
+        f"neznámý klíč {_navic(e)!r}"),
+    "enum": lambda e: (
+        f"hodnota {e.instance!r} není z výčtu "
+        + " | ".join(str(p) for p in e.validator_value)),
+    "minimum": lambda e: f"{e.instance} je pod minimem {e.validator_value}",
+    "maximum": lambda e: f"{e.instance} je nad maximem {e.validator_value}",
+    "exclusiveMinimum": lambda e: (
+        f"{e.instance} musí být větší než {e.validator_value}"),
+    "minProperties": lambda e: (
+        f"očekáváno aspoň {e.validator_value} klíčů, "
+        f"nalezeno {len(e.instance)}"),
 }
 
 
-def read_json(cesta: Path, *, co: str) -> dict[str, Any]:
-    """Přečte JSON soubor a převede chyby na `ConfigError` s čitelnou hláškou.
+def check_schema_supported(schema: dict[str, Any], schema_path=None) -> None:
+    """Ověří, že schéma samo je platné JSON Schema.
 
-    Proč zvlášť: `FileNotFoundError` ani `JSONDecodeError` neřeknou, o který
-    ze dvou souborů šlo, a při startu je to první věc, kterou člověk potřebuje
-    vědět.
-
-    Vstup:
-        cesta: absolutní cesta k souboru.
-        co: jak se souboru říká v hlášce, česky (např. "konfigurace").
-
-    Výstup:
-        Načtený JSON objekt.
+    Dřív tahle funkce hlídala, že schéma nepoužívá klíčové slovo, kterému
+    náš ručně psaný validátor nerozumí. S knihovnou ten problém zmizel —
+    rozumí celému Draft 7 — a zůstala potřeba opačná: poznat, že je
+    rozbité SCHÉMA, ne konfigurace. To je jinak vada, která se projeví
+    jako podivná hláška o konfiguraci, která je ve skutečnosti v pořádku.
 
     Při chybě:
-        `ConfigError`, když soubor chybí, nejde přečíst, není platný JSON
-        nebo není objekt.
+        `ConfigError` s tím, co je ve schématu špatně.
     """
+    try:
+        jsonschema.Draft7Validator.check_schema(schema)
+    except jsonschema.SchemaError as e:
+        raise ConfigError(
+            f"schéma {schema_path or 'konfigurace'} je neplatné:\n"
+            f"  {'.'.join(str(k) for k in e.absolute_path) or '<kořen>'}: "
+            f"{e.message}") from None
+
+
+def _validate(hodnota: Any, schema: dict[str, Any], *,
+              kde: str = "") -> list[str]:
+    """Ověří hodnotu proti schématu; vrátí seznam českých popisů chyb.
+
+    Validaci dělá knihovna `jsonschema` (schválená závislost, § 19) —
+    ručně psaný validátor uměl jen část Draft 7 a každé nové klíčové
+    slovo ve schématu se muselo doplnit do kódu. Tady zůstává jen
+    překlad do češtiny a stabilní pořadí.
+
+    Vrací seznam místo výjimky, aby šlo ohlásit **všechny** chyby
+    najednou. Opravovat konfiguraci po jedné hlášce na spuštění je trest,
+    ne pomoc.
+    """
+    validator = jsonschema.Draft7Validator(schema)
+    chyby = []
+    for e in validator.iter_errors(hodnota):
+        # Index pole patří do hranatých závorek (rules[0]), ne za tečku:
+        # tečkový zápis `rules.0` vypadá jako klíč, který se dá najít
+        # v konfiguraci, a nejde.
+        misto = kde
+        for klic in e.absolute_path:
+            if isinstance(klic, int):
+                misto = f"{misto}[{klic}]"
+            else:
+                misto = f"{misto}.{klic}" if misto else str(klic)
+        misto = misto or "<kořen>"
+        preklad = _HLASKY.get(e.validator)
+        chyby.append(f"{misto}: "
+                     + (preklad(e) if preklad else e.message))
+    # Stabilní pořadí: bez něj se dvě spuštění nad touž vadnou konfigurací
+    # liší v pořadí řádků a diff hlášek nic neříká.
+    return sorted(chyby)
+
+
+def _typ(ocekavany: Any) -> str:
+    """Očekávaný typ jako jedno slovo; `jsonschema` jich smí uvést víc."""
+    if isinstance(ocekavany, list):
+        return " | ".join(str(t) for t in ocekavany)
+    return str(ocekavany)
+
+
+def _chybejici(e) -> str:
+    """Jméno chybějícího klíče z anglické hlášky knihovny."""
+    return e.message.split("'")[1] if "'" in e.message else e.message
+
+
+def _navic(e) -> str:
+    """Jméno klíče navíc z anglické hlášky knihovny."""
+    return e.message.split("'")[1] if "'" in e.message else e.message
+
+
+def fingerprint(config: dict[str, Any]) -> str:
+    """Krátký otisk obsahu konfigurace, nezávislý na pořadí klíčů.
+
+    Každé naměřené číslo nese otisk nastavení, se kterým vzniklo; jinak se
+    dvě měření nedají porovnat a nikdo nepozná, že běžela jinak.
+    """
+    kanonicky = json.dumps(config, sort_keys=True, ensure_ascii=False,
+                           separators=(",", ":"))
+    return hashlib.sha256(kanonicky.encode("utf-8")).hexdigest()[:12]
+
+
+def read_json(cesta: Path, *, co: str) -> dict[str, Any]:
+    """Přečte JSON objekt; každá vada je `ConfigError` s adresou.
+
+    Hlášky říkají řádek a sloupec, protože hledat čárku navíc v tisícovém
+    souboru bez toho je zbytečná práce.
+    """
+    cesta = Path(cesta)
     try:
         obsah = cesta.read_text(encoding="utf-8")
     except FileNotFoundError:
         raise ConfigError(f"chybí {co}: {cesta}") from None
     except OSError as e:
-        raise ConfigError(f"nejde přečíst {co} {cesta}: {e}") from None
-
+        raise ConfigError(f"{co} {cesta} nejde přečíst: {e}") from None
     try:
         data = json.loads(obsah)
     except json.JSONDecodeError as e:
         raise ConfigError(
             f"{co} {cesta} není platný JSON:\n"
-            f"  řádek {e.lineno}, sloupec {e.colno}: {e.msg}"
-        ) from None
-
+            f"  řádek {e.lineno}, sloupec {e.colno}: {e.msg}") from None
     if not isinstance(data, dict):
         raise ConfigError(
-            f"{co} {cesta} musí být JSON objekt, ne {type(data).__name__}"
-        )
+            f"{co} {cesta} musí být JSON objekt, ne {type(data).__name__}")
     return data
-
-
-def check_schema_supported(schema: dict[str, Any],
-                           schema_path=None) -> None:
-    """Ověří, že schéma nepoužívá nic, čemu validátor nerozumí.
-
-    Proč to stojí za vlastní průchod: validátor umí jen podmnožinu JSON Schema.
-    Kdyby na neznámé klíčové slovo mlčel, tvářilo by se schéma jako vynucené,
-    ale ta část by nekontrolovala nic. Test, který zticha přestane hlídat, je
-    horší než žádný test.
-
-    Vstup:
-        schema: načtené schéma.
-
-    Výstup:
-        Nic.
-
-    Při chybě:
-        `ConfigError` se seznamem klíčových slov, kterým validátor nerozumí,
-        a s místem, kde ve schématu jsou.
-    """
-    nalezene: list[str] = []
-
-    def projdi(uzel: Any, kde: str) -> None:
-        if not isinstance(uzel, dict):
-            return
-        for klic, hodnota in uzel.items():
-            if klic == "properties" and isinstance(hodnota, dict):
-                for jmeno, podschema in hodnota.items():
-                    projdi(podschema, f"{kde}.{jmeno}" if kde else jmeno)
-            elif klic == "items":
-                projdi(hodnota, f"{kde}[]")
-            elif klic not in SUPPORTED_SCHEMA_KEYWORDS:
-                nalezene.append(f"{kde or '<kořen>'}: {klic}")
-
-    projdi(schema, "")
-    if nalezene:
-        raise ConfigError(
-            f"schéma {schema_path or 'konfigurace'} používá klíčová "
-            f"slova, kterým validátor "
-            f"nerozumí:\n" + "\n".join(f"  {n}" for n in nalezene) + "\n"
-            "  Buď se doplní do _validate, nebo se ze schématu odstraní. "
-            "Mlčky ignorovat je nesmí."
-        )
-
-
-def _validate(hodnota: Any, schema: dict[str, Any], *, kde: str) -> list[str]:
-    """Ověří hodnotu proti schématu; vrátí seznam českých popisů chyb.
-
-    Proč seznam a ne první nález: když je konfigurace špatně, je obvykle špatně
-    víc věcí. Nahlásit jen první znamená, že se to opravuje na třikrát a mezi
-    tím se pokaždé restartuje.
-
-    Vstup:
-        hodnota: kus konfigurace k ověření.
-        schema: odpovídající kus schématu.
-        kde: tečková cesta k hodnotě pro hlášku (např. `service.port`).
-            Prázdný řetězec znamená kořen.
-
-    Výstup:
-        Seznam vět. Prázdný seznam znamená, že je hodnota v pořádku.
-
-    Při chybě:
-        Nevyhazuje — chyby vrací, ne hází. Vyhodit by znamenalo ohlásit jen
-        první z nich.
-    """
-    chyby: list[str] = []
-    misto = kde or "<kořen>"
-
-    ocekavany = schema.get("type")
-    if ocekavany:
-        povolene = _JSON_TYPES[ocekavany]
-        # `bool` je v Pythonu podtyp `int`, takže by True prošlo jako číslo.
-        je_bool_navic = isinstance(hodnota, bool) and ocekavany in (
-            "integer", "number"
-        )
-        if not isinstance(hodnota, povolene) or je_bool_navic:
-            chyby.append(
-                f"{misto}: očekáván {ocekavany}, nalezeno "
-                f"{type(hodnota).__name__}"
-            )
-            # Bez správného typu nemá smysl kontrolovat zbytek.
-            return chyby
-
-    if "enum" in schema and hodnota not in schema["enum"]:
-        povolene = " | ".join(str(p) for p in schema["enum"])
-        chyby.append(f"{misto}: hodnota {hodnota!r} není z výčtu {povolene}")
-
-    if isinstance(hodnota, (int, float)) and not isinstance(hodnota, bool):
-        if "minimum" in schema and hodnota < schema["minimum"]:
-            chyby.append(f"{misto}: {hodnota} je pod minimem {schema['minimum']}")
-        if "maximum" in schema and hodnota > schema["maximum"]:
-            chyby.append(f"{misto}: {hodnota} je nad maximem {schema['maximum']}")
-        if "exclusiveMinimum" in schema and hodnota <= schema["exclusiveMinimum"]:
-            chyby.append(
-                f"{misto}: {hodnota} musí být větší než "
-                f"{schema['exclusiveMinimum']}"
-            )
-
-    if isinstance(hodnota, dict):
-        chyby += _validate_object(hodnota, schema, kde=kde, misto=misto)
-
-    if isinstance(hodnota, list) and "items" in schema:
-        for i, polozka in enumerate(hodnota):
-            chyby += _validate(schema=schema["items"], hodnota=polozka,
-                               kde=f"{kde}[{i}]")
-
-    return chyby
-
-
-def _validate_object(
-    hodnota: dict[str, Any], schema: dict[str, Any], *, kde: str, misto: str
-) -> list[str]:
-    """Ověří objektová pravidla: povinné klíče, neznámé klíče, podřazené hodnoty.
-
-    Vyděleno z `_validate`, aby se ta funkce dala přečíst najednou.
-
-    Vstup:
-        hodnota: ověřovaný objekt.
-        schema: jeho schéma.
-        kde: tečková cesta pro sestavení cest podřazených hodnot.
-        misto: tečková cesta pro hlášku (kořen se píše jako `<kořen>`).
-
-    Výstup:
-        Seznam českých popisů chyb.
-
-    Při chybě:
-        Nevyhazuje.
-    """
-    chyby: list[str] = []
-    vlastnosti: dict[str, Any] = schema.get("properties", {})
-
-    for povinny in schema.get("required", []):
-        if povinny not in hodnota:
-            chyby.append(f"{misto}: chybí povinný klíč '{povinny}'")
-
-    if schema.get("additionalProperties") is False:
-        neznamé = set(hodnota) - set(vlastnosti)
-        for klic in sorted(neznamé):
-            # Neznámý klíč je chyba, ne tiché ignorování: obvykle je to překlep
-            # a tiše ignorovaný překlep znamená, že běží jiné nastavení,
-            # než si člověk myslí.
-            chyby.append(f"{misto}: neznámý klíč '{klic}'")
-
-    if "minProperties" in schema and len(hodnota) < schema["minProperties"]:
-        chyby.append(
-            f"{misto}: očekáváno aspoň {schema['minProperties']} klíčů, "
-            f"nalezeno {len(hodnota)}"
-        )
-
-    for klic, podschema in vlastnosti.items():
-        if klic in hodnota:
-            chyby += _validate(
-                hodnota[klic], podschema, kde=f"{kde}.{klic}" if kde else klic
-            )
-
-    return chyby
-
-
-def fingerprint(config: dict[str, Any]) -> str:
-    """Vrátí krátký otisk obsahu konfigurace.
-
-    Proč je potřeba: každé naměřené číslo nese verzi konfigurace, jinak jsou
-    dvě čísla nesrovnatelná (README-MODULES.md § 11). Verze v souboru se mění zřídka,
-    kdežto hodnoty často — otisk pozná i změnu, u které nikdo číslo nezvýšil.
-
-    Vstup:
-        config: konfigurace před doplněním `_meta`, aby otisk nezávisel sám
-            na sobě.
-
-    Výstup:
-        Prvních dvanáct znaků SHA-256 z kanonického JSON zápisu. Dvanáct
-        hexadecimálních znaků je dost na rozlišení a krátké na přečtení v logu.
-
-    Při chybě:
-        Nevyhazuje.
-    """
-    import hashlib
-
-    kanonicky = json.dumps(config, sort_keys=True, ensure_ascii=False)
-    return hashlib.sha256(kanonicky.encode("utf-8")).hexdigest()[:12]

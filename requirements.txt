@@ -48,3 +48,14 @@ numpy==2.4.6
 #   pip install 'viewbase @ git+https://github.com/alchy/viewBase2#subdirectory=python'
 # Otisk frontendu ověřuje cb_bond/graphview.py při startu.
 viewbase
+
+# --- cb-config: validace konfigurace proti JSON Schema --------------------
+# Vědomá, zdůvodněná výjimka z pravidla „moduly bez závislostí" (§ 19),
+# schváleno 2026-08-05. Předtím tu stál ručně psaný validátor ve třech
+# kopiích; uměl jen část Draft 7 a každé nové klíčové slovo ve schématu se
+# muselo doplnit do kódu, jinak by prošlo mlčky. Knihovna rozumí celému
+# standardu, takže ta třída chyb mizí.
+#
+# Vlastní zůstal jen překlad hlášek do češtiny (§ 17) — knihovna mluví
+# anglicky a hlášky pro člověka mají být české.
+jsonschema==4.26.0

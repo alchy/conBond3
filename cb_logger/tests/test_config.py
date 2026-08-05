@@ -296,38 +296,23 @@ class CestySeResolvujiVuciModulu(unittest.TestCase):
         self.assertEqual(surova["runtime"]["pid_file"], "run/service.pid")
 
 
-class ValidatorNemlciNadTim_CemuNerozumi(unittest.TestCase):
-    """Pojistka proti vakuu (`T-13`).
+class ValidatorPoznaRozbiteSchema(unittest.TestCase):
+    """Vada SCHÉMATU se musí poznat od vady konfigurace.
 
-    Validátor umí jen podmnožinu JSON Schema. Kdyby na neznámé klíčové slovo
-    mlčel, tvářilo by se schéma jako vynucené, ale ta část by nekontrolovala
-    nic. Tenhle test tvrdí, že se pojistka opravdu spustí — jinak by zticha
-    přestal hlídat cokoli a nikdo by si toho nevšiml.
+    Dřív tu stál test, že validátor nemlčí nad klíčovým slovem, kterému
+    nerozumí — ručně psaný uměl jen část Draft 7. S knihovnou
+    `jsonschema` ten problém zmizel a zůstala potřeba opačná: rozbité
+    schéma se jinak projeví jako podivná hláška o konfiguraci, která je
+    ve skutečnosti v pořádku.
     """
 
-    def test_neznamé_klicove_slovo_ve_schematu_je_chyba(self):
-        from cb_logger import config as modul
+    def test_rozbite_schema_je_hlasita_chyba(self):
+        from cb_config import check_schema_supported
 
-        podvrzene = {
-            "type": "object",
-            "properties": {"a": {"type": "string", "pattern": "^x"}},
-        }
         with self.assertRaises(ConfigError) as chycena:
-            modul._check_schema_supported(podvrzene)
+            check_schema_supported({"type": "objekt"})   # takový typ není
 
-        text = str(chycena.exception)
-        self.assertIn("pattern", text)
-        self.assertIn("Mlčky ignorovat je nesmí", text)
-
-    def test_skutecne_schema_pojistkou_projde(self):
-        # A zároveň sonda ověřuje, že se pojistka pouští na reálném schématu.
-        from cb_logger import config as modul
-
-        schema = json.loads(
-            (MODULE_DIR / "config.schema.json").read_text(encoding="utf-8")
-        )
-        modul._check_schema_supported(schema)
-
+        self.assertIn("schéma", str(chycena.exception))
 
 if __name__ == "__main__":
     unittest.main()
