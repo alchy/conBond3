@@ -237,3 +237,52 @@ bod; třetí skok nepřidá nic.
 | co | jak |
 |---|---|
 | celý protokol | `./run-python cb_bond/scripts/protokol.py [vse]` — **učí a promuje**, běh v minutách |
+
+### Co je které rameno
+
+Ramena nejsou varianty téhož; každé odpovídá na jinou otázku a pořadí
+je závazné, protože na sebe navazují stavem korpusu.
+
+| rameno | otázka, na kterou odpovídá | co je zapnuté | co se z něj čte |
+|---|---|---|---|
+| **A** | Co systém umí BEZ všeho? | hloubka 1, žádné učení, žádná promoce | výchozí bod, proti kterému se poměřuje všechno ostatní |
+| **B** | Kolik přidá učení samo? | A + kontrastivní trénink | rozdíl B−A je čistý příspěvek učení |
+| **D** | Kolik přidá hloubka sama? | hloubka 2 na ČISTÉM baselinu (bez učení) | rozdíl D−A je hloubka bez příměsí; měří se ZVLÁŠŤ, aby šlo poznat skládání |
+| **C** | Kolik přidá promoce? | promoční cyklus nad B (rozhodne sám) | rozdíl **C−B** je čistý příspěvek promovaných os — proto je B kontrola k C, obě mají učení |
+| **E** | Skládá se hloubka s ostatním? | hloubka 2 nad přijatým stavem C | E−C proti D−A; v referenci se skládalo NADADITIVNĚ |
+| **F** | Jaký je provozní bod? | kalibrované θ (řez na mlčení) | přesnost KLESNE a mlčení stoupne — systém raději mlčí, než tipuje |
+
+Pořadí A → B → D → C → E → F je dané tím, že D musí měřit hloubku
+dřív, než promoce změní osu, a C musí navazovat na B, aby jejich rozdíl
+znamenal jen promoci.
+
+**F není vítěz, je to rozhodnutí.** Které rameno se nasadí do provozu,
+neurčuje měření — měření jen ukáže, co která volba stojí.
+
+
+## Kde se která metoda používá — přehled po krocích
+
+| krok | stav | co je hotové | čím se to používá |
+|---|---|---|---|
+| **1** Corpus + fixovaný JSON | hotovo (2 912 a 12 258 vět sedí) | `Corpus`, `corpusfile` v cb_field | základ všeho; `build_corpus` volají všechny skripty |
+| **2** `KnowledgeGraph` | hotovo (16 074 hran, 5 695 lemmat, bit po bitu) | `add_sentence`, `node_stat`, `select_verticals`, `illuminate` | `GraphRecall` (předvýběr), `PromotionCycle` (selekt), `GraphMirror` (kresba) |
+| **3** `Matcher` | pokrytí a ablace sedí; přesnost 11/30 proti referenčním 14/30 | `given_axes`, `coverage`, `recall`, `match`, členy skóre | `Responder`, `ContrastiveTrainer`, `BenchmarkProtocol` |
+| **4** `AnswerField` | hotovo (shluk 0,69 > špička 0,40) | `tokens`, `spans`, `sentences`, `gaussian_peaks` | trenér (vrcholy pro hinge), `rozklad-skore.py` |
+| **5** `ContrastiveTrainer` | hotovo (invariant drží, věta 20 → 21/30) | `learning_bag`, `ValidationSplit`, `train`, `sentence_hit` | rameno B a C protokolu; `trenink-vah.py` |
+| **6** `PromotionCycle` | hotovo (rollback bit po bitu) | `run` → `CycleOutcome` | rameno C protokolu |
+| **7** `RelationMiner` | hotovo (94 definic) | `mine_definitions`, `mine_derivations` | `QuestionExpander`, `rozklad-skore.py` |
+| **8** `Responder` | hotovo (dialog o dálnici bit po bitu) | `gaps`, `reply`, `append_context` | dialogová cesta; `DefinitionResolver` pro doplnění |
+| **9** `GraphMirror` | hotovo (proti skutečnému oknu) | `emit`, `mirror`, `refresh`, `illuminate` | `graphview` (:8080) |
+| **10** `BenchmarkProtocol` | hotovo (A = 0,3667, C přijato) | `run`, `ThresholdCalibrator` | `protokol.py` |
+| **S1** dvoustupňové čtení | hotovo | `recall` + `match` jen v top-K | každé volání `match()` |
+| **S2** spektrální člen | hotovo (věta 21 → 22/30) | `SpectralMember`, `truncated_svd` | `Matcher(spectral_k=…)`, vypnutý nulou |
+| **S3** řídká reprezentace | hotovo | `LinkOperator` (v·L bez husté matice) | `saturate` ve všech členech |
+
+Mimo desítku, ale ze stejné práce:
+
+| co | kde | proč vzniklo |
+|---|---|---|
+| `GraphRecall` | `recall.py` | graf byl postavený a k odpovídání se nepoužíval; 53/117 proti 37/117 |
+| `question_words` | `matcher.py` | tázací slovo do tématu a postihu nepatří |
+| `ADPOSITION_ANCHORS` | cb_field `service.py` | odpovědní strana neznala SMĚR (`space:from` 7 → 358) |
+| `registry.link_version` | cb_field `registry.py` | cache klíčovaná počtem vazeb nepoznala změnu VÁHY |

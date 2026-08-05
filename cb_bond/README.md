@@ -4,6 +4,7 @@ Modul staví nad cb_field (pole věty) **tázací systém**: z otázky
 v české větě vybere kandidátní VĚTY, které nesou odpověď, a umí říct
 proč — rozkladem skóre po pojmenovaných členech a vysvícením v grafu.
 
+Vývojářský průvodce s ukázkami je v kořeni: `README-BOND.md`.
 Zadání celé stavby (deset kroků, zmražené přejímky, páky systému):
 `docs/zadani.md`. Návrhová rozhodnutí a pasti: `docs/`.
 Co se model naučil: `docs/trenink-vah.md`.
