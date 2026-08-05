@@ -9,8 +9,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from cb_bond import (DefinitionResolver, KnowledgeGraph, Matcher,
-                     QuestionExpander, RelationMiner, Responder)
+from cb_bond import KnowledgeGraph, Matcher, Responder
+from cb_bond.dialog import DefinitionResolver, QuestionExpander
+from cb_bond.relations import RelationMiner
 from cb_bond.tests.vzorky import (ELEKTROMOTOR, GRAVITACE, KRESTA,
                                   OTAZKA_KREST, SYNAGOGA, Veta)
 from cb_field import Corpus, SentenceField

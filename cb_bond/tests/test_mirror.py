@@ -6,7 +6,8 @@ server ani nainstalovaný frontend: atrapa jen zapisuje, co jí přišlo.
 
 import unittest
 
-from cb_bond import GraphMirror, KnowledgeGraph
+from cb_bond import KnowledgeGraph
+from cb_bond.mirror import GraphMirror
 from cb_bond.tests.vzorky import KRESTA
 
 

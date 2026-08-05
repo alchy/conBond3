@@ -188,6 +188,45 @@ Vrací **slovníky**, ne objekty modulu — to je totéž, co pak jde do JSON p�
 startu služby**, ne při dotazu. To je hlavní důvod, proč z toho vůbec služba
 být má.
 
+### `state()` je to, co uvidí člověk ve `status`
+
+*(Požadavek J., 5. 8. 2026: „status by měl vypsat i statistiky typu 16 074
+hran, 5 695 lemmat atp.")*
+
+U loggeru i udpipe `status` říká nejen že služba běží, ale **co v sobě má** —
+kolik záznamů, kolik vět v cache. U cb-bondu je ta otázka nejzajímavější ze
+všech tří, protože obsah hlavy se mění učením a promocí. Bez čísel se nedá
+poznat, jestli běží model, který se učil, nebo čerstvě postavený.
+
+```
+cb-bond      BĚŽÍ     127.0.0.1:42400  pid 71203
+             zdraví   ok
+             verze    modul 0.7.0 · konfigurace 1
+             korpus   2 912 vět · 7 souborů · rádius 1
+             graf     16 074 hran · 5 695 lemmat · stupeň 5.6
+             osy      6 671 celkem · 328 vlastních (verze 12)
+             vazby    1 204 naučených · práh 0.02
+             služby   cb-logger BĚŽÍ 42100 · cb-udpipe BĚŽÍ 42200
+             viewBase http://127.0.0.1:42401
+             data     /Users/j/Projects/conBondCorpus
+             config   …/cb_bond/cb-bond-config.json  otisk a3f1c2e94b07
+```
+
+Odkud čísla jsou: **od běžící služby**, ne z vlastního počítání. Kdyby si je
+`status` spočítal sám, trvalo by pět vteřin a ukázal by, co by v hlavě bylo,
+kdyby se postavila znovu — ne co v ní je. To je přesně ta třída vady, kterou
+politika § 11 zakazuje u měření: měřit něco jiného, než co se tvrdí.
+
+Když služba **neběží**, čísla se nevymýšlejí. `status` vypíše, co by stavěl
+(cesty a páky z konfigurace), a řekne, že obsah hlavy nezná:
+
+```
+cb-bond      NEBĚŽÍ   měl by běžet na 127.0.0.1:42400
+             korpus   <data_root>/corpus  ·  vzory korpus-1*.json  (nenačteno)
+             data     /Users/j/Projects/conBondCorpus
+             config   …/cb_bond/cb-bond-config.json
+```
+
 ---
 
 ## 5 · `stack.py`: cb-bond jako řídicí vrstva
@@ -372,21 +411,47 @@ kdo si sáhne, ví, že sahá pod kapotu.
 
 ## 9 · Pořadí stavby (podle § 16)
 
-1. **konfigurace** — `cb-bond-config.json`, schéma, `config.py`, test na
+1. ✅ **konfigurace** — `cb-bond-config.json`, schéma, `config.py`, test na
    odmítnutí vadné konfigurace
-2. **`service.py`** — fasáda nad hotovým jádrem; skripty se na ni přepíšou
-   (tím se ověří, že měření zůstala stejná)
-3. **`stack.py`** — kontrola a spouštění služeb pod sebou
-4. **`control.py` + `cb-bond.py`** — pět příkazů podle § 12 plus `corpus`
-   (status/parse/build/validate), stavové soubory, `status` s datovým kořenem
-5. **`api.py` + `client.py`** — REST kontrakt a klient, test parity
-   (v procesu == přes síť)
-6. **`window.py` + `console.py`** — viewBase2 jako rozhraní
-7. **logování** — protažení `trace` a `LogClient` skrz službu
+2. ✅ **`service.py`** — fasáda nad hotovým jádrem (`build`, `ask`, `state`,
+   `health`); skripty čtou cesty z konfigurace přes `corpus_dir()`
+3. ✅ **`stack.py`** — kontrola a spouštění služeb pod sebou
+4. ✅ **`control.py` + `cb-bond.py`** — `start`/`stop`/`restart`/`status`,
+   stavové soubory, `status` s datovým kořenem i statistikami obsahu.
+   Zbývá `corpus` (status/parse/build/validate) a `reload`.
+5. ✅ **`api.py` + `client.py`** — REST kontrakt a klient.
+   Zbývá test parity (v procesu == přes síť).
+6. **`window.py` + `console.py`** — viewBase2 jako rozhraní; s tím přesun
+   grafu z portu **8080** na 42401
+7. **logování** — protažení `trace` skrz službu. `LogClient` už visí
+   (`component="bond"`, metody `build` a `ask`).
 8. **zúžení `__init__.py`** až nakonec, aby refaktor nebolel dvakrát
 
 Po každém kroku běží celý balík testů i přejímky — hodnoty jako 16 074 hran,
 pokrytí 1,000/0,604/0,885 a dialog o dálnici se **nesmí hnout**.
+
+### REST kontrakt, jak vznikl
+
+```
+GET  /version      modul, verze, verze rozhraní — odpovídá i nezdravé službě
+GET  /v1/health    'ok' vs 'degraded' (běží, ale systém nepostavený)
+GET  /v1/state     vět · souborů · hran · lemmat · uzlů · stupeň ·
+                   os · vlastních os (+verze) · vazeb (+verze)
+GET  /v1/config    cesta, otisk, verze konfigurace
+POST /v1/ask       {"text": …, "top": 5} → odpověď, rozklad, věty, osy
+```
+
+Dvě věci, které se v tom kontraktu lámou o § 9:
+
+**`/v1/ask` na nepostavený systém je `503 not_built`, ne prázdná
+odpověď.** Prázdná by se slila s platným „nevím" — a mlčení systému je
+platný výsledek, kdežto nepostavená hlava je porucha.
+
+**`lemmas` a `nodes` jsou dvě různá čísla** (5 695 proti 5 727):
+`NOUN:vedení` a `VERB:vedení` jsou dva uzly, ale jedno lemma. Přejímka
+§ 6 zmrazila lemmata, takže `state()` vrací obojí pod vlastním jménem.
+Kdyby vracel jen jedno pod jménem toho druhého, rozdíl by nikdo nehledal
+v definici.
 
 ---
 

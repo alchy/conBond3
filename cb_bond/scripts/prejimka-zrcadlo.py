@@ -13,7 +13,8 @@ Nenulový návrat znamená rozdíl proti zadání § krok 9.
 import sys
 
 from viewbase import GraphWindow
-from cb_bond import GraphMirror, KnowledgeGraph
+from cb_bond import KnowledgeGraph
+from cb_bond.mirror import GraphMirror
 from cb_bond.tests.vzorky import KRESTA
 
 okno = GraphWindow(title="přejímka")

@@ -9,7 +9,7 @@ import unittest
 
 import numpy as np
 
-from cb_bond import SpectralMember, truncated_svd
+from cb_bond.spectral import SpectralMember, truncated_svd
 
 #: Vzorek ze zadání. Osy: smět · povolený · rychlost · dálnice · jezdit.
 VZOREK = np.array([

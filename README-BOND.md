@@ -16,34 +16,88 @@ Tohle je jen to nejnutnější. Hloubka je v `cb_bond/docs/`:
 | `docs/trenink-vah.md` | jak zjistit, co se model naučil |
 | `cb_bond/README.md` | rozhraní, závislosti, co modul vědomě neřeší |
 
-**Stav: mockup.** Modul zatím nemá vlastní REST API, logování ani
-konfiguraci (doplní se podle README-MODULES § 16). Používá se importem.
+**Stav: služba.** Modul má konfiguraci, REST API, klienta, ovládací
+program, čtyři okna viewBase2 na portu 42401 a logování do cb-loggeru.
 
 ---
 
 ## Než začneš
 
 ```bash
-./cb-udpipe.py status                     # parser vět musí běžet
+./cb-bond.py start                        # zvedne i logger a udpipe pod sebou
+./cb-bond.py status                       # co je v hlavě: vět, hran, lemmat, os
 ./run-python cli                          # konzole — nikdy holé `python`
 ```
 
-Korpusy leží mimo git (licence, `ZDROJ.md`) v
-`cb_field/data-persistent/korpus/`. Bez nich fungují jen jednotkové
-testy, ne měřicí skripty.
+`start` je jediný příkaz, který potřebuješ: cb-bond je vrcholová služba
+a spustí si logger a udpipe sám, v tomhle pořadí (udpipe do loggeru
+loguje už při vlastním startu). `--no-deps` to vypne, když si služby
+řídíš sám.
 
-## Celé to jsou čtyři řádky
+Korpusy leží **mimo repozitář** (licence, `ZDROJ.md`) v datovém kořeni —
+`module.data_root` v `cb_bond/cb-bond-config.json`, dnes
+`/Users/j/Projects/conBondCorpus/corpus/`. Kde přesně, řekne
+`cb_bond.config.corpus_dir()`; skripty se ptají tudy a cestu nehádají.
+Bez korpusů fungují jen jednotkové testy, ne měřicí skripty.
+
+## Přes službu to jsou dva řádky
+
+Když cb-bond běží, nemusíš stavět nic — systém je postavený v něm.
+
+```python
+from cb_bond import BondClient
+
+odpoved = BondClient().ask("Kde byl pokřtěn Ježíš?", top=3)
+
+odpoved["answer"]           # 'říci'  — lemma, nebo None, když mlčí
+odpoved["outcome"]          # 'answer' | 'silent' | 'needs_context'
+odpoved["decomposition"]    # {'meet': 1.23, 'cover': 0.60, 'topic': 0.54, …}
+odpoved["sentences"]        # [{'lemma': …, 'text': …, 'score': …}, …]
+odpoved["axes"]             # osy otázky a jak dobře je korpus zná:
+                            #   WORD=AUX:být        1.000
+                            #   WORD=ADJ:pokřtěný   0.604
+                            #   WORD=PROPN:Ježíš    0.885
+odpoved["missing"]          # osy s pokrytím PŘESNĚ 0.0 — tady []
+```
+
+`missing` je propast, ne škála: osa, kterou korpus vůbec nezná, dá
+přesnou nulu. Na tom stojí „nevím" — pozná se podle nuly, ne podle
+prahu na malém čísle.
+
+Součet členů `decomposition` dá `score` — je to rozklad, ne komentář
+vedle čísla. Co který člen znamená, je v `docs/rozklad-skore.md`.
+
+Totéž přes REST:
+
+```bash
+curl -s http://127.0.0.1:42400/v1/ask \
+     -H 'Content-Type: application/json' \
+     -d '{"text": "Kde byl pokřtěn Ježíš?", "top": 3}'
+
+curl -s http://127.0.0.1:42400/v1/state    # vět, hran, lemmat, os, vazeb
+curl -s http://127.0.0.1:42400/v1/health   # 'ok' vs 'degraded'
+```
+
+`degraded` znamená, že služba běží, ale systém nemá postavený — port
+odpovídá a v hlavě nic není. `POST /v1/ask` na takovou službu vrátí
+`503 not_built`, ne prázdnou odpověď: prázdná by se slila s platným
+„nevím" a to jsou dvě různé věci.
+
+## Bez služby to jsou čtyři řádky
+
+Skripty přejímek si systém staví přímo — měření nemá viset na tom,
+jestli zrovna něco běží.
 
 ```python
 from cb_udpipe import UdpipeClient
 from cb_field import SentenceField
 from cb_field.corpusfile import build_corpus
 from cb_bond import GraphRecall, KnowledgeGraph, Matcher, Responder
-from pathlib import Path
+from cb_bond.config import corpus_dir
 
 parser = UdpipeClient()
 corpus = build_corpus(
-    sorted(Path("cb_field/data-persistent/korpus").glob("korpus-1*.json")),
+    sorted(corpus_dir().glob("korpus-1*.json")),
     parser, r=1)                                  # 2 912 vět, ~5 s z cache
 
 graf = KnowledgeGraph()
@@ -134,7 +188,8 @@ Mezera je **přesná nula**, ne práh: osa známá slabě má 0,604, neznámá
 | vidět, čím se rozhodly odpovědi | `./run-python cb_bond/scripts/rozklad-skore.py 8` |
 | natrénovat a podívat se na váhy | `./run-python cb_bond/scripts/trenink-vah.py` |
 | změřit celý systém po ramenech | `./run-python cb_bond/scripts/protokol.py` |
-| živý graf v prohlížeči | `./run-python -m cb_bond.graphview "Kde byl pokřtěn Ježíš?"` |
+| živý graf a okna | `./cb-bond.py start` → http://127.0.0.1:42401 |
+| konzole nad běžící službou | `./run-python -m cb_bond.console` |
 
 Skripty, jejichž jméno začíná `prejimka-`, **nic nemění** a končí
 nenulově, když se naměřené rozejde se zadáním. `trenink-vah.py`

@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 
 from cb_bond import (AnswerField, KnowledgeGraph, Matcher, RelationMiner,
+from cb_bond.config import corpus_dir
                      ScoreWeights)
 from cb_field import SentenceField
 from cb_field.corpusfile import build_corpus
@@ -37,7 +38,7 @@ def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     limit = int(argv[0]) if argv else None
 
-    korpus = Path("cb_field/data-persistent/korpus")
+    korpus = corpus_dir()
     paths = sorted(korpus.glob("korpus-1*.json"))
     if not paths:
         print(f"chybí korpusy v {korpus} — viz ZDROJ.md", file=sys.stderr)

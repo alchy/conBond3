@@ -10,8 +10,8 @@ import unittest
 
 import numpy as np
 
-from cb_bond import (Matcher, MatchResult, ScoreCandidate,
-                     ScoreWeights, saturate, semantic_bag)
+from cb_bond import MatchResult, Matcher, ScoreWeights
+from cb_bond.matcher import ScoreCandidate, saturate, semantic_bag
 from cb_bond.tests.vzorky import (GRAVITACE, KRESTA, OTAZKA_KREST,
                                  SYNAGOGA)
 from cb_field import Corpus, SentenceField

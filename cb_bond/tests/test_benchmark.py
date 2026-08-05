@@ -6,7 +6,8 @@ měřila nad TÝMŽ korpusem a etalon se nikdy nedostal do tréninku.
 
 import unittest
 
-from cb_bond import BenchmarkProtocol, ThresholdCalibrator
+from cb_bond import BenchmarkProtocol
+from cb_bond.benchmark import ThresholdCalibrator
 
 
 class _Kandidat:

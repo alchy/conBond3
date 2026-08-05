@@ -16,7 +16,8 @@ import sys
 from pathlib import Path
 
 from cb_bond import GraphRecall, KnowledgeGraph, Matcher, ScoreWeights
-from cb_bond import sentence_hit
+from cb_bond.config import corpus_dir
+from cb_bond.training import sentence_hit
 from cb_field import SentenceField
 from cb_field.corpusfile import build_corpus
 from cb_udpipe import UdpipeClient
@@ -52,7 +53,7 @@ ABLACE = {
 
 
 def main() -> int:
-    korpus = Path("cb_field/data-persistent/korpus")
+    korpus = corpus_dir()
     paths = sorted(korpus.glob("korpus-1*.json"))
     if not paths:
         print(f"chybí korpusy v {korpus} — viz ZDROJ.md", file=sys.stderr)

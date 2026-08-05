@@ -7,7 +7,8 @@ k0 = 0,267, k1 = 0,213; shluk tří jedniček dá vrchol 0,69, osamělá
 
 import unittest
 
-from cb_bond import AnswerField, MatchResult, ScoreCandidate
+from cb_bond import AnswerField, MatchResult
+from cb_bond.matcher import ScoreCandidate
 from cb_bond.answer import gaussian_kernel
 
 
