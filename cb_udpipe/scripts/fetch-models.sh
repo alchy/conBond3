@@ -24,9 +24,18 @@ set -euo pipefail
 
 MODUL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODEL_JMENO="cs_all-ud-2.17-251125.model"
-CIL_MODEL="$MODUL/data-persistent/models/$MODEL_JMENO"
-CIL_HF="$MODUL/data-persistent/models/hf"
 ROBECZECH="hub/models--ufal--robeczech-base"
+
+# Cíl se ČTE Z KONFIGURACE, neskládá se tady. Data leží mimo repozitář
+# (README-MODULES.md § 19) a `data_root` je jediná absolutní cesta, kterou
+# se to řídí — kdyby si skript cestu vyrobil sám, stáhl by model tam, kde
+# ho služba nehledá, a nikdo by nepoznal proč.
+CIL_MODEL="$(cd "$MODUL/.." && ./run-python -c "
+from cb_udpipe.config import load
+print(load()['module']['upstream']['model_dir'])")"
+CIL_HF="$(cd "$MODUL/.." && ./run-python -c "
+from cb_udpipe.config import load
+print(load()['module']['upstream']['hf_home'])")"
 
 chyba() { printf '%s\n' "$@" >&2; exit 2; }
 
