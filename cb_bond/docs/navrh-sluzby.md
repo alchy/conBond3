@@ -74,9 +74,14 @@ cb_bond/
     linkops.py                  ← z matcher.py: LinkOperator + saturate
     window.py                   ← z graphview.py: zrcadlo + okna, bez main()
 
-    run/                        service.pid · service.port
-    data-persistent/            uložený stav registru (po promoci/učení)
+    run/                        service.pid · service.port (V REPOZITÁŘI —
+                                stav procesu, ne data)
     docs/  scripts/  tests/
+
+  DATA leží mimo repozitář (§ 11):
+    /Users/j/Projects/conBondCorpus/cb_bond/persistent-registry/
+                                             persistent-dictionary/
+                                             persistent-benchmark/
 ```
 
 ### Porty
@@ -113,10 +118,11 @@ jako u kódu; česky jsou jen docstringy, komentáře a hlášky pro člověka.
     "stop_timeout_s": 10,
     "start_dependencies": true
   },
+  "data_root": "/Users/j/Projects/conBondCorpus",
   "corpus": {
-    "directory": "cb_field/data-persistent/korpus",
-    "patterns": ["korpus-1*.json"],
-    "question_files": ["cb_field/tests/data/korpus/otazky-*.json"],
+    "directory": "corpus",
+    "patterns": ["korpus-*.json"],
+    "question_files": ["otazky-*.json"],
     "radius": 1,
     "sentence_radius": 0
   },
@@ -135,9 +141,9 @@ jako u kódu; česky jsou jen docstringy, komentáře a hlášky pro člověka.
                 "max_epochs": 6, "validation_share": 0.3},
   "promotion": {"limit": 328, "usage_weight": 0.0},
   "relations": {"min_stem": 5, "min_stem_share": 0.75,
-                "dictionary_store": "cb_bond/data-persistent/dictionary.json"},
-  "state":     {"registry": "cb_bond/data-persistent/registry.json",
-                "load_on_start": true},
+                "dictionary_store": "cb_bond/persistent-dictionary"},
+  "state":     {"registry": "cb_bond/persistent-registry",
+                "load_on_start": true, "save_on_accept": true},
   "seed": 328
 }
 ```
@@ -146,6 +152,10 @@ jako u kódu; česky jsou jen docstringy, komentáře a hlášky pro člověka.
 čtyřech a `lr` se během kalibrace měnilo v kódu. Registr prahů v README modulu
 pak není soupis, ale opis. S konfigurací je jedno místo a `status` může vypsat
 její otisk — takže jde poznat, že dvě měření běžela s jiným nastavením.
+
+**`data_root` je JEDINÁ absolutní cesta.** Všechno ostatní je relativní vůči
+ní, takže se celá instalace přenese změnou jednoho řádku a nikdo si datový
+kořen nemůže vyrobit potichu za běhu (§ 11).
 
 **Co do konfigurace NEPATŘÍ:** zmražené hodnoty přejímek (ty patří do skriptů,
 protože jsou to testy) a `LEARN_PREFIXES` (to je invariant, ne nastavení —
@@ -221,6 +231,11 @@ cb-bond    BĚŽÍ     127.0.0.1:42400  pid 71203
            viewBase 127.0.0.1:42401
 ```
 
+**Spouštění závislostí je VÝCHOZÍ chování** (rozhodnutí J.): `start` nejdřív
+zvedne logger, pak udpipe, a teprve až obojí odpovídá, instanciuje jejich
+klienty. Pořadí není libovolné — udpipe do loggeru loguje už při vlastním
+startu, takže obrácené pořadí by první záznamy zahodilo.
+
 `--no-deps` to vypne pro případ, kdy si člověk služby řídí sám.
 
 ---
@@ -240,9 +255,9 @@ i **rozklad skóre** a nechá v grafu rozsvítit uzly kandidátních vět. Tím 
 konečně naplní princip 6 — člověk vidí, proč systém odpověděl, aniž by četl
 kód.
 
-Otázka k rozhodnutí: má konzole umět i `:kontext <věta>` (dialogové doplnění)
-a `:stav`? Podle mě ano — jinak se dialogová vrstva z kroku 8 nedá vyzkoušet
-jinak než skriptem.
+Oken jsou **čtyři**, ne jedno — rozpis a proč v § 13. Konzole navíc umí
+`:context <věta>` (dialogové doplnění) a `:state`, jinak by se dialogová
+vrstva z kroku 8 nedala vyzkoušet jinak než skriptem.
 
 ---
 
@@ -331,8 +346,8 @@ kdo si sáhne, ví, že sahá pod kapotu.
 2. **`service.py`** — fasáda nad hotovým jádrem; skripty se na ni přepíšou
    (tím se ověří, že měření zůstala stejná)
 3. **`stack.py`** — kontrola a spouštění služeb pod sebou
-4. **`control.py` + `cb-bond.py`** — pět příkazů, stavové soubory, `status`
-   podle § 12
+4. **`control.py` + `cb-bond.py`** — pět příkazů podle § 12 plus `corpus`
+   (status/parse/build/validate), stavové soubory, `status` s datovým kořenem
 5. **`api.py` + `client.py`** — REST kontrakt a klient, test parity
    (v procesu == přes síť)
 6. **`window.py` + `console.py`** — viewBase2 jako rozhraní
@@ -344,22 +359,144 @@ pokrytí 1,000/0,604/0,885 a dialog o dálnici se **nesmí hnout**.
 
 ---
 
-## 10 · Otázky k rozhodnutí
+## 10 · Rozhodnutí (J., 2026-08-05)
 
-1. **Který korpus je provozní?** Dnešní skripty berou 1xx (2 912 vět), ale data
-   jsou i pro 12 258. Start s 12 258 trvá 23 s — snese to `start`, nebo má být
-   výchozí menší a velký se dogenerovat?
-2. **Má se stav ukládat?** Registr po učení a promoci umí `save`/`load` (v2).
-   Když se neuloží, každý start začíná od nuly a promoce se počítá znovu.
-3. **Má `stop` zastavovat i služby pod sebou?** Podle mě NE — jiný klient je
-   může používat. Ale `./cb-bond.py stop --all` by dávalo smysl.
-4. **Kolik oken viewBase2?** Graf a konzole zvlášť, nebo jedno okno s obojím?
-5. **Má `ask` přes REST vracet i rozklad skóre?** Je objemný, ale je to jediné,
-   čím se odpověď dá obhájit.
+Všech pět otázek zodpovězeno; odpovědi zapracované výše i níže.
+
+| otázka | rozhodnutí |
+|---|---|
+| provozní korpus | `/Users/j/Projects/conBondCorpus` — **mimo repozitář** |
+| ukládání stavu | ANO, registr se ukládá (`persistent-*` v datovém adresáři) |
+| start závislostí | **výchozí chování**: nejdřív logger, pak udpipe, pak teprve instanciace |
+| okna viewBase2 | **čtyři** — graf · dialog · top 5 vět · použité vertikály |
+| rozklad přes REST | ANO, `ask` ho vrací |
+
+Navíc: cb-bond dostane příkaz **`corpus`** vedle start/stop/status/restart.
 
 ---
 
-## 11 · Hierarchie a závislosti
+## 11 · Data mimo repozitář — vědomá odchylka od § 19
+
+**Rozhodnutí J.:** kód a data se oddělí. Data žijí v
+`/Users/j/Projects/conBondCorpus/`, členěná podle modulu a povahy.
+
+Politika dnes říká opak, a to výslovně:
+
+> *„**Všechno běží z projektového adresáře.** Modul nesmí sahat mimo repozitář
+> ani do domovského adresáře — cesty jsou v konfiguraci a míří dovnitř."*
+> — README-MODULES § 19
+
+Odchylka má dobré důvody (verzování gitu, přenos aplikace, licencovaná data
+mimo repozitář z principu), ale **je to změna politiky, ne rozhodnutí jednoho
+modulu** — § 19 to o sdílených pravidlech říká přímo. Navrhuju proto § 19
+upravit takto, aby zůstalo zachované to, co pravidlo chránilo:
+
+**Co pravidlo chránilo a musí platit dál:** modul nesmí sahat do domovského
+adresáře ani do cizí cesty *uhodnuté za běhu*. Datový kořen je **jediná cesta
+v konfiguraci**, všechno ostatní je relativní vůči němu — takže se přenese
+změnou jednoho řádku a nikdo si ho nemůže vyrobit potichu.
+
+**Co se mění:** ten kořen smí ležet mimo repozitář.
+
+**Co z toho plyne pro `status`:** musí datový kořen vypsat, stejně jako vypisuje
+port a cestu ke konfiguraci. Jinak člověk hledá chybu v datech, která služba
+vůbec nečte.
+
+### Navržená struktura datového adresáře
+
+Dnes tam leží 37 souborů korpusu naplocho. Návrh členění podle modulu a povahy:
+
+```
+/Users/j/Projects/conBondCorpus/
+    corpus/                      ZDROJ — dnešní korpus-*.json a otazky-*.json
+        korpus-101…107.json
+        korpus-201, 202.json
+        korpus-301…326.json
+        otazky-201, 202.json
+
+    cb_field/
+        persistent-verticals/    registr vertikál (save/load, v2)
+        persistent-corpora/      původní txt, ze kterých korpusy vznikly
+
+    cb_bond/
+        persistent-registry/     stav registru po učení a promoci
+            registry-<axis_version>.json
+            latest.json          → symlink nebo kopie posledního přijatého
+        persistent-dictionary/   fixovaná hesla ze slovníku (offline-first)
+        persistent-benchmark/    reporty ramen A–F s otiskem konfigurace
+
+    cb_udpipe/
+        persistent-models/       modely UDPipe (CC BY-NC-SA, mimo git)
+        persistent-cache/        trvalá cache rozborů
+
+    cb_logger/
+        persistent-log/          log.jsonl a rotace
+```
+
+**Proč `persistent-<co>` a ne `data-persistent/<co>`:** jméno adresáře pak nese
+i povahu obsahu, takže `ls` v modulovém adresáři řekne, co se ukládá, bez
+otevírání. A prefix drží pohromadě to, co přežívá restart, oproti tomu, co je
+běhový stav (`run/` zůstává **v repozitáři** — PID a port nejsou data, jsou to
+stav procesu a mají zmizet s ním).
+
+**Registr se verzuje `axis_version`.** Promoce mění osu a stará matice se s ní
+nesmí potkat (princip 3); jméno souboru to nese, takže se nedá načíst cizí stav
+omylem. `latest.json` ukazuje na poslední PŘIJATÝ — vrácený cyklus se neuloží.
+
+---
+
+## 12 · Příkaz `corpus`
+
+Vedle pěti povinných příkazů (§ 12) dostane cb-bond ještě jeden, protože
+stavba korpusu je drahá a dnes ji dělá každý skript sám.
+
+```
+./cb-bond.py corpus status      co je v datovém kořeni: soubory, vět, otisk
+./cb-bond.py corpus parse       projde korpusy parserem a naplní cache UDPipe
+./cb-bond.py corpus build       postaví korpus + graf a uloží stav registru
+./cb-bond.py corpus validate    formát, 1 položka = 1 věta, answer_lemma
+```
+
+`validate` je to, co dnes umí `./run-python -m cb_field.corpusfile` — patří sem,
+aby se člověk nemusel učit dvě cesty.
+
+`parse` je oddělený schválně: naplnit cache je jednorázová drahá operace
+(12 258 vět), po které je `build` rychlý. Dnes to dělá první spuštění
+libovolného skriptu, což je nemilé překvapení.
+
+---
+
+## 13 · Čtyři okna viewBase2
+
+Rozhodnuto: ne jedno okno, ale čtyři — každé odpovídá na jinou otázku.
+
+```
+┌─ GRAF ────────────────┐  ┌─ DIALOG ──────────────────────────┐
+│ uzly a hrany faktů,   │  │ > Kde byl pokřtěn Ježíš?          │
+│ po dotazu se rozsvítí │  │ [Jordán] V těch dnech přišel      │
+│ kandidátní věty       │  │          Ježíš z Nazareta…        │
+└───────────────────────┘  └───────────────────────────────────┘
+
+┌─ TOP 5 VĚT ───────────────────────┐  ┌─ VERTIKÁLY ──────────┐
+│ 1. [Jordán]  V těch dnech přišel… │  │ QLEM=ADV:kde    0,7  │
+│ 2. [Galilej] Když byl Jan uvěz…   │  │ QANCHOR=space   0,7  │
+│ 3. [Jan]     A kázal: Za mnou…    │  │ WORD=ADJ:pokřtěný    │
+│ 4. …                              │  │ ANCHOR=space:loc     │
+│ 5. …                              │  │ …                    │
+└───────────────────────────────────┘  └──────────────────────┘
+      obnovuje se po KAŽDÉ otázce
+```
+
+Konvence `[slovo] Věta` je v dialogu i v top 5 stejná — kandidátní slovo
+v hranatých závorkách, za ním věta, ze které je.
+
+**Okno vertikál je to, co dnes nikde vidět není.** Ukazuje osy, které se
+dotazu opravdu účastnily — tedy proč se která věta rozsvítila. Je to lidsky
+čitelná podoba toho, co `rozklad-skore.py` vypisuje do terminálu.
+
+---
+
+## 14 · Hierarchie a závislosti
 
 ### Služby za běhu — kdo koho startuje
 
