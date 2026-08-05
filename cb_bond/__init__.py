@@ -31,6 +31,12 @@ from cb_bond.graph import (  # noqa: E402
     KnowledgeGraph,
     NodeStat,
 )
+from cb_bond.benchmark import (  # noqa: E402
+    ArmResult,
+    BenchmarkProtocol,
+    BenchmarkReport,
+    ThresholdCalibrator,
+)
 from cb_bond.dialog import (  # noqa: E402
     DefinitionResolver,
     Expansion,
@@ -85,6 +91,10 @@ __all__ = [
     "CycleOutcome",
     "GraphMirror",
     "GraphRecall",
+    "BenchmarkProtocol",
+    "BenchmarkReport",
+    "ArmResult",
+    "ThresholdCalibrator",
     "SpectralMember",
     "truncated_svd",
     "ContrastiveTrainer",

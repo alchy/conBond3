@@ -23,7 +23,7 @@ Z čeho se skládá odpověď: `docs/rozklad-skore.md`.
 | 9 | `GraphMirror` — zrcadlo do viewBase2 | hotovo (proti skutečnému oknu) |
 | 5 | `ContrastiveTrainer` — učení | hotovo (věta v top-3: 20 → 21/30) |
 | S2 | `SpectralMember` — spektrální člen | hotovo (věta v top-3: 21 → 22/30) |
-| 10 | měřicí protokol | zbývá |
+| 10 | `BenchmarkProtocol` — ramena A–F | hotovo (A sedí na 0,3667, C přijato) |
 
 Vědomě zatím **není** plný modul podle README-MODULES § 2: chybí
 konfigurace se schématem, logování přes cb-logger, `api.py`,
@@ -55,6 +55,7 @@ usadí — stejně jako u cb_field.
 | `ContrastiveTrainer`, `ValidationSplit`, `TrainingReport` | kontrastivní učení nad metadaty; validace řídí konec |
 | `SpectralMember`, `truncated_svd` | latentní podobnost jako vážený člen (§ 5/S2); vypnutý nulou |
 | `GraphRecall` | předvýběr vět GRAFEM: lemata otázky → uzly → záře → věty; předá se `Matcher(graph_recall=…)` |
+| `BenchmarkProtocol`, `ThresholdCalibrator` | měření po ramenech A–F a kalibrace θ |
 | `learning_bag`, `sentence_hit`, `LEARN_PREFIXES` | učicí pytel (bez WORD=) a větné měřítko úspěchu |
 
 ## Závislosti
@@ -72,7 +73,7 @@ Na registru cb_fieldu smí cb_bond volat jen `link` / `unlink` /
 ## Testy
 
 ```
-./run-python -m unittest discover -s cb_bond -t .     # 157 testů
+./run-python -m unittest discover -s cb_bond -t .     # 175 testů
 ```
 
 Zmražené rozbory v `tests/vzorky.py` (skutečné výstupy UDPipe
@@ -97,6 +98,7 @@ Diagnostika učení (nic nemění, jen vypisuje):
 ```
 ./run-python cb_bond/scripts/trenink-vah.py     # natrénuje a ukáže váhy
 ./run-python cb_bond/scripts/rozklad-skore.py  # čím se rozhodla odpověď
+./run-python cb_bond/scripts/protokol.py       # ramena A–F (učí a promuje)
 ```
 
 Porovnají naměřené se zmraženými hodnotami § 6 zadání a skončí

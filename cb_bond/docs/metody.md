@@ -223,3 +223,17 @@ novější osou a sloupce navíc by se tiše zahodily.
 Naměřeno: proti kosinu slov otázky 53/117 místo 37/117 (top-50)
 a 22/30 místo 17/30 (věta v top-3 na etalonu). Hloubka 2 je provozní
 bod; třetí skok nepřidá nic.
+
+## BenchmarkProtocol (benchmark.py)
+
+| jméno | co dělá / na čem visí |
+|---|---|
+| `BenchmarkProtocol(measure, train, promote, calibrate=None, seed=328)` | závislosti parametrem — protokol neví, čím se měří ani učí |
+| `.run()` | projde ramena A → B → D → C → E → F a vrátí `BenchmarkReport` |
+| `ARMS` | závazné pořadí i popisy ramen |
+| `ArmResult` | `label`, `presnost`, `mlceni`, `veta`, `zodpoveditelnych`, `pozn` |
+| `ThresholdCalibrator.calibrate(entries, results)` | `{theta, presnost, mlceni, merit}`; merit je průměr přesnosti a správného mlčení — jedno bez druhého jde získat triviálně |
+
+| co | jak |
+|---|---|
+| celý protokol | `./run-python cb_bond/scripts/protokol.py [vse]` — **učí a promuje**, běh v minutách |

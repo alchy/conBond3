@@ -377,3 +377,39 @@ tedy nic.
 
 Je to nezávislé potvrzení rozhodnutí z kroku 2 (`NODE_UPOS` bez
 zavřených tříd), které tehdy padlo kvůli shodě s přejímkou 16 074 hran.
+
+## 21 · Měřicí protokol: ramena, ne jedno číslo
+
+Krok 10. Šest ramen nad TÝMŽ korpusem, aby šlo poznat, co který díl
+přidal. Naměřeno (2 912 vět, supervize 120, etalon 40):
+
+| rameno | co měří | přesnost | mlčení | věta |
+|---|---|---|---|---|
+| A | baseline, hloubka 1, bez učení | **0,3667** | 0,00 | 24/30 |
+| B | + kontrastivní učení | 0,3667 | 0,00 | 24/30 |
+| D | hloubka 2 na čistém baselinu | 0,3667 | 0,00 | 24/30 |
+| C | promoční cyklus nad B | **0,4000 PŘIJATO** | 0,00 | 24/30 |
+| E | hloubka 2 nad C | 0,3667 | 0,00 | 24/30 |
+| F | θ = 2,539 (kalibrované) | 0,0667 | **1,00** | 24/30 |
+
+**A sedí na zmraženou hodnotu § 6** (`Matcher baseline k=1 · 0,3667 ·
+mlčení 0`) — jinou cestou než reference, ale na totéž číslo.
+
+**Promoce poprvé vydělala.** C zvedlo přesnost o jednu otázku
+(0,3667 → 0,4000) a cyklus se přijal. V referenci byl rozdíl C−B nula
+(„sloty si zatím nevydělaly na přesnost"); s předvýběrem grafem se to
+otočilo.
+
+**Hloubka 2 tady nepomáhá.** D i E dávají 0,3667, kdežto reference měla
+E 0,467. Skládá se to jinak, protože předvýběr už dělá graf: hloubka
+šíření po vazbách registru dodává něco, co graf dodal dřív a lépe.
+
+**F je provozní bod, ne vítěz.** Kalibrované θ zvedne mlčení na 1,00
+a přesnost srazí na 0,0667. Systém raději mlčí, než aby tipoval — a je
+to rozhodnutí, ne měření.
+
+**θ kalibrované na tréninku přenáší špatně.** Nad supervizí vyšlo
+0,0133/1,0, tedy prakticky „mlč vždycky": tréninkové otázky jsou
+parafráze, tedy těžší než etalon, a práh vybraný na těžší sadě umlčí
+i to, co by na lehčí prošlo. Kalibrovat se přesto musí tam — jinak by
+se práh vybíral podle testu, který má měřit.
