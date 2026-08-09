@@ -29,6 +29,15 @@ from cb_logic.inference import (InferenceResult, InferenceStatus, Limits,
                                 Proof, ProofStatus, RetractResult,
                                 assumption_label, ground_rule, infer_forward,
                                 prove, retract, with_assumptions)
+from cb_logic.models import (AtomClassification, ModalResult, ModalVerdict,
+                             Model, ModelLimits, ModelSearchResult,
+                             ScopeResult, SearchStatus, classify_atoms,
+                             classify_query, enumerate_models, is_redundant,
+                             model_scope, uniqueness_critical, violations)
+from cb_logic.explain import (Explanation, Suggestion, WhyNotResult,
+                              explain_conflict, why, why_not)
+from cb_logic.serialize import (FORMAT_VERSION, kb_from_json, kb_to_json,
+                                kb_to_json_text)
 
 __all__ = [
     "Atom", "Domain", "Entity", "Literal", "Relation", "Value", "Variable",
@@ -49,4 +58,11 @@ __all__ = [
     "InferenceResult", "InferenceStatus", "Limits", "Proof", "ProofStatus",
     "RetractResult", "assumption_label", "ground_rule", "infer_forward",
     "prove", "retract", "with_assumptions",
+    "AtomClassification", "ModalResult", "ModalVerdict", "Model",
+    "ModelLimits", "ModelSearchResult", "ScopeResult", "SearchStatus",
+    "classify_atoms", "classify_query", "enumerate_models", "is_redundant",
+    "model_scope", "uniqueness_critical", "violations",
+    "Explanation", "Suggestion", "WhyNotResult", "explain_conflict", "why",
+    "why_not",
+    "FORMAT_VERSION", "kb_from_json", "kb_to_json", "kb_to_json_text",
 ]

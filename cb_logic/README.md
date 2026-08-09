@@ -5,10 +5,13 @@ pravdivostní sémantika (dvouhodnotová + Kleeneho K3) s tabulkovým
 orákulem, provenience s mřížkou úrovní, constrainty (dvě čtení jedné
 sémantiky), KnowledgeBase s jedinou zapisovací cestou, forward chaining
 do fixpointu s derivacemi a konflikty, well-founded invalidace,
-backward proof a assumptions jako pohled.
+backward proof, assumptions jako pohled, prostor modelů s relevančním
+scope (possible/necessary/impossible, protipříklady, redundance),
+vysvětlení why/why-not a JSON persistence.
 
 Specifikace: `KNOWLEDGE_MODEL.md`, `LOGIC_SEMANTICS.md`,
-`CONSTRAINT_MODEL.md`, `INFERENCE_ENGINE.md` v kořeni.
+`CONSTRAINT_MODEL.md`, `INFERENCE_ENGINE.md`, `MODEL_REASONING.md`,
+`PROVENANCE.md` v kořeni.
 
 Zásady: pouze stdlib, žádný import z `cb_*`, žádný globální stav,
 determinismus (stabilní klíče, žádné hodiny, náhoda jen se semínkem).
@@ -19,6 +22,6 @@ determinismus (stabilní klíče, žádné hodiny, náhoda jen se semínkem).
 
 ## Co modul vědomě neřeší (zatím)
 
-Prostor modelů a modální dotazy (possible/necessary/impossible,
-protipříklady), persistence — fáze 6+ dle ARCHITECTURE_REVIEW § 15.
-Přirozený jazyk nikdy: interpretace je klient tohoto jádra.
+Interpretaci přirozeného jazyka (dialog → kandidátní tvrzení, fáze 9)
+a integraci do služby cb-bond (fáze 11). Přirozený jazyk nikdy:
+interpretace je klient tohoto jádra.

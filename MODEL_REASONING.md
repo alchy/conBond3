@@ -1,6 +1,6 @@
 # MODEL_REASONING — prostor modelů a modální dotazy (návrh, fáze 6–7)
 
-**Stav:** návrh ke schválení, před implementací.
+**Stav:** implementováno (`cb_logic/models.py`); dokument odpovídá implementaci.
 **Vzniká z:** zadání §25–§31; KNOWLEDGE_MODEL.md § 8, § 11; CONSTRAINT_MODEL.md;
 INFERENCE_ENGINE.md.
 

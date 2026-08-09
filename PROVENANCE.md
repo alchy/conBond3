@@ -1,6 +1,7 @@
 # PROVENANCE — derivační graf, vysvětlení a persistence (návrh, fáze 8)
 
-**Stav:** návrh ke schválení, před implementací.
+**Stav:** implementováno (`cb_logic/explain.py`, `cb_logic/serialize.py`);
+dokument odpovídá implementaci.
 **Vzniká z:** zadání §35–§39, §54; KNOWLEDGE_MODEL.md § 7, § 10; INFERENCE_ENGINE.md
 § 6–7; MODEL_REASONING.md.
 
