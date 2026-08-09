@@ -12,7 +12,8 @@ from dataclasses import dataclass, field
 from cb_logic.constraints import Constraint
 from cb_logic.expressions import Expression, atoms
 from cb_logic.provenance import (Assertion, Conflict, Derivation,
-                                 LEVEL_DERIVED, LEVEL_HYPOTHESIS, Provenance)
+                                 LEVEL_DERIVED, LEVEL_DOCUMENTED,
+                                 LEVEL_HYPOTHESIS, Provenance)
 from cb_logic.semantics import Truth
 from cb_logic.terms import (Atom, Domain, Literal, Relation, Variable,
                             atom_key)
@@ -189,6 +190,30 @@ class KnowledgeBase:
         neg = self._sides.get((atom, False))
         pos_level = pos.effective_level() if pos else None
         neg_level = neg.effective_level() if neg else None
+        if pos_level is None and neg_level is None:
+            return Truth.UNKNOWN
+        if neg_level is None:
+            return Truth.TRUE
+        if pos_level is None:
+            return Truth.FALSE
+        if pos_level > neg_level:
+            return Truth.TRUE
+        if neg_level > pos_level:
+            return Truth.FALSE
+        return Truth.UNKNOWN
+
+    def documented_truth(self, atom: Atom) -> Truth:
+        """Čtení JEN z vlastních evidencí úrovně ≥ DOCUMENTED.
+
+        Slouží pinování atomů v prostoru modelů: odvozené se nepinuje
+        (regenerují ho instance pravidel), hypotézy nikdy.
+        """
+        pos = self._sides.get((atom, True))
+        neg = self._sides.get((atom, False))
+        pos_level = (pos.own.level if pos is not None and pos.own is not None
+                     and pos.own.level >= LEVEL_DOCUMENTED else None)
+        neg_level = (neg.own.level if neg is not None and neg.own is not None
+                     and neg.own.level >= LEVEL_DOCUMENTED else None)
         if pos_level is None and neg_level is None:
             return Truth.UNKNOWN
         if neg_level is None:
