@@ -164,6 +164,55 @@ def _dedupe(literals: list[Literal]) -> tuple[Literal, ...]:
     return tuple(out)
 
 
+@dataclass(frozen=True)
+class RetractResult:
+    """Strany, které odstraněním ztratily veškerou podporu (kanonicky)."""
+    removed: tuple[Literal, ...]
+
+
+def retract(kb: KnowledgeBase, literal: Literal) -> RetractResult:
+    """Odstranění vlastní evidence + well-founded přepočet podpory (INV-12).
+
+    Podporované strany se přepočítají uzávěrem z vlastních evidencí přes
+    derivace — vzájemná podpora dvou odvozených se sama neudrží. Derivace
+    bez opory se odpojí od stran (ledger derivací zůstává historií).
+    """
+    side = kb._sides.get((literal.atom, literal.positive))
+    before = {key for key, s in kb._sides.items() if s.supported()}
+    if side is not None:
+        side.own = None
+    grounded: set[tuple[Atom, bool]] = {
+        key for key, s in kb._sides.items()
+        if s.own is not None and s.own.level > LEVEL_HYPOTHESIS}
+    active: set[int] = set()
+    changed = True
+    while changed:
+        changed = False
+        for derivation in kb.derivations:
+            if derivation.id in active:
+                continue
+            conclusion_key = (derivation.conclusion.atom,
+                              derivation.conclusion.positive)
+            if kb._sides.get(conclusion_key) is None:
+                continue
+            if derivation.id not in kb._sides[conclusion_key].derivations:
+                continue
+            if all((p.atom, p.positive) in grounded
+                   for p in derivation.premises):
+                active.add(derivation.id)
+                if conclusion_key not in grounded:
+                    grounded.add(conclusion_key)
+                changed = True
+    for key, s in kb._sides.items():
+        s.derivations = [i for i in s.derivations if i in active]
+    removed = [Literal(atom, positive)
+               for (atom, positive) in sorted(
+                   before - {key for key, s in kb._sides.items()
+                             if s.supported()},
+                   key=lambda k: (atom_key(k[0]), not k[1]))]
+    return RetractResult(tuple(removed))
+
+
 def infer_forward(kb: KnowledgeBase,
                   limits: Limits = Limits()) -> InferenceResult:
     """Forward chaining do fixpointu; mutuje bázi (odvozená vrstva)."""
