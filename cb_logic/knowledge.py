@@ -87,6 +87,23 @@ class KnowledgeBase:
             raise ValueError(f"doména {domain.name!r} už je deklarovaná jinak")
         self._domains[domain.name] = domain
 
+    def extend_domain(self, name: str, members: tuple) -> Domain:
+        """Append-only růst domény (dialog přináší nové entity).
+
+        Růst je monotónní — instance pravidel jen přibývají, žádná
+        nezmizí; proto je bezpečný, na rozdíl od přepisu deklarace.
+        """
+        existing = self._domains.get(name)
+        if existing is None:
+            domain = Domain(name, tuple(members))
+        else:
+            new = tuple(m for m in members if m not in existing.members)
+            if not new:
+                return existing
+            domain = Domain(name, existing.members + new)
+        self._domains[name] = domain
+        return domain
+
     def relation(self, name: str) -> Relation:
         return self._relations[name]
 

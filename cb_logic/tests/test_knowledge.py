@@ -111,6 +111,21 @@ class TestRules(unittest.TestCase):
             kb.add_rule(rule, Provenance(LEVEL_DEFINITION, USER))
 
 
+class TestExtendDomain(unittest.TestCase):
+    def test_rust_je_append_only(self):
+        kb = make_kb()
+        kb.extend_domain("things", (Entity("e2"),))
+        self.assertEqual(kb.domain("things").members,
+                         (E1, Entity("e2")))
+        kb.extend_domain("things", (E1,))  # duplicitní člen se nepřidá
+        self.assertEqual(len(kb.domain("things").members), 2)
+
+    def test_zalozi_novou_domenu(self):
+        kb = make_kb()
+        kb.extend_domain("nova", (Entity("x"),))
+        self.assertEqual(kb.domain("nova").members, (Entity("x"),))
+
+
 class TestCopy(unittest.TestCase):
     def test_kopie_je_nezavisla(self):
         kb = make_kb()
