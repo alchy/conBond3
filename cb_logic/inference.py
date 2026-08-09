@@ -165,6 +165,159 @@ def _dedupe(literals: list[Literal]) -> tuple[Literal, ...]:
 
 
 @dataclass(frozen=True)
+class Proof:
+    """Uzel důkazu: list (rule_index None) = fakt báze, jinak aplikace pravidla."""
+    conclusion: Literal
+    rule_index: int | None
+    premises: tuple["Proof", ...]
+
+
+class ProofStatus(Enum):
+    FOUND = "found"
+    NOT_FOUND = "not_found"
+    INCOMPLETE = "incomplete"
+
+
+def prove(kb: KnowledgeBase, literal: Literal, *,
+          max_depth: int = 32) -> tuple[Proof | None, ProofStatus]:
+    """Backward proof — dotazová a vysvětlovací cesta (INFERENCE_ENGINE § 7).
+
+    Cyklus cílů na cestě větev ukončí (žádná smyčka); vyčerpaná hloubka je
+    INCOMPLETE, nikoli NOT_FOUND (zadání § 24).
+    """
+    hit_limit = [False]
+    proof = _prove_literal(kb, literal, frozenset(), max_depth, hit_limit)
+    if proof is not None:
+        return proof, ProofStatus.FOUND
+    return None, (ProofStatus.INCOMPLETE if hit_limit[0]
+                  else ProofStatus.NOT_FOUND)
+
+
+def _prove_literal(kb: KnowledgeBase, literal: Literal,
+                   path: frozenset[Literal], depth: int,
+                   hit_limit: list[bool]) -> Proof | None:
+    value = kb.truth_of(literal.atom)
+    if value is Truth.TRUE and literal.positive:
+        return Proof(literal, None, ())
+    if value is Truth.FALSE and not literal.positive:
+        return Proof(literal, None, ())
+    if depth <= 0:
+        hit_limit[0] = True
+        return None
+    if literal in path:
+        return None
+    for rule_index, (rule, _) in enumerate(kb.rules):
+        head = rule.head
+        if head.positive != literal.positive:
+            continue
+        if head.atom.relation != literal.atom.relation:
+            continue
+        binding = _unify_head(head.atom, literal.atom)
+        if binding is None:
+            continue
+        free = [(v, d) for v, d in rule.var_domains if v not in binding]
+        member_lists = [sorted(kb.domain(d).members, key=term_key)
+                        for _, d in free]
+        for combo in itertools.product(*member_lists):
+            full = dict(binding)
+            full.update({v: t for (v, _), t in zip(free, combo)})
+            body = _nnf(substitute(rule.body, full), False)
+            sub = _prove_expr(kb, body, path | {literal}, depth - 1,
+                              hit_limit)
+            if sub is not None:
+                return Proof(literal, rule_index, sub)
+    return None
+
+
+def _unify_head(head_atom: Atom, goal_atom: Atom) -> dict[Variable, Term] | None:
+    binding: dict[Variable, Term] = {}
+    for h, g in zip(head_atom.args, goal_atom.args):
+        if isinstance(h, Variable):
+            if h in binding and binding[h] != g:
+                return None
+            binding[h] = g
+        elif h != g:
+            return None
+    return binding
+
+
+def _prove_expr(kb: KnowledgeBase, expr: Expression,
+                path: frozenset[Literal], depth: int,
+                hit_limit: list[bool]) -> tuple[Proof, ...] | None:
+    """Důkaz výrazu v NNF (listy: AtomRef, Not(AtomRef), Const)."""
+    if isinstance(expr, Const):
+        return () if expr.value else None
+    if isinstance(expr, AtomRef):
+        proof = _prove_literal(kb, Literal(expr.atom, True), path, depth,
+                               hit_limit)
+        return (proof,) if proof is not None else None
+    if isinstance(expr, Not):
+        proof = _prove_literal(kb, Literal(expr.operand.atom, False), path,
+                               depth, hit_limit)
+        return (proof,) if proof is not None else None
+    if isinstance(expr, And):
+        collected: list[Proof] = []
+        for op in expr.operands:
+            sub = _prove_expr(kb, op, path, depth, hit_limit)
+            if sub is None:
+                return None
+            collected.extend(sub)
+        return tuple(collected)
+    for op in expr.operands:  # Or: první úspěšný disjunkt
+        sub = _prove_expr(kb, op, path, depth, hit_limit)
+        if sub is not None:
+            return sub
+    return None
+
+
+def _nnf(expr: Expression, negated: bool) -> Expression:
+    """Negační normální forma — interní pohled pro důkaz, ne druhý kalkul."""
+    if isinstance(expr, Const):
+        return Const(expr.value != negated)
+    if isinstance(expr, AtomRef):
+        return Not(expr) if negated else expr
+    if isinstance(expr, Not):
+        return _nnf(expr.operand, not negated)
+    if isinstance(expr, And):
+        ops = tuple(_nnf(o, negated) for o in expr.operands)
+        return Or(ops) if negated else And(ops)
+    if isinstance(expr, Or):
+        ops = tuple(_nnf(o, negated) for o in expr.operands)
+        return And(ops) if negated else Or(ops)
+    if isinstance(expr, Implies):
+        if negated:  # ¬(a→b) ≡ a ∧ ¬b
+            return And((_nnf(expr.antecedent, False),
+                        _nnf(expr.consequent, True)))
+        return Or((_nnf(expr.antecedent, True),
+                   _nnf(expr.consequent, False)))
+    a, b = expr.left, expr.right
+    if negated:  # ¬(a↔b) ≡ (a∧¬b) ∨ (b∧¬a)
+        return Or((And((_nnf(a, False), _nnf(b, True))),
+                   And((_nnf(b, False), _nnf(a, True)))))
+    return And((Or((_nnf(a, True), _nnf(b, False))),
+                Or((_nnf(b, True), _nnf(a, False)))))
+
+
+def with_assumptions(kb: KnowledgeBase,
+                     literals: tuple[Literal, ...]) -> KnowledgeBase:
+    """Pohled na bázi s předpoklady (KNOWLEDGE_MODEL § 9); báze se nemění.
+
+    Předpoklad je fakt s Evidence(ASSUMPTION) a jmenovkou; derivace pod ním
+    vzniklé nesou jmenovky přes _support_assumptions.
+    """
+    from cb_logic.provenance import LEVEL_DOCUMENTED
+    view = kb.copy()
+    for literal in literals:
+        side = view._side(literal.atom, literal.positive)
+        if side.own is None or LEVEL_DOCUMENTED > side.own.level:
+            side.own = Provenance(
+                LEVEL_DOCUMENTED,
+                Evidence(EvidenceKind.ASSUMPTION,
+                         source=assumption_label(literal)))
+    return view
+
+
+@dataclass(frozen=True)
 class RetractResult:
     """Strany, které odstraněním ztratily veškerou podporu (kanonicky)."""
     removed: tuple[Literal, ...]
