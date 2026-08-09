@@ -1,6 +1,6 @@
 # CONSTRAINT_MODEL — model omezení (návrh, fáze 4)
 
-**Stav:** návrh ke schválení, před implementací.
+**Stav:** implementováno (`cb_logic/constraints.py`); dokument odpovídá implementaci.
 **Vzniká z:** zadání §25–§29; KNOWLEDGE_MODEL.md § 6; LOGIC_SEMANTICS.md.
 **Předpoklad:** implementované jádro fáze 2 (termy, výrazy, sémantika).
 

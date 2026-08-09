@@ -1,6 +1,7 @@
 # INFERENCE_ENGINE — báze znalostí a inferenční jádro (návrh, fáze 3+5)
 
-**Stav:** návrh ke schválení, před implementací.
+**Stav:** implementováno (`cb_logic/knowledge.py`, `cb_logic/inference.py`);
+dokument odpovídá implementaci.
 **Vzniká z:** zadání §18–§24, §37–§39; KNOWLEDGE_MODEL.md; LOGIC_SEMANTICS.md § 6–7;
 CONSTRAINT_MODEL.md.
 **Předpoklad:** jádro fáze 2. Prostor modelů a modální dotazy jsou fáze 6–7

@@ -1,6 +1,7 @@
 # KNOWLEDGE_MODEL — formální model znalosti (návrh, fáze 1)
 
-**Stav:** návrh ke schválení, před implementací.
+**Stav:** implementováno po § 10 (fáze 2–5, `cb_logic/`); Query/Model objekty
+a persistence jsou fáze 6+. Dokument odpovídá implementaci.
 **Vzniká z:** zadání §7–§11, ARCHITECTURE_REVIEW §13–14, README-ARCHITECTURE_OVERVIEW
 (invarianty INV-1…14, mřížka provenience 14.3).
 **Kam míří:** nový balík **`cb_logic`** — čistá knihovna (vzor cb_config/cb_field),

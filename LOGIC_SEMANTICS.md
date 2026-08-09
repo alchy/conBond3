@@ -1,6 +1,6 @@
 # LOGIC_SEMANTICS — reprezentace a sémantika logických výrazů (návrh, fáze 2)
 
-**Stav:** návrh ke schválení, před implementací.
+**Stav:** implementováno (fáze 2, `cb_logic/`); dokument odpovídá implementaci.
 **Vzniká z:** zadání §12–§17, §21–§24, §33; KNOWLEDGE_MODEL.md; README-ARCHITECTURE_OVERVIEW
 kap. 16 (C-3, C-4, C-12), kap. 20 (pohledy, orákulum).
 

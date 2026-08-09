@@ -13,6 +13,22 @@ from cb_logic.semantics import (DEFAULT_MAX_ATOMS, Decision, DecisionResult,
                                 Truth, UnboundAtomError, evaluate,
                                 evaluate_partial, is_contradiction,
                                 is_satisfiable, is_tautology, truth_table)
+from cb_logic.provenance import (Assertion, Conflict, Derivation, Evidence,
+                                 EvidenceKind, LEVEL_CORRECTION,
+                                 LEVEL_DEFINITION, LEVEL_DERIVED,
+                                 LEVEL_DOCUMENTED, LEVEL_HYPOTHESIS,
+                                 Provenance)
+from cb_logic.constraints import (CardinalityConstraint, Constraint,
+                                  ExpressionConstraint, MAX_EXPANSION_ATOMS,
+                                  at_least_one, at_most_one, atom_family,
+                                  equivalent, exactly_one, excludes, requires,
+                                  satisfied_by, to_expression, truth_partial)
+from cb_logic.knowledge import (Accepted, Conflicted, KnowledgeBase, Rejected,
+                                Rule)
+from cb_logic.inference import (InferenceResult, InferenceStatus, Limits,
+                                Proof, ProofStatus, RetractResult,
+                                assumption_label, ground_rule, infer_forward,
+                                prove, retract, with_assumptions)
 
 __all__ = [
     "Atom", "Domain", "Entity", "Literal", "Relation", "Value", "Variable",
@@ -22,4 +38,15 @@ __all__ = [
     "DEFAULT_MAX_ATOMS", "Decision", "DecisionResult", "Truth",
     "UnboundAtomError", "evaluate", "evaluate_partial", "is_contradiction",
     "is_satisfiable", "is_tautology", "truth_table",
+    "Assertion", "Conflict", "Derivation", "Evidence", "EvidenceKind",
+    "LEVEL_CORRECTION", "LEVEL_DEFINITION", "LEVEL_DERIVED",
+    "LEVEL_DOCUMENTED", "LEVEL_HYPOTHESIS", "Provenance",
+    "CardinalityConstraint", "Constraint", "ExpressionConstraint",
+    "MAX_EXPANSION_ATOMS", "at_least_one", "at_most_one", "atom_family",
+    "equivalent", "exactly_one", "excludes", "requires", "satisfied_by",
+    "to_expression", "truth_partial",
+    "Accepted", "Conflicted", "KnowledgeBase", "Rejected", "Rule",
+    "InferenceResult", "InferenceStatus", "Limits", "Proof", "ProofStatus",
+    "RetractResult", "assumption_label", "ground_rule", "infer_forward",
+    "prove", "retract", "with_assumptions",
 ]
