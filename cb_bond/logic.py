@@ -149,10 +149,12 @@ class LogicBridge:
         }
         if result.why_not is not None:
             output["why_not_kind"] = result.why_not.kind
-            output["missing"] = [
+            # dict.fromkeys: bez duplicit, v pořadí návrhů — táž premisa
+            # od více pravidel by se jinak vypsala vícekrát
+            output["missing"] = list(dict.fromkeys(
                 render_literal(lit, self.profile)
                 for suggestion in result.why_not.suggestions
-                for lit in suggestion.missing]
+                for lit in suggestion.missing))
         return output
 
     # --- učení jazykových vzorů ----------------------------------------

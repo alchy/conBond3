@@ -283,6 +283,18 @@ class TestReferenceResolution(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.bridge.resolve_reference("cokoliv")
 
+    def test_chybejici_premisy_se_neopakuji(self):
+        # Zapsáno po demu: dvakrát sdělené pravidlo → why_not navrhne
+        # tutéž premisu vícekrát a okno vypsalo „chybí vědět" třikrát.
+        self.bridge.context("Auto je dopravní prostředek.")
+        self.bridge.context("Auto je dopravní prostředek.")
+        self.bridge.ask("Je auto dopravní prostředek?")
+        vysledek = self.bridge.resolve_reference("instance")
+        self.assertEqual(vysledek["truth"], "UNKNOWN")
+        self.assertTrue(vysledek["missing"])
+        self.assertEqual(len(vysledek["missing"]),
+                         len(set(vysledek["missing"])))
+
 
 class TestLearnedPatterns(unittest.TestCase):
     def setUp(self):
