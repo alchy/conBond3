@@ -1,0 +1,19 @@
+{
+  "format_version": 1,
+  "language": "cs",
+  "question_mark": "?",
+  "templates": {
+    "unary_positive": "{arg0} je {relation}",
+    "unary_negative": "{arg0} není {relation}",
+    "binary_positive": "{arg0} {relation} {arg1}",
+    "binary_negative": "neplatí, že {arg0} {relation} {arg1}",
+    "because": "{claim}, protože {premises}",
+    "premise_join": " a ",
+    "fact_source": "{claim} (doloženo: {source})",
+    "assumption_note": "{claim} (za předpokladu)",
+    "truth_true": "Ano.",
+    "truth_false": "Ne.",
+    "truth_unknown": "Nevím.",
+    "conflict_note": "Pozor: k této otázce eviduji rozpor."
+  }
+}

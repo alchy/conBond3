@@ -9,9 +9,12 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 
+import itertools
+
 from cb_logic.expressions import (And, AtomRef, Const, Not, Or, from_literal,
-                                  to_text)
-from cb_logic.inference import _nnf, assumption_label, ground_rule
+                                  substitute, to_text)
+from cb_logic.inference import _nnf, _unify_head, assumption_label
+from cb_logic.terms import term_key
 from cb_logic.knowledge import KnowledgeBase
 from cb_logic.models import (ModalResult, ModalVerdict, ModelLimits,
                              classify_query)
@@ -128,6 +131,8 @@ def why_not(kb: KnowledgeBase, literal: Literal, *,
 
 def _suggestions(kb: KnowledgeBase, literal: Literal,
                  depth: int) -> tuple[Suggestion, ...]:
+    """Hlava se s cílem UNIFIKUJE (ne grounduje přes doménu) — návrh musí
+    fungovat i pro entitu, kterou báze ještě nezná."""
     if depth <= 0:
         return ()
     out: list[Suggestion] = []
@@ -136,9 +141,16 @@ def _suggestions(kb: KnowledgeBase, literal: Literal,
             continue
         if rule.head.atom.relation != literal.atom.relation:
             continue
-        for _, body, head in ground_rule(rule, kb):
-            if head != literal:
-                continue
+        binding = _unify_head(rule.head.atom, literal.atom)
+        if binding is None:
+            continue
+        free = [(v, d) for v, d in rule.var_domains if v not in binding]
+        member_lists = [sorted(kb.domain(d).members, key=term_key)
+                        for _, d in free]
+        for combo in itertools.product(*member_lists):
+            full = dict(binding)
+            full.update({v: t for (v, _), t in zip(free, combo)})
+            body = substitute(rule.body, full)
             missing: list[Literal] = []
             for body_literal in _nnf_literals(_nnf(body, False)):
                 if (kb.truth_of(body_literal.atom) is Truth.UNKNOWN
