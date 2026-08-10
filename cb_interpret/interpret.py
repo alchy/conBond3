@@ -316,48 +316,32 @@ def _operator(children, root, text, patterns) -> Candidate:
     subjects = _kids(children, root, "nsubj")
     if not subjects:
         return _unparsed(text, "operátorové sloveso bez podmětu")
-    subject_entity = _entity(subjects[0])
+    subject = subjects[0]
     xcomp = _kids(children, root, "xcomp")[0]
-    atom, entities, relation = _predicate_atom(children, xcomp, subject_entity)
+    conjuncts, relations, entities, blocker = verb_conjuncts(
+        children, xcomp, _entity(subject), subject)
+    if blocker is not None:
+        return _unparsed(text, blocker)
     negated = _negated(root)
     signature = StructuralSignature(
         root.lemma, has_xcomp=True,
         has_obj=bool(_kids(children, xcomp, "obj")),
         has_obl=bool(_kids(children, xcomp, "obl")))
-    literal = Literal(atom)
+    exprs = tuple(_ref(atom, pos) for atom, pos, _, _ in conjuncts)
+    common = dict(
+        literal=Literal(conjuncts[0][0], conjuncts[0][1]),
+        query_expr=conj(*exprs) if len(exprs) > 1 else exprs[0],
+        query_atoms=tuple(a for a, _, _, _ in conjuncts),
+        negated=negated, relations=tuple(relations),
+        entities=tuple(entities), signature=signature)
 
     matched = patterns.match(signature) if patterns is not None else None
     if matched is not None:
-        return Candidate("modal_query", text, literal=literal,
-                         operation=matched.operation, negated=negated,
-                         relations=(relation,), entities=entities,
-                         signature=signature)
-    return Candidate("needs_pattern", text, literal=literal, negated=negated,
-                     relations=(relation,), entities=entities,
-                     signature=signature,
-                     note=f"neznámé mapování operátoru {root.lemma!r}")
-
-
-def _predicate_atom(children, verb, subject_entity):
-    entities = [subject_entity]
-    objects = _kids(children, verb, "obj")
-    obliques = _kids(children, verb, "obl")
-    if objects:
-        relation = Relation(verb.lemma, 2)
-        second, extra = _term_for(objects[0])
-    else:
-        with_case = [o for o in obliques if _kids(children, o, "case")]
-        if with_case:
-            oblique = with_case[0]
-            adposition = _kids(children, oblique, "case")[0]
-            relation = Relation(f"{verb.lemma}_{adposition.lemma}", 2)
-            second, extra = _term_for(oblique)
-        else:
-            relation = Relation(verb.lemma, 1)
-            second, extra = None, ()
-    entities.extend(extra)
-    args = (subject_entity,) if second is None else (subject_entity, second)
-    return Atom(relation, args), tuple(entities), relation
+        return Candidate("modal_query", text,
+                         operation=matched.operation, **common)
+    return Candidate("needs_pattern", text,
+                     note=f"neznámé mapování operátoru {root.lemma!r}",
+                     **common)
 
 
 def _kids(children, token, deprel):

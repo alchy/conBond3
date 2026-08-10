@@ -103,6 +103,17 @@ MARIE_PRACUJE = (  # Marie pracuje v Brně.   (generalizace — unseen)
     Token(id=5, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=2, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
 )
 
+AUTO_MUZE_JET_DO_MESTA = (  # Auto může jet po dálnici do města.
+    Token(id=1, form='Auto', lemma='auto', upos='NOUN', xpos='NNNS1-----A----', feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing'}, head=2, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='může', lemma='moci', upos='VERB', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=3, form='jet', lemma='jet', upos='VERB', xpos='Vf--------A-I--', feats={'Aspect': 'Imp', 'Polarity': 'Pos', 'VerbForm': 'Inf'}, head=2, deprel='xcomp', deps=None, misc=None),
+    Token(id=4, form='po', lemma='po', upos='ADP', xpos='RR--6----------', feats={'AdpType': 'Prep', 'Case': 'Loc'}, head=5, deprel='case', deps=None, misc=None),
+    Token(id=5, form='dálnici', lemma='dálnice', upos='NOUN', xpos='NNFS6-----A----', feats={'Case': 'Loc', 'Gender': 'Fem', 'Number': 'Sing'}, head=3, deprel='obl', deps=None, misc=None),
+    Token(id=6, form='do', lemma='do', upos='ADP', xpos='RR--2----------', feats={'AdpType': 'Prep', 'Case': 'Gen'}, head=7, deprel='case', deps=None, misc=None),
+    Token(id=7, form='města', lemma='město', upos='NOUN', xpos='NNNS2-----A----', feats={'Case': 'Gen', 'Gender': 'Neut', 'Number': 'Sing'}, head=3, deprel='obl', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=8, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=2, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
 JE_PETR_ZKUSENY = (  # Je Petr zkušený programátor?
     Token(id=1, form='Je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=4, deprel='cop', deps=None, misc=None),
     Token(id=2, form='Petr', lemma='Petr', upos='PROPN', xpos='NNMS1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'NameType': 'Giv', 'Number': 'Sing'}, head=4, deprel='nsubj', deps=None, misc=None),

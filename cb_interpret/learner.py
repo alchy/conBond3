@@ -52,13 +52,14 @@ class AskResult:
     reference: ReferenceClarification | None = None
 
 
-def _run_modal(kb: KnowledgeBase, atom, operation: Operation, negated: bool):
+def _run_modal(kb: KnowledgeBase, atoms, expr, operation: Operation,
+               negated: bool):
     """Modální dotaz jako kvantifikace nad modely (∃M/∀M/¬∃M), ne operátor.
 
+    Propozice smí být konjunkce atomů (složený vložený přísudek).
     `grounded` rozlišuje „našel model" od „nic to nezakazuje": je true,
-    dotýká-li se propozice nějaké znalosti (fakt/pravidlo/constraint).
+    dotýká-li se KTERÝKOLI konjunkt nějaké znalosti.
     """
-    expr = AtomRef(atom)
     mood = operation
     if negated:
         if operation is Operation.POSSIBLE:
@@ -66,7 +67,7 @@ def _run_modal(kb: KnowledgeBase, atom, operation: Operation, negated: bool):
         elif operation is Operation.IMPOSSIBLE:
             mood = Operation.POSSIBLE
         else:
-            mood, expr = Operation.POSSIBLE, Not(AtomRef(atom))
+            mood, expr = Operation.POSSIBLE, Not(expr)
     result: ModalResult = classify_query(kb, expr)
     verdict = result.verdict
     if verdict is ModalVerdict.INCOMPLETE:
@@ -78,7 +79,7 @@ def _run_modal(kb: KnowledgeBase, atom, operation: Operation, negated: bool):
     else:
         answer = verdict in (ModalVerdict.IMPOSSIBLE,
                              ModalVerdict.UNSATISFIABLE)
-    grounded = _touches_knowledge(kb, atom)
+    grounded = any(_touches_knowledge(kb, atom) for atom in atoms)
     return mood, result, answer, grounded
 
 
@@ -199,9 +200,10 @@ class DialogueLearner:
     # --- vnitřní odpovědi ----------------------------------------------
 
     def _answer_modal(self, candidate: Candidate) -> AskResult:
+        atoms = candidate.query_atoms or (candidate.literal.atom,)
+        expr = candidate.query_expr or AtomRef(candidate.literal.atom)
         mood, result, answer, grounded = _run_modal(
-            self.kb, candidate.literal.atom, candidate.operation,
-            candidate.negated)
+            self.kb, atoms, expr, candidate.operation, candidate.negated)
         modal = {
             "operation": mood.value, "verdict": result.verdict.name,
             "answer": answer, "grounded": grounded,
