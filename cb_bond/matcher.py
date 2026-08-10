@@ -196,18 +196,20 @@ class MatchResult:
         return tuple(poradi)
 
     def __and__(self, other: "MatchResult") -> "MatchResult":
-        return self._spoj(other, _and)
+        return self._spoj(other, _and, prunik=True, po_clenech=False)
 
     def __or__(self, other: "MatchResult") -> "MatchResult":
-        return self._spoj(other, lambda a, b: a + b)
+        return self._spoj(other, lambda a, b: a + b,
+                          prunik=False, po_clenech=True)
 
     def __invert__(self) -> "MatchResult":
-        return MatchResult(
-            [ScoreCandidate(k.sentence, k.token, k.lemma, -k.score,
-                            {jmeno: -hodnota
-                             for jmeno, hodnota in k._members.items()})
-             for k in self.candidates],
-            self.outcome, self.question)
+        obraceni = [
+            ScoreCandidate(k.sentence, k.token, k.lemma, -k.score,
+                           {jmeno: -hodnota
+                            for jmeno, hodnota in k._members.items()})
+            for k in self.candidates]
+        obraceni.sort(key=lambda k: -k.score)
+        return MatchResult(obraceni, self.outcome, self.question)
 
     def __len__(self) -> int:
         return len(self.candidates)
@@ -216,16 +218,39 @@ class MatchResult:
         return (f"MatchResult({self.outcome}, {len(self.candidates)} "
                 f"kandidátů, nejlepší {self.best.lemma if self.best else '—'})")
 
-    def _spoj(self, other: "MatchResult", operace) -> "MatchResult":
+    def _spoj(self, other: "MatchResult", operace, *, prunik: bool,
+              po_clenech: bool) -> "MatchResult":
+        """Složí dva koše kandidátů.
+
+        prunik: kandidát bez protějšku se zahodí (&), nebo přežije se
+        svým skóre (|) — sjednocení; `a | b` dřív fakticky vracelo
+        průnik (audit, příloha A).
+
+        po_clenech: sčítání jde složit po členech rozkladu (invariant
+        „součet členů dá skóre" drží). Součin/minimum po členech složit
+        nejde — složené skóre dostane jeden explicitní člen `and`, ať
+        rozklad nelže.
+        """
         druhy = {k.key: k for k in other.candidates}
         spojene = []
         for kandidat in self.candidates:
-            protejsek = druhy.get(kandidat.key)
+            protejsek = druhy.pop(kandidat.key, None)
             if protejsek is None:
+                if not prunik:
+                    spojene.append(kandidat)
                 continue
+            slozene = operace(kandidat.score, protejsek.score)
+            if po_clenech:
+                cleny = dict(kandidat._members)
+                for jmeno, hodnota in protejsek._members.items():
+                    cleny[jmeno] = cleny.get(jmeno, 0.0) + hodnota
+            else:
+                cleny = {"and": slozene}
             spojene.append(ScoreCandidate(
                 kandidat.sentence, kandidat.token, kandidat.lemma,
-                operace(kandidat.score, protejsek.score), {}))
+                slozene, cleny))
+        if not prunik:
+            spojene.extend(druhy.values())
         spojene.sort(key=lambda k: -k.score)
         return MatchResult(spojene, self.outcome, self.question)
 

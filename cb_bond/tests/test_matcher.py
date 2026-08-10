@@ -445,6 +445,53 @@ class TestVysledek(unittest.TestCase):
             self.assertAlmostEqual(kandidat.score, -podle[kandidat.key],
                                    places=5)
 
+    def test_or_je_sjednoceni_ne_prunik(self):
+        # audit (příloha A): `a | b` dřív fakticky vracelo průnik
+        a = _vysledek({(0, 0): 0.5, (0, 1): 0.4})
+        b = _vysledek({(0, 1): 0.2, (1, 0): 0.3})
+
+        sjednoceni = a | b
+
+        podle = {k.key: k.score for k in sjednoceni.candidates}
+        self.assertEqual(set(podle), {(0, 0), (0, 1), (1, 0)})
+        self.assertAlmostEqual(podle[(0, 1)], 0.6)   # společný se sčítá
+        self.assertAlmostEqual(podle[(0, 0)], 0.5)   # jen v a — přežije
+        self.assertAlmostEqual(podle[(1, 0)], 0.3)   # jen v b — přežije
+
+    def test_invert_preradi_kandidaty(self):
+        puvodni = _vysledek({(0, 0): 0.5, (0, 1): -0.2})
+
+        obraceny = ~puvodni
+
+        skore = [k.score for k in obraceny.candidates]
+        self.assertEqual(skore, sorted(skore, reverse=True))
+        self.assertEqual(obraceny.best.key, (0, 1))   # −0,2 → +0,2 vede
+
+    def test_or_zachova_rozklad_po_clenech(self):
+        a = MatchResult([ScoreCandidate(0, 0, "x", 0.5,
+                                        {"meet": 0.3, "cover": 0.2})],
+                        "answer")
+        b = MatchResult([ScoreCandidate(0, 0, "x", 0.2,
+                                        {"meet": 0.1, "topic": 0.1})],
+                        "answer")
+
+        soucet = (a | b).best
+
+        self.assertAlmostEqual(sum(soucet.decomposition().values()),
+                               soucet.score)
+        self.assertAlmostEqual(soucet.decomposition()["meet"], 0.4)
+
+    def test_and_rozklad_secte_na_skore(self):
+        a = MatchResult([ScoreCandidate(0, 0, "x", 0.5, {"meet": 0.5})],
+                        "answer")
+        b = MatchResult([ScoreCandidate(0, 0, "x", 0.2, {"meet": 0.2})],
+                        "answer")
+
+        soucin = (a & b).best
+
+        self.assertAlmostEqual(sum(soucin.decomposition().values()),
+                               soucin.score)
+
 
 class TestPredvyberGrafem(unittest.TestCase):
     """Matcher smí předvýběr delegovat na graf (naměřeně lepší)."""
