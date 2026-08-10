@@ -84,6 +84,17 @@ class Console:
             self._pis(f"  přidáno — korpus {stav.get('sentences')} vět "
                       f"(+{stav.get('added_sentences')}) · "
                       f"graf +{stav.get('added_edges')} hran")
+            logika = stav.get("logic")
+            if logika and logika.get("outcome"):
+                # Formální vrstva se z věty učí vedle korpusu — ať je
+                # vidět, co přijala a co z toho odvodila.
+                self._pis(f"  logika — {logika['kind']}: {logika['outcome']}")
+                for fakt in logika.get("derived", ()):
+                    self._pis(f"    odvozeno: {fakt}")
+                if logika.get("conflicts"):
+                    self._pis(f"    rozporů v bázi: {logika['conflicts']}")
+            elif logika and logika.get("note"):
+                self._pis(f"  logika — neinterpretováno: {logika['note']}")
             return True
         self._pis(f"  neznámý příkaz {jmeno!r}; umím :context, :state, :quit")
         return True
