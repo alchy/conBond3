@@ -17,9 +17,9 @@ from cb_logic import (Accepted, Assertion, Atom, AtomRef, Conflicted, Entity,
                       Evidence, EvidenceKind, Explanation, InferenceResult,
                       KnowledgeBase, LEVEL_DEFINITION, LEVEL_DOCUMENTED,
                       Literal, ModalResult, ModalVerdict, Not, Provenance,
-                      Rejected, Relation, Truth, WhyNotResult, classify_query,
-                      evaluate_partial, infer_forward, why, why_not,
-                      with_assumptions)
+                      Rejected, Relation, Truth, Variable, WhyNotResult,
+                      classify_query, evaluate_partial, infer_forward, why,
+                      why_not, with_assumptions)
 from cb_interpret.clarify import (ClarificationRequest, ReferenceClarification,
                                   build_clarification,
                                   build_reference_clarification)
@@ -150,7 +150,7 @@ class DialogueLearner:
             return AskResult(
                 candidate, None, (), None,
                 reference=build_reference_clarification(
-                    candidate.predication.subject.lemma))
+                    candidate.subject_lemma))
         if candidate.kind == "needs_pattern":
             return AskResult(candidate, None, (), None,
                              clarification=build_clarification(
@@ -169,28 +169,30 @@ class DialogueLearner:
         „auto", JE auto — u třídy se předpokládá arbitrární instance
         (probe), u instance referent sám. Doptávat se „je auto auto?"
         je nesmysl; členství zakládá reference sama.
+
+        Konjunkty dotazu přicházejí buď z predikace (kopulová věta),
+        nebo z konjunktů s proměnnou (slovesná věta) — viz
+        _conjunct_literals.
         """
-        pred = candidate.predication
-        subject_rel = Relation(pred.subject.lemma, 1)
+        subject_rel = Relation(candidate.subject_lemma, 1)
         if choice == "instance":
-            referent = Entity(pred.subject.lemma.lower())
+            referent = Entity(candidate.subject_lemma.lower())
             view = self._assumed_view(candidate, subject_rel, referent)
-            conjuncts, relations, entities = build_conjuncts(pred, referent)
-            query = _query_from(conjuncts)
+            literals = self._conjunct_literals(candidate, referent)
+            query = _query_from(literals)
             result = self._answer_query(Candidate(
                 "query", candidate.source_text, query_expr=query[0],
-                query_atoms=query[1], relations=tuple(relations),
-                entities=tuple(entities)), kb=view)
+                query_atoms=query[1], relations=candidate.relations,
+                entities=candidate.entities), kb=view)
             # bez řetězu vysvětlení — symetrie s třídním čtením; řetěz by
             # jen opakoval presupozici („auto je auto (za předpokladu)")
             return AskResult(result.candidate, result.truth, (),
                              result.why_not, conflicted=result.conflicted)
         # třída: „platí ∀x subj(x) → …?" ověříme arbitrární instancí (probe)
         view = self._assumed_view(candidate, subject_rel, PROBE)
-        conjuncts, _, _ = build_conjuncts(pred, PROBE)
-        values = [view.truth_of(atom) if pos
-                  else _flip(view.truth_of(atom))
-                  for atom, pos, _, _ in conjuncts]
+        values = [view.truth_of(lit.atom) if lit.positive
+                  else _flip(view.truth_of(lit.atom))
+                  for lit in self._conjunct_literals(candidate, PROBE)]
         if all(v is Truth.TRUE for v in values):
             truth = Truth.TRUE
         elif any(v is Truth.FALSE for v in values):
@@ -198,6 +200,17 @@ class DialogueLearner:
         else:
             truth = Truth.UNKNOWN
         return AskResult(candidate, truth, (), None)
+
+    def _conjunct_literals(self, candidate: Candidate, term):
+        """Konjunkty dotazu pro daný podmětový term.
+
+        Kopulová věta je nese jako predikaci (build_conjuncts), slovesná
+        jako literály s proměnnou podmětu — za tu se term dosadí.
+        """
+        if candidate.predication is not None:
+            conjuncts, _, _ = build_conjuncts(candidate.predication, term)
+            return tuple(Literal(atom, pos) for atom, pos, _, _ in conjuncts)
+        return _substitute(candidate.literals, term)
 
     def _assumed_view(self, candidate: Candidate, subject_rel: Relation,
                       entity: Entity) -> KnowledgeBase:
@@ -282,12 +295,24 @@ class DialogueLearner:
         return self.patterns.revoke(root_lemma)
 
 
-def _query_from(conjuncts):
-    exprs = tuple(AtomRef(atom) if pos else Not(AtomRef(atom))
-                  for atom, pos, _, _ in conjuncts)
+def _query_from(literals):
+    exprs = tuple(AtomRef(lit.atom) if lit.positive
+                  else Not(AtomRef(lit.atom))
+                  for lit in literals)
     from cb_logic import conj
     query = conj(*exprs) if len(exprs) > 1 else exprs[0]
-    return query, tuple(a for a, _, _, _ in conjuncts)
+    return query, tuple(lit.atom for lit in literals)
+
+
+def _substitute(literals, term):
+    """Dosadí term za proměnnou podmětu v konjunktech slovesné věty."""
+    out = []
+    for literal in literals:
+        args = tuple(term if isinstance(arg, Variable) else arg
+                     for arg in literal.atom.args)
+        out.append(Literal(Atom(literal.atom.relation, args),
+                           literal.positive))
+    return tuple(out)
 
 
 def _flip(value: Truth) -> Truth:

@@ -46,6 +46,7 @@ class Candidate:
     signature: StructuralSignature | None = None
     negated: bool = False
     predication: Predication | None = None         # reference_ambiguous
+    subject_lemma: str | None = None               # reference_ambiguous
 
 
 def interpret_sentence(tokens, text: str, *, patterns=None,
@@ -69,7 +70,7 @@ def interpret_sentence(tokens, text: str, *, patterns=None,
     if root.upos == "VERB" and _kids(children, root, "xcomp"):
         return _operator(children, root, text, patterns)
     if root.upos == "VERB":
-        return _verbal(children, root, text, question)
+        return _verbal(children, root, text, question, domain)
     return _unparsed(text, f"vzor věty mimo rozsah (kořen {root.upos})")
 
 
@@ -99,6 +100,7 @@ def _lower_copular(pred: Predication, text: str, domain: str) -> Candidate:
     if subj.kind is ReferenceKind.AMBIGUOUS:
         # obecné jméno v otázce — nejednoznačná reference → doptání (§5)
         return Candidate("reference_ambiguous", text, predication=pred,
+                         subject_lemma=subj.lemma,
                          relations=tuple(relations), provenance=provenance,
                          note=f"reference {subj.lemma!r}: instance, nebo třída?")
 
@@ -181,18 +183,29 @@ def _entity_from(ref: Reference) -> Entity:
 
 # --- slovesné věty ------------------------------------------------------
 
-def _verbal(children, root, text, question) -> Candidate:
+def _verbal(children, root, text, question, domain) -> Candidate:
     subjects = _kids(children, root, "nsubj")
     if not subjects:
         return _unparsed(text, "sloveso bez podmětu")
     subject = subjects[0]
-    if _kids(children, subject, "det"):
+    if subject.upos == "PRON":
+        # zájmenný podmět = definiční otázka / odkaz do rozhovoru — mimo
+        # rozsah věty-jako-jednotky (týž guard jako u kopuly)
+        return _unparsed(text, "zájmenný podmět slovesné věty mimo rozsah")
+    prontypes: set = set()
+    for det in _kids(children, subject, "det"):
+        if det.feats and det.feats.get("PronType"):
+            prontypes |= set(det.feats["PronType"].split(","))
+    if prontypes - {"Tot", "Neg"}:
         return _unparsed(text, "určený podmět slovesné věty mimo rozsah")
-    if subject.upos != "PROPN":
-        return _unparsed(text, "obecný podmět slovesné věty mimo rozsah")
-    negated = _negated(root)
+    negated = _negated(root) or "Neg" in prontypes
+
+    if subject.upos == "PROPN":
+        subject_term: object = _entity(subject)
+    else:
+        subject_term = Variable("X")
     conjuncts, relations, entities, blocker = verb_conjuncts(
-        children, root, _entity(subject), subject)
+        children, root, subject_term, subject)
     if blocker is not None:
         return _unparsed(text, blocker)
     if negated and len(conjuncts) > 1:
@@ -202,6 +215,31 @@ def _verbal(children, root, text, question) -> Candidate:
     lowered = tuple((atom, pos and not negated, tok, popis)
                     for atom, pos, tok, popis in conjuncts)
     provenance = tuple((popis, tok) for _, _, tok, popis in lowered)
+
+    if subject.upos != "PROPN" and question:
+        # obecné jméno v otázce — doptání (§5); konjunkty s proměnnou si
+        # kandidát nese, rozřešení za ni dosadí referent, nebo probe
+        return Candidate("reference_ambiguous", text,
+                         literals=tuple(Literal(a, p)
+                                        for a, p, _, _ in lowered),
+                         subject_lemma=subject.lemma,
+                         relations=tuple(relations),
+                         entities=tuple(entities), provenance=provenance,
+                         note=(f"reference {subject.lemma!r}: "
+                               f"instance, nebo třída?"))
+
+    if subject.upos != "PROPN":
+        # obecné jméno v tvrzení → třída → pravidla (jako u kopuly)
+        subject_rel = Relation(subject.lemma, 1)
+        relations.append(subject_rel)
+        x = subject_term  # Variable("X")
+        rules = tuple(
+            Rule(((x, domain),), AtomRef(Atom(subject_rel, (x,))),
+                 Literal(atom, pos))
+            for atom, pos, _, _ in lowered)
+        return Candidate("rule", text, rules=rules,
+                         relations=tuple(relations), provenance=provenance)
+
     if question:
         exprs = tuple(_ref(atom, pos) for atom, pos, _, _ in lowered)
         query_expr = conj(*exprs) if len(exprs) > 1 else exprs[0]

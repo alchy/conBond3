@@ -184,6 +184,43 @@ class TestRules(unittest.TestCase):
         self.assertEqual(heads, {"zvíře", "domácí"})
 
 
+class TestVerbalRules(unittest.TestCase):
+    """Slovesná věta s obecným podmětem — třídní čtení (po demu J.)."""
+
+    def test_obecny_podmet_tvrzeni_da_pravidlo(self):
+        c = interpret_sentence(vs.OVOCE_OBSAHUJE, "Ovoce obsahuje vitamíny.")
+        self.assertEqual(c.kind, "rule")
+        self.assertLessEqual({"ovoce", "obsahovat"}, relnames(c))
+        [rule] = c.rules
+        self.assertEqual(rule.head.atom.relation, Relation("obsahovat", 2))
+        self.assertEqual(rule.head.atom.args[1], Value("vitamín"))
+
+    def test_univerzalni_determinant_slovesne_vety(self):
+        c = interpret_sentence(vs.KAZDE_OVOCE,
+                               "Každé ovoce obsahuje vitamíny.")
+        self.assertEqual(c.kind, "rule")
+        self.assertLessEqual({"ovoce", "obsahovat"}, relnames(c))
+
+    def test_obecny_podmet_otazky_se_dopta(self):
+        c = interpret_sentence(vs.LETAJI_PTACI, "Létají ptáci?")
+        self.assertEqual(c.kind, "reference_ambiguous")
+        self.assertEqual(c.subject_lemma, "pták")
+        self.assertTrue(c.literals)     # konjunkty s proměnnou pro rozřešení
+
+    def test_generalizace_unseen_nepredmetna(self):
+        c = interpret_sentence(vs.PTACI_LETAJI, "Ptáci létají.")
+        self.assertEqual(c.kind, "rule")
+        [rule] = c.rules
+        self.assertEqual(rule.head.atom.relation, Relation("létat", 1))
+
+    def test_rozbor_bez_podmetu_je_unparsed(self):
+        # „Obsahuje citron vitamíny?" — UDPipe dá dva obj (nom == acc);
+        # bez podmětu poctivé odmítnutí, ne hádání, kdo je podmět
+        c = interpret_sentence(vs.OBSAHUJE_CITRON,
+                               "Obsahuje citron vitamíny?")
+        self.assertEqual(c.kind, "unparsed")
+
+
 class TestGenitiveNmod(unittest.TestCase):
     """Holý genitiv je vztah, ne tiché zahození — HANDOVER 4.1.2."""
 

@@ -131,7 +131,7 @@ class LogicBridge:
         result = self.learner.resolve_reference(pending, choice)
         output: dict[str, Any] = {
             "kind": "reference_resolved", "choice": choice,
-            "subject": pending.predication.subject.lemma,
+            "subject": pending.subject_lemma,
             "source_text": pending.source_text,
         }
         output.update(self._query_output(result))

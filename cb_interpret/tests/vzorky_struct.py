@@ -163,6 +163,47 @@ CO_JE_AUTO = (  # Co je auto?   (definiční otázka — mimo rozsah)
     Token(id=4, form='?', lemma='?', upos='PUNCT', xpos='Z:-------------', feats=None, head=3, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
 )
 
+CITRON_OVOCE = (  # Citron je ovoce.
+    Token(id=1, form='Citron', lemma='citron', upos='NOUN', xpos='NNIS1-----A----', feats={'Animacy': 'Inan', 'Case': 'Nom', 'Gender': 'Masc', 'Number': 'Sing'}, head=3, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=3, deprel='cop', deps=None, misc=None),
+    Token(id=3, form='ovoce', lemma='ovoce', upos='NOUN', xpos='NNNS1-----A----', feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing'}, head=0, deprel='root', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=4, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=3, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+OVOCE_OBSAHUJE = (  # Ovoce obsahuje vitamíny.
+    Token(id=1, form='Ovoce', lemma='ovoce', upos='NOUN', xpos='NNNS1-----A----', feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing'}, head=2, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='obsahuje', lemma='obsahovat', upos='VERB', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=3, form='vitamíny', lemma='vitamín', upos='NOUN', xpos='NNIP4-----A----', feats={'Animacy': 'Inan', 'Case': 'Acc', 'Gender': 'Masc', 'Number': 'Plur'}, head=2, deprel='obj', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=4, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=2, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+OBSAHUJE_CITRON = (  # Obsahuje citron vitamíny?  (rozbor bez podmětu: 2× obj)
+    Token(id=1, form='Obsahuje', lemma='obsahovat', upos='VERB', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=2, form='citron', lemma='citron', upos='NOUN', xpos='NNIS4-----A----', feats={'Animacy': 'Inan', 'Case': 'Acc', 'Gender': 'Masc', 'Number': 'Sing'}, head=1, deprel='obj', deps=None, misc=None),
+    Token(id=3, form='vitamíny', lemma='vitamín', upos='NOUN', xpos='NNIP4-----A----', feats={'Animacy': 'Inan', 'Case': 'Acc', 'Gender': 'Masc', 'Number': 'Plur'}, head=1, deprel='obj', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=4, form='?', lemma='?', upos='PUNCT', xpos='Z:-------------', feats=None, head=1, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+KAZDE_OVOCE = (  # Každé ovoce obsahuje vitamíny.
+    Token(id=1, form='Každé', lemma='každý', upos='DET', xpos='PLNS1----------', feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing', 'PronType': 'Tot'}, head=2, deprel='det', deps=None, misc=None),
+    Token(id=2, form='ovoce', lemma='ovoce', upos='NOUN', xpos='NNNS1-----A----', feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing'}, head=3, deprel='nsubj', deps=None, misc=None),
+    Token(id=3, form='obsahuje', lemma='obsahovat', upos='VERB', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=4, form='vitamíny', lemma='vitamín', upos='NOUN', xpos='NNIP4-----A----', feats={'Animacy': 'Inan', 'Case': 'Acc', 'Gender': 'Masc', 'Number': 'Plur'}, head=3, deprel='obj', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=5, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=3, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+PTACI_LETAJI = (  # Ptáci létají.   (generalizace — unseen)
+    Token(id=1, form='Ptáci', lemma='pták', upos='NOUN', xpos='NNMP1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'Number': 'Plur'}, head=2, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='létají', lemma='létat', upos='VERB', xpos='VB-P---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Plur', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=0, deprel='root', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=3, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=2, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+LETAJI_PTACI = (  # Létají ptáci?
+    Token(id=1, form='Létají', lemma='létat', upos='VERB', xpos='VB-P---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Plur', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=2, form='ptáci', lemma='pták', upos='NOUN', xpos='NNMP1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'Number': 'Plur'}, head=1, deprel='nsubj', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=3, form='?', lemma='?', upos='PUNCT', xpos='Z:-------------', feats=None, head=1, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
 JE_PETR_ZKUSENY = (  # Je Petr zkušený programátor?
     Token(id=1, form='Je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=4, deprel='cop', deps=None, misc=None),
     Token(id=2, form='Petr', lemma='Petr', upos='PROPN', xpos='NNMS1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'NameType': 'Giv', 'Number': 'Sing'}, head=4, deprel='nsubj', deps=None, misc=None),

@@ -46,6 +46,22 @@ class TestLearn(unittest.TestCase):
 
 
 class TestAsk(unittest.TestCase):
+    def test_plny_kruh_slovesna_trida(self):
+        # „Ptáci létají." → pravidlo; „Létají ptáci?" → doptání → obě
+        # čtení TRUE (třída přes probe, instance přes presupozici)
+        learner = make_learner()
+        r = learner.learn(vs.PTACI_LETAJI, "Ptáci létají.")
+        self.assertEqual(r.candidate.kind, "rule")
+        result = learner.ask(vs.LETAJI_PTACI, "Létají ptáci?")
+        self.assertEqual(result.candidate.kind, "reference_ambiguous")
+        self.assertEqual(result.reference.subject_lemma, "pták")
+        self.assertEqual(
+            learner.resolve_reference(result.candidate, "class").truth,
+            Truth.TRUE)
+        self.assertEqual(
+            learner.resolve_reference(result.candidate, "instance").truth,
+            Truth.TRUE)
+
     def test_plny_kruh_genitiv(self):
         # „Česka" se cestou učení ani dotazu nikde neztratí (4.1.2)
         learner = make_learner()

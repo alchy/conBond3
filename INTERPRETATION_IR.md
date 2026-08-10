@@ -71,6 +71,14 @@ rozvitý argument, …) → `unparsed` s důvodem. Negace složeného přísudku
 `unparsed` (De Morgan guard). U `_operator` jde konjunkce jako JEDEN
 modální dotaz nad výrazem (`jet_po ∧ jet_do`).
 
+Podmět slovesné věty čte táž pravidla jako kopulový (§ 4): PROPN →
+jednotlivina (fakta/dotaz), obecné jméno v tvrzení → třída → pravidla
+(„Ovoce obsahuje vitamíny." → `ovoce(X) → obsahovat(X, vitamín)`),
+obecné jméno v otázce → doptání (§ 5; kandidát nese konjunkty
+s proměnnou, rozřešení dosadí referent/probe), zájmeno → `unparsed`.
+Mez parseru: „Obsahuje citron vitamíny?" dá UDPipe jako dva `obj` bez
+podmětu (nom = acc) → poctivé `unparsed`, ne hádání podmětu.
+
 ## 3 · Snížení do logiky (zachová VŠECHNY části)
 
 Podmět jako term: INDIVIDUAL → `Entity`; CLASS → proměnná `X` (univerzál).
