@@ -23,9 +23,9 @@ import json
 import sys
 from pathlib import Path
 
-from cb_bond import (AnswerField, KnowledgeGraph, Matcher, RelationMiner,
+from cb_bond import AnswerField, KnowledgeGraph, Matcher, ScoreWeights
 from cb_bond.config import corpus_dir
-                     ScoreWeights)
+from cb_bond.relations import RelationMiner
 from cb_field import SentenceField
 from cb_field.corpusfile import build_corpus
 from cb_udpipe import UdpipeClient

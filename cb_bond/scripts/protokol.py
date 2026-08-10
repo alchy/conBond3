@@ -18,10 +18,11 @@ import sys
 import time
 from pathlib import Path
 
-from cb_bond import (ArmResult, BenchmarkProtocol, ContrastiveTrainer,
+from cb_bond import (BenchmarkProtocol, ContrastiveTrainer, GraphRecall,
+                     KnowledgeGraph, Matcher, PromotionCycle)
+from cb_bond.benchmark import ArmResult, ThresholdCalibrator
 from cb_bond.config import corpus_dir
-                     GraphRecall, KnowledgeGraph, Matcher, PromotionCycle,
-                     ThresholdCalibrator, sentence_hit)
+from cb_bond.training import sentence_hit
 from cb_field import SentenceField
 from cb_field.corpusfile import build_corpus
 from cb_udpipe import UdpipeClient
