@@ -258,6 +258,30 @@ class BondService:
                                    in k.decomposition().items()}}
                 for k in poradi]
 
+    def teach_pattern(self, lemma: str, operation: str, *,
+                      learned_from: str = "") -> dict[str, Any]:
+        """Naučí jazykový vzor operátoru (LANGUAGE_LEARNING.md).
+
+        Při chybě: `RuntimeError`, když formální vrstva neběží — učit vzor
+        do neexistující vrstvy by bylo tiché nedorozumění.
+        """
+        if self.logic is None:
+            raise RuntimeError("formální vrstva neběží (chybí module.logic)")
+        vysledek = self.logic.teach_pattern(lemma, operation,
+                                            learned_from=learned_from)
+        self._oznam(f"naučen vzor {lemma!r} → {operation}",
+                    method="teach_pattern", result="ok", output=vysledek)
+        return vysledek
+
+    def forget_word(self, lemma: str) -> dict[str, Any]:
+        """Odvolá jazykový vzor slova; formální operace zůstává."""
+        if self.logic is None:
+            raise RuntimeError("formální vrstva neběží (chybí module.logic)")
+        vysledek = self.logic.forget_word(lemma)
+        self._oznam(f"odvolán vzor {lemma!r}",
+                    method="forget_word", result="ok", output=vysledek)
+        return vysledek
+
     def _pole_otazky(self, text: str):
         """Otázka jako pole nad TÝMŽ registrem jako korpus.
 

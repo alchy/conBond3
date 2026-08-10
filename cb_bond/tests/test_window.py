@@ -126,6 +126,23 @@ class TestFormatovani(unittest.TestCase):
         bez.pop("logic", None)
         self.assertNotIn("logika", "\n".join(format_answer(bez)))
 
+    def test_doptani_ukaze_menu_operaci(self):
+        s_doptanim = dict(ODPOVED, logic={
+            "kind": "needs_pattern", "lemma": "moci",
+            "question": "Jakou operaci to vyjadřuje?",
+            "options": [{"operation": "possible", "popis": "aspoň v jednom"},
+                        {"operation": "necessary", "popis": "ve všech"}]})
+        text = "\n".join(format_answer(s_doptanim))
+        self.assertIn("logika se ptá", text)
+        self.assertIn("possible", text)
+        self.assertIn(":vzor moci", text)
+
+    def test_modalni_odpoved(self):
+        s_modalitou = dict(ODPOVED, logic={
+            "kind": "modal_query", "operation": "possible", "answer": "Ano."})
+        self.assertIn("logika (possible): Ano.",
+                      "\n".join(format_answer(s_modalitou)))
+
 
 class TestPrepisOken(unittest.TestCase):
 

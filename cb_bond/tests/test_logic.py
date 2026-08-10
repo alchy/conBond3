@@ -80,10 +80,37 @@ JE_PETR_CLOVEK = (  # Je Petr člověk?
           misc={'SpaceAfter': 'No'}),
 )
 
+MUZE_AUTO_JET = (  # Auto může jet na silnici.
+    Token(id=1, form='Auto', lemma='auto', upos='NOUN',
+          xpos='NNNS1-----A----',
+          feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing'},
+          head=2, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='může', lemma='moci', upos='VERB',
+          xpos='VB-S---3P-AAI--',
+          feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing',
+                 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres',
+                 'VerbForm': 'Fin', 'Voice': 'Act'},
+          head=0, deprel='root', deps=None, misc=None),
+    Token(id=3, form='jet', lemma='jet', upos='VERB', xpos='Vf--------A-I--',
+          feats={'Aspect': 'Imp', 'Polarity': 'Pos', 'VerbForm': 'Inf'},
+          head=2, deprel='xcomp', deps=None, misc=None),
+    Token(id=4, form='na', lemma='na', upos='ADP', xpos='RR--6----------',
+          feats={'AdpType': 'Prep', 'Case': 'Loc'},
+          head=5, deprel='case', deps=None, misc=None),
+    Token(id=5, form='silnici', lemma='silnice', upos='NOUN',
+          xpos='NNFS6-----A----',
+          feats={'Case': 'Loc', 'Gender': 'Fem', 'Number': 'Sing'},
+          head=3, deprel='obl', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=6, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------',
+          feats=None, head=2, deprel='punct', deps=None,
+          misc={'SpaceAfter': 'No'}),
+)
+
 VETY = {
     "Petr je programátor.": PETR_PROGRAMATOR,
     "Každý programátor je člověk.": KAZDY_PROGRAMATOR,
     "Je Petr člověk?": JE_PETR_CLOVEK,
+    "Auto může jet na silnici.": MUZE_AUTO_JET,
 }
 
 
@@ -140,6 +167,52 @@ class TestLogicBridge(unittest.TestCase):
         stav = self.bridge.state()
         self.assertEqual(stav["facts"], 1)
         self.assertEqual(stav["conflicts"], 0)
+
+
+class TestLearnedPatterns(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.kb_file = Path(self._tmp.name) / "logic" / "kb.json"
+        self.bridge = LogicBridge(_Parser(), self.kb_file)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_neznamy_operator_se_dopta(self):
+        odpoved = self.bridge.ask("Auto může jet na silnici.")
+        self.assertEqual(odpoved["kind"], "needs_pattern")
+        self.assertEqual(odpoved["lemma"], "moci")
+        self.assertEqual({o["operation"] for o in odpoved["options"]},
+                         {"possible", "necessary", "impossible"})
+
+    def test_nauceni_pak_modalni_odpoved(self):
+        self.bridge.teach_pattern("moci", "possible", learned_from="test")
+        odpoved = self.bridge.ask("Auto může jet na silnici.")
+        self.assertEqual(odpoved["kind"], "modal_query")
+        self.assertEqual(odpoved["operation"], "possible")
+        self.assertEqual(odpoved["answer"], "Ano.")
+
+    def test_vzor_prezije_restart(self):
+        self.bridge.teach_pattern("moci", "possible", learned_from="test")
+        znovu = LogicBridge(_Parser(), self.kb_file)   # „restart služby"
+        self.assertEqual(znovu.state()["patterns"], 1)
+        odpoved = znovu.ask("Auto může jet na silnici.")
+        self.assertEqual(odpoved["kind"], "modal_query")
+
+    def test_odvolani_maze_mapovani_ne_operaci(self):
+        self.bridge.teach_pattern("moci", "possible", learned_from="test")
+        vysledek = self.bridge.forget_word("moci")
+        self.assertTrue(vysledek["revoked"])
+        # po odvolání se zase ptá; operace POSSIBLE existuje dál
+        self.assertEqual(self.bridge.ask("Auto může jet na silnici.")["kind"],
+                         "needs_pattern")
+
+    def test_kb_i_vzory_v_jednom_souboru(self):
+        self.bridge.context("Petr je programátor.")
+        self.bridge.teach_pattern("moci", "possible", learned_from="test")
+        znovu = LogicBridge(_Parser(), self.kb_file)
+        self.assertEqual(znovu.state()["facts"], 1)
+        self.assertEqual(znovu.state()["patterns"], 1)
 
 
 if __name__ == "__main__":

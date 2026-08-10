@@ -8,6 +8,9 @@ Příkazy navíc, bez kterých by dialogová vrstva nešla vyzkoušet jinak než
 skriptem:
 
     :context <věta>   přidá větu do korpusu i grafu (dialogové doplnění)
+    :vzor <slovo> <possible|necessary|impossible>
+                      nauč, jakou operaci vyjadřuje operátorové sloveso
+    :zapomen <slovo>  odvolej naučený jazykový vzor slova
     :state            vypíše, co má systém v hlavě
     :quit             konec
 
@@ -76,6 +79,25 @@ class Console:
             for klic, hodnota in self.service.state().items():
                 self._pis(f"   {klic:20} {hodnota}")
             return True
+        if jmeno == "vzor":
+            casti = zbytek.split()
+            if len(casti) != 2 or casti[1] not in (
+                    "possible", "necessary", "impossible"):
+                self._pis("  :vzor chce  <slovo> <possible|necessary|"
+                          "impossible>")
+                return True
+            vysledek = self.service.teach_pattern(casti[0], casti[1])
+            self._pis(f"  naučeno: {vysledek['lemma']!r} → "
+                      f"{vysledek['operation']} ({vysledek['status']})")
+            return True
+        if jmeno == "zapomen":
+            if not zbytek.strip():
+                self._pis("  :zapomen chce slovo")
+                return True
+            vysledek = self.service.forget_word(zbytek.strip())
+            self._pis(f"  odvoláno: {vysledek['lemma']!r}"
+                      + ("" if vysledek["revoked"] else " (nebyl naučen)"))
+            return True
         if jmeno == "context":
             if not zbytek.strip():
                 self._pis("  :context chce větu")
@@ -138,6 +160,13 @@ class _KlientJakoSluzba:
 
     def context(self, text: str) -> dict[str, Any]:
         return self.klient.context(text)
+
+    def teach_pattern(self, lemma: str, operation: str, *,
+                      learned_from: str = "") -> dict[str, Any]:
+        return self.klient.teach_pattern(lemma, operation)
+
+    def forget_word(self, lemma: str) -> dict[str, Any]:
+        return self.klient.forget_word(lemma)
 
 
 if __name__ == "__main__":

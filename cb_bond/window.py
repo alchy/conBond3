@@ -95,18 +95,38 @@ def format_answer(odpoved: dict[str, Any]) -> list[str]:
             for jmeno, hodnota in odpoved["decomposition"].items()))
     if odpoved.get("missing"):
         radky.append(f"  chybí: {', '.join(odpoved['missing'])}")
-    logika = odpoved.get("logic")
-    if logika:
-        # Formální vrstva stojí vedle retrieval cesty — když odpoví,
-        # patří její verdikt i řetěz do téhož okna, ne do logu.
-        if logika.get("answer"):
-            radky.append(f"  logika: {logika['answer']}")
-        for vysvetleni in logika.get("explanations", ()):
-            radky.append(f"    {vysvetleni}")
-        for chybejici in logika.get("missing", ()):
-            radky.append(f"    chybělo by: {chybejici}")
-        if logika.get("conflicted"):
-            radky.append("    pozor: k dotazu eviduji rozpor")
+    radky.extend(format_logic(odpoved.get("logic")))
+    return radky
+
+
+def format_logic(logika: dict[str, Any] | None) -> list[str]:
+    """Řádky formální vrstvy — podle druhu: odpověď, modalita, doptání.
+
+    Formální vrstva stojí vedle retrieval cesty; když má co říct, patří
+    její verdikt, řetěz i doptání do téhož okna, ne do logu.
+    """
+    if not logika:
+        return []
+    kind = logika.get("kind")
+    if kind == "needs_pattern":
+        # Systém zná strukturu, ne mapování — ptá se z uzavřeného menu.
+        radky = [f"  logika se ptá: {logika['question']}"]
+        for volba in logika.get("options", ()):
+            radky.append(f"    · {volba['operation']} — {volba['popis']}")
+        radky.append(f"    (nauč příkazem  :vzor {logika['lemma']} "
+                     f"<possible|necessary|impossible>)")
+        return radky
+    if kind == "modal_query":
+        return [f"  logika ({logika['operation']}): {logika['answer']}"]
+    radky = []
+    if logika.get("answer"):
+        radky.append(f"  logika: {logika['answer']}")
+    for vysvetleni in logika.get("explanations", ()):
+        radky.append(f"    {vysvetleni}")
+    for chybejici in logika.get("missing", ()):
+        radky.append(f"    chybí vědět: {chybejici}")
+    if logika.get("conflicted"):
+        radky.append("    pozor: k dotazu eviduji rozpor")
     return radky
 
 

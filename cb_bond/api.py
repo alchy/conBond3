@@ -71,6 +71,9 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         cesta = self.path.split("?", 1)[0].rstrip("/") or "/"
+        if cesta in ("/v1/logic/pattern", "/v1/logic/forget"):
+            self._logic_pattern(cesta)
+            return
         if cesta not in ("/v1/ask", "/v1/context"):
             self._chyba(HTTP_NOT_FOUND, "not_found", f"neznámá cesta {cesta}")
             return
@@ -137,6 +140,33 @@ class ApiHandler(BaseHTTPRequestHandler):
         return data
 
     # ----------------------------------------------------------- odpovědi
+
+    def _logic_pattern(self, cesta: str) -> None:
+        """Naučení / odvolání jazykového vzoru operátoru (LANGUAGE_LEARNING)."""
+        telo = self._precti_telo()
+        if telo is None:
+            return
+        lemma = telo.get("lemma")
+        if not isinstance(lemma, str) or not lemma.strip():
+            self._chyba(HTTP_BAD_REQUEST, "invalid_request",
+                        "chybí klíč 'lemma' s neprázdným řetězcem")
+            return
+        try:
+            if cesta == "/v1/logic/forget":
+                self._json(HTTP_OK, self.server.service.forget_word(lemma))
+                return
+            operation = telo.get("operation")
+            if operation not in ("possible", "necessary", "impossible"):
+                self._chyba(HTTP_BAD_REQUEST, "invalid_request",
+                            "klíč 'operation' musí být possible|necessary|"
+                            "impossible")
+                return
+            self._json(HTTP_OK, self.server.service.teach_pattern(
+                lemma, operation, learned_from=telo.get("learned_from", "")))
+        except RuntimeError as e:
+            self._chyba(HTTP_UNAVAILABLE, "not_built", str(e))
+        except Exception as e:               # noqa: BLE001
+            self._neocekavana(e)
 
     def _version(self) -> dict[str, Any]:
         """Verze modulu a rozhraní.
