@@ -106,11 +106,63 @@ MUZE_AUTO_JET = (  # Auto může jet na silnici.
           misc={'SpaceAfter': 'No'}),
 )
 
+AUTO_PROSTREDEK = (  # Auto je dopravní prostředek.
+    Token(id=1, form='Auto', lemma='auto', upos='NOUN',
+          xpos='NNNS1-----A----',
+          feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing'},
+          head=4, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--',
+          feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing',
+                 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres',
+                 'VerbForm': 'Fin', 'Voice': 'Act'},
+          head=4, deprel='cop', deps=None, misc=None),
+    Token(id=3, form='dopravní', lemma='dopravní', upos='ADJ',
+          xpos='AAIS1----1A----',
+          feats={'Animacy': 'Inan', 'Case': 'Nom', 'Degree': 'Pos',
+                 'Gender': 'Masc', 'Number': 'Sing', 'Polarity': 'Pos'},
+          head=4, deprel='amod', deps=None, misc=None),
+    Token(id=4, form='prostředek', lemma='prostředek', upos='NOUN',
+          xpos='NNIS1-----A----',
+          feats={'Animacy': 'Inan', 'Case': 'Nom', 'Gender': 'Masc',
+                 'Number': 'Sing'},
+          head=0, deprel='root', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=5, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------',
+          feats=None, head=4, deprel='punct', deps=None,
+          misc={'SpaceAfter': 'No'}),
+)
+
+JE_AUTO_PROSTREDEK = (  # Je auto dopravní prostředek?
+    Token(id=1, form='Je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--',
+          feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing',
+                 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres',
+                 'VerbForm': 'Fin', 'Voice': 'Act'},
+          head=4, deprel='cop', deps=None, misc=None),
+    Token(id=2, form='auto', lemma='auto', upos='NOUN',
+          xpos='NNNS1-----A----',
+          feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing'},
+          head=4, deprel='nsubj', deps=None, misc=None),
+    Token(id=3, form='dopravní', lemma='dopravní', upos='ADJ',
+          xpos='AAIS1----1A----',
+          feats={'Animacy': 'Inan', 'Case': 'Nom', 'Degree': 'Pos',
+                 'Gender': 'Masc', 'Number': 'Sing', 'Polarity': 'Pos'},
+          head=4, deprel='amod', deps=None, misc=None),
+    Token(id=4, form='prostředek', lemma='prostředek', upos='NOUN',
+          xpos='NNIS1-----A----',
+          feats={'Animacy': 'Inan', 'Case': 'Nom', 'Gender': 'Masc',
+                 'Number': 'Sing'},
+          head=0, deprel='root', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=5, form='?', lemma='?', upos='PUNCT', xpos='Z:-------------',
+          feats=None, head=4, deprel='punct', deps=None,
+          misc={'SpaceAfter': 'No'}),
+)
+
 VETY = {
     "Petr je programátor.": PETR_PROGRAMATOR,
     "Každý programátor je člověk.": KAZDY_PROGRAMATOR,
     "Je Petr člověk?": JE_PETR_CLOVEK,
     "Auto může jet na silnici.": MUZE_AUTO_JET,
+    "Auto je dopravní prostředek.": AUTO_PROSTREDEK,
+    "Je auto dopravní prostředek?": JE_AUTO_PROSTREDEK,
 }
 
 
@@ -167,6 +219,69 @@ class TestLogicBridge(unittest.TestCase):
         stav = self.bridge.state()
         self.assertEqual(stav["facts"], 1)
         self.assertEqual(stav["conflicts"], 0)
+
+
+class TestReferenceResolution(unittest.TestCase):
+    """Plný kruh doptání na referenci — HANDOVER 4.1 bod 3, expanze § 1."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.kb_file = Path(self._tmp.name) / "logic" / "kb.json"
+        self.bridge = LogicBridge(_Parser(), self.kb_file)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_otazka_se_dopta_a_nabidne_prikazy(self):
+        self.bridge.context("Auto je dopravní prostředek.")
+        odpoved = self.bridge.ask("Je auto dopravní prostředek?")
+        self.assertEqual(odpoved["kind"], "reference_ambiguous")
+        self.assertEqual({o["choice"] for o in odpoved["options"]},
+                         {"instance", "class"})
+        self.assertEqual({o["command"] for o in odpoved["options"]},
+                         {":instance", ":trida"})
+        self.assertTrue(self.bridge.state()["pending_reference"])
+
+    def test_volba_trida_dokonci_dotaz_pres_probe(self):
+        self.bridge.context("Auto je dopravní prostředek.")
+        self.bridge.ask("Je auto dopravní prostředek?")
+        vysledek = self.bridge.resolve_reference("class")
+        self.assertEqual(vysledek["kind"], "reference_resolved")
+        self.assertEqual(vysledek["truth"], "TRUE")
+        self.assertEqual(vysledek["answer"], "Ano.")
+        self.assertEqual(vysledek["subject"], "auto")
+        self.assertFalse(self.bridge.state()["pending_reference"])
+
+    def test_volba_instance_bez_znalosti_je_nevim(self):
+        self.bridge.context("Auto je dopravní prostředek.")
+        self.bridge.ask("Je auto dopravní prostředek?")
+        vysledek = self.bridge.resolve_reference("instance")
+        self.assertEqual(vysledek["truth"], "UNKNOWN")
+        self.assertEqual(vysledek["answer"], "Nevím.")
+
+    def test_bez_cekajiciho_doptani_je_hlaska_ne_chyba(self):
+        vysledek = self.bridge.resolve_reference("class")
+        self.assertEqual(vysledek["kind"], "no_pending_reference")
+
+    def test_jina_otazka_doptani_zrusi(self):
+        self.bridge.context("Auto je dopravní prostředek.")
+        self.bridge.ask("Je auto dopravní prostředek?")
+        self.bridge.ask("Je Petr člověk?")
+        self.assertEqual(self.bridge.resolve_reference("class")["kind"],
+                         "no_pending_reference")
+
+    def test_tvrzeni_mezi_doptanim_a_volbou_slot_nerusi(self):
+        # Člověk si smí PŘED volbou doplnit znalost — kontext slot nechává.
+        self.bridge.ask("Je auto dopravní prostředek?")
+        self.bridge.context("Auto je dopravní prostředek.")
+        vysledek = self.bridge.resolve_reference("class")
+        self.assertEqual(vysledek["truth"], "TRUE")
+
+    def test_neplatna_volba_je_chyba(self):
+        self.bridge.context("Auto je dopravní prostředek.")
+        self.bridge.ask("Je auto dopravní prostředek?")
+        with self.assertRaises(ValueError):
+            self.bridge.resolve_reference("cokoliv")
 
 
 class TestLearnedPatterns(unittest.TestCase):
