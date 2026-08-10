@@ -92,6 +92,78 @@ class TestCompoundPredicate(unittest.TestCase):
         self.assertEqual(c.kind, "unparsed")
 
 
+class TestVerbalCompound(unittest.TestCase):
+    """Slovesná věta se rozkládá bezztrátově — HANDOVER 4.1.1, expanze § 2."""
+
+    def test_dve_obliky_daji_dva_konjunkty(self):
+        c = interpret_sentence(vs.PETR_JEDE_AUTEM,
+                               "Petr jede autem po dálnici.")
+        self.assertEqual(c.kind, "fact")
+        rel = {l.atom.relation.name for l in c.literals}
+        self.assertEqual(rel, {"jet_ins", "jet_po"})   # „autem" se neztrácí
+        for l in c.literals:
+            self.assertEqual(l.atom.args[0], Entity("petr"))
+
+    def test_otazka_nad_konjunkci(self):
+        c = interpret_sentence(vs.JEDE_PETR_AUTEM,
+                               "Jede Petr autem po dálnici?")
+        self.assertEqual(c.kind, "query")
+        self.assertEqual({a.relation.name for a in c.query_atoms},
+                         {"jet_ins", "jet_po"})
+
+    def test_prislovce_je_vlastnost_deje(self):
+        c = interpret_sentence(vs.PETR_RYCHLE_JEDE,
+                               "Petr rychle jede po dálnici.")
+        self.assertEqual(c.kind, "fact")
+        rel = {l.atom.relation.name for l in c.literals}
+        self.assertEqual(rel, {"jet_rychle", "jet_po"})  # „rychle" žije
+        rychle = [l for l in c.literals
+                  if l.atom.relation.name == "jet_rychle"][0]
+        self.assertEqual(rychle.atom.args, (Entity("petr"),))
+
+    def test_holy_dativ_je_vztah_pojmenovany_padem(self):
+        c = interpret_sentence(vs.PETR_DAL_PAVLOVI, "Petr dal Pavlovi knihu.")
+        self.assertEqual(c.kind, "fact")
+        rel = {l.atom.relation.name for l in c.literals}
+        self.assertEqual(rel, {"dát", "dát_dat"})
+        dativ = [l for l in c.literals
+                 if l.atom.relation.name == "dát_dat"][0]
+        self.assertEqual(dativ.atom.args, (Entity("petr"), Entity("pavel")))
+
+    def test_rozvity_argument_je_unparsed_ne_tichy(self):
+        # „červené auto" jako předmět: amod nejde bez událostí věrně
+        # snížit — poctivé odmítnutí místo tichého zahození
+        c = interpret_sentence(vs.PETR_RIDI_AUTO, "Petr řídí červené auto.")
+        self.assertEqual(c.kind, "unparsed")
+
+    def test_generalizace_unseen_veta(self):
+        c = interpret_sentence(vs.MARIE_PRACUJE, "Marie pracuje v Brně.")
+        self.assertEqual(c.kind, "fact")
+        self.assertEqual(c.literals[0].atom.relation,
+                         Relation("pracovat_v", 2))
+        self.assertEqual(c.literals[0].atom.args,
+                         (Entity("marie"), Entity("brno")))
+
+    def test_generalizace_prejmenovani(self):
+        import dataclasses
+        mapa = {"Petr": "Karel", "jet": "letět", "auto": "vlak",
+                "dálnice": "pole"}
+        prejmenovano = tuple(
+            dataclasses.replace(t, lemma=mapa.get(t.lemma, t.lemma))
+            for t in vs.PETR_JEDE_AUTEM)
+        c = interpret_sentence(prejmenovano, "Karel letí vlakem po poli.")
+        self.assertEqual({l.atom.relation.name for l in c.literals},
+                         {"letět_ins", "letět_po"})
+
+    def test_negace_slozeneho_prisudku_je_unparsed(self):
+        import dataclasses
+        negovano = tuple(
+            dataclasses.replace(t, feats=dict(t.feats, Polarity="Neg"))
+            if t.deprel == "root" else t for t in vs.PETR_JEDE_AUTEM)
+        c = interpret_sentence(negovano, "Petr nejede autem po dálnici.")
+        self.assertEqual(c.kind, "unparsed")
+
+
 class TestRules(unittest.TestCase):
     def test_univerzalni_determinant(self):
         c = interpret_sentence(vzorky.KAZDY_PROGRAMATOR,
