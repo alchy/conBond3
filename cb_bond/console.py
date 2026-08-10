@@ -11,6 +11,8 @@ skriptem:
     :vzor <slovo> <possible|necessary|impossible>
                       nauč, jakou operaci vyjadřuje operátorové sloveso
     :zapomen <slovo>  odvolej naučený jazykový vzor slova
+    :instance         odpověz na doptání: myslel jsem konkrétní věc
+    :trida            odpověz na doptání: myslel jsem třídu (obecně)
     :state            vypíše, co má systém v hlavě
     :quit             konec
 
@@ -23,7 +25,8 @@ from __future__ import annotations
 import sys
 from typing import Any
 
-from cb_bond.window import format_answer, format_axes, format_sentence
+from cb_bond.window import (format_answer, format_axes, format_logic,
+                            format_sentence)
 
 PROMPT = "? "
 
@@ -98,6 +101,12 @@ class Console:
             self._pis(f"  odvoláno: {vysledek['lemma']!r}"
                       + ("" if vysledek["revoked"] else " (nebyl naučen)"))
             return True
+        if jmeno in ("instance", "trida"):
+            # odpověď na doptání „instance, nebo třída?" (kap. § 5)
+            volba = "instance" if jmeno == "instance" else "class"
+            for radek in format_logic(self.service.resolve_reference(volba)):
+                self._pis(radek)
+            return True
         if jmeno == "context":
             if not zbytek.strip():
                 self._pis("  :context chce větu")
@@ -118,7 +127,8 @@ class Console:
             elif logika and logika.get("note"):
                 self._pis(f"  logika — neinterpretováno: {logika['note']}")
             return True
-        self._pis(f"  neznámý příkaz {jmeno!r}; umím :context, :state, :quit")
+        self._pis(f"  neznámý příkaz {jmeno!r}; umím :context, :vzor, "
+                  f":zapomen, :instance, :trida, :state, :quit")
         return True
 
     def _pis(self, text: str) -> None:
@@ -167,6 +177,9 @@ class _KlientJakoSluzba:
 
     def forget_word(self, lemma: str) -> dict[str, Any]:
         return self.klient.forget_word(lemma)
+
+    def resolve_reference(self, choice: str) -> dict[str, Any]:
+        return self.klient.resolve_reference(choice)
 
 
 if __name__ == "__main__":

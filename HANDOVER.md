@@ -1,6 +1,8 @@
 # HANDOVER — obecný systém znalosti a logického reasoningu v conBond3
 
-**Větev:** `feature/general-reasoning` (39 commitů nad `main`).
+**Větev:** `feature/general-reasoning` (zamergováno do `main`); navazuje
+`feature/handover-fronta` (expanze zadání J., 10. 8. 2026 — hotová,
+viz § 3 a plán `docs/superpowers/plans/2026-08-10-handover-fronta.md`).
 **Datum:** 2026‑08‑10.
 **Rozsah:** stav práce na zadání „obecný systém pro reprezentaci znalosti,
 učení a logický reasoning", co je hotové, a **co je nutné teď řešit** v každé
@@ -66,7 +68,21 @@ příkazy v § 8).
 - **Benchmark generalizace.** 13 úloh z Bartlové (2014) čistě daty; akceptační
   úloha §59 vytvořená po implementaci, invariantní přes přejmenování/permutaci/
   šum. Anti‑overfitting audit (GENERALIZATION_AUDIT.md).
-- **Celkem 1008 testů zeleně** (`./run-python -m unittest discover -s . -p "test_*.py" -t .`).
+- **Fronta z expanze zadání (10. 8. 2026) — hotová:**
+  - *Interaktivní rozřešení reference v UI (4.1.3).* `LogicBridge` drží
+    poslední nejednoznačný dotaz; `:instance`/`:trida` v okně i konzoli,
+    `POST /v1/logic/resolve` v REST. Plný kruh „Auto je dopravní
+    prostředek." → otázka → volba → Ano/Ne/Nevím funguje v prohlížeči.
+  - *Slovesné složené přísudky (4.1.1).* `verb_conjuncts`: obj + všechny
+    obl (předložka i holý pád → `jet_ins`) + advmod jako vlastnost děje
+    (`jet_rychle`); operátorová cesta se ptá nad konjunkcí. Co rozklad
+    neunese, je `unparsed` s důvodem — konec tichého zahazování.
+  - *Genitivní `nmod` (4.1.2).* Holý pád pojmenuje vztah (`gen(město,
+    česko)`); bez předložky i pádu → `unparsed` (pojistka).
+  - *Dluhy 4.4 (první dvě odrážky).* Skripty `protokol.py` a
+    `rozklad-skore.py` jdou spustit (+ smoke test); `MatchResult.__or__`
+    je sjednocení, `__invert__` přeřazuje, kompozice nese rozklad.
+- **Celkem 1046 testů zeleně** (`./run-python -m unittest discover -s . -p "test_*.py" -t .`).
 
 ## 4 · CO JE NUTNÉ TEĎ ŘEŠIT (podle oblastí)
 
@@ -74,19 +90,12 @@ Prioritizováno; každá položka nese, kde je popsaná a proč je důležitá.
 
 ### 4.1 Interpretační vrstva (cb_interpret) — nejaktivnější fronta
 
-1. **Slovesné složené přísudky.** Dnes se `amod`/`nmod`+`case` rekurze dělá
-   jen u **kopulových** vět. „Petr rychle jede po dálnici" nebo vazby s více
-   argumenty u sloves se ještě nerozkládají obecně. → rozšířit `_verbal` /
-   `_operator` o týž mechanismus jako `build_conjuncts`.
-2. **Genitivní `nmod` bez předložky.** „hlavní město **státu**" — `nmod` bez
-   `case` (genitiv) se dnes zahodí (jen `nmod`+`case` → vztah). Potřebuje
-   obecné čtení genitivu jako vztahu (např. `of`/posesivní). *Tiché zahození
-   mění význam — proti INV zásadě § INTERPRETATION_IR.md.*
-3. **Interaktivní rozřešení reference v UI.** `resolve_reference` (instance/
-   třída) je hotové a otestované na úrovni learneru, ale **není zapojené do
-   okna/konzole jako víc‑tahový dialog** (systém se zeptá, uživatel odpoví,
-   výsledek dorazí). Potřebuje stavovou obsluhu „poslední nejednoznačný
-   dotaz" + příkaz `:instance` / `:trida`. (INTERPRETATION_IR § 5.)
+1. ~~**Slovesné složené přísudky.**~~ **HOTOVO** (viz § 3) —
+   `verb_conjuncts` v `interpret.py`, INTERPRETATION_IR § 2b.
+2. ~~**Genitivní `nmod` bez předložky.**~~ **HOTOVO** (viz § 3) —
+   holopádový `RelationMod.marker`, INTERPRETATION_IR § 2.
+3. ~~**Interaktivní rozřešení reference v UI.**~~ **HOTOVO** (viz § 3) —
+   `:instance`/`:trida`, `/v1/logic/resolve`, INTERPRETATION_IR § 5.
 4. **`chtít` a propoziční postoje.** Postoj → **referent + omezení**
    (úloha typu autíčko z Bartlové: „chci autíčko s houkačkou" → hledaný objekt
    splňuje `houkačka`). Jiná cílová operace než modelový dotaz; navazuje na
@@ -128,10 +137,10 @@ Prioritizováno; každá položka nese, kde je popsaná a proč je důležitá.
 ### 4.4 Dluhy z auditu retrieval vrstvy (ARCHITECTURE_REVIEW příloha A)
 
 Malé, oddělené opravy — nebrání ničemu výše, ale visí:
-- `cb_bond/scripts/protokol.py` a `rozklad-skore.py` mají **SyntaxError**
-  (rozbité importy) — měřicí protokol A–F dnes nejde spustit.
-- `MatchResult.__or__` vrací fakticky průnik místo sjednocení; `__invert__`
-  nepřeřazuje; kompozice zahazuje rozklad.
+- ~~`cb_bond/scripts/protokol.py` a `rozklad-skore.py` mají **SyntaxError**~~
+  **HOTOVO** — importy opravené, hlídá `cb_bond/tests/test_scripts.py`.
+- ~~`MatchResult.__or__` vrací fakticky průnik; `__invert__` nepřeřazuje;
+  kompozice zahazuje rozklad.~~ **HOTOVO** (viz § 3).
 - `training.py` čte `answer_position`, který v datech supervize není (mrtvá
   větev).
 - Chybí AST test směru závislostí (T‑12); přímé importy do vnitřku cb_field.
@@ -184,7 +193,7 @@ CURRENT/TARGET_DEPENDENCIES.md   graf závislostí před/po
 ## 7 · Jak spustit a ověřit
 
 ```bash
-# všechny testy (1008)
+# všechny testy (1046)
 ./run-python -m unittest discover -s . -p "test_*.py" -t .
 
 # jen nové vrstvy
@@ -204,13 +213,14 @@ grep -rhn "^from cb_\|^import cb_" cb_interpret/*.py | grep -vE "cb_interpret|cb
 **Dialog v konzoli / okně:** věta bez `?` = tvrzení (učí se), věta s `?` =
 otázka (odpoví). `:vzor <slovo> <possible|necessary|impossible>` naučí modální
 vzor; `:zapomen <slovo>` ho odvolá; `:context <věta>` explicitně sdělí;
+`:instance` / `:trida` odpoví na doptání „instance, nebo třída?";
 `:state` vypíše stav. Persistence báze i vzorů: `<data_root>/cb_bond/
 persistent-logic/kb.json`.
 
 ## 8 · Nejbližší doporučený krok
 
-Dokončit **4.1 bod 3 (interaktivní rozřešení reference v UI)** — mechanismus
-je hotový, chybí jen víc‑tahová obsluha; udělá plný kruh „Auto je dopravní
-prostředek." → „Je auto dopravní prostředek?" odklikatelný v prohlížeči. Pak
-**4.1 bod 1–2 (slovesné složené přísudky + genitiv)**, protože bez nich zůstává
-extrakce bezztrátová jen u kopulových vět.
+Body 4.1.1–3 i první dvě odrážky 4.4 jsou hotové (§ 3). Další fronta podle
+priorit: **4.1 bod 4 (`chtít` a propoziční postoje)** — navazuje na
+constraint vrstvu a nově i na slovesný rozklad; vedle toho drobnosti
+**4.2 bod 1 (`grounded` do UI)** a zbytek dluhů **4.4** (mrtvá větev
+`training.py`, T‑12 AST test, drift `requirements.txt`).

@@ -14,6 +14,7 @@ from cb_logic import (Assertion, Atom, AtomRef, Domain, Entity, Evidence,
 from cb_interpret.learner import DialogueLearner, _run_modal
 from cb_interpret.patterns import Operation, PatternStatus, StructuralSignature
 from cb_interpret.tests import vzorky
+from cb_interpret.tests import vzorky_struct as vs
 
 
 def make_learner():
@@ -43,6 +44,21 @@ class TestLearnAndApply(unittest.TestCase):
         self.assertEqual(pattern.status, PatternStatus.HYPOTHESIS)
         result = learner.ask(vzorky.MUZE_AUTO_JET, "Auto může jet na silnici.")
         self.assertEqual(result.candidate.kind, "modal_query")
+
+    def test_slozeny_xcomp_je_modalni_dotaz_nad_konjunkci(self):
+        # „do města" se nesmí tiše ztratit — dotaz jde nad konjunkci
+        learner = make_learner()
+        learner.teach_pattern(
+            StructuralSignature("moci", has_xcomp=True),
+            Operation.POSSIBLE, learned_from="test")
+        result = learner.ask(vs.AUTO_MUZE_JET_DO_MESTA,
+                             "Auto může jet po dálnici do města.")
+        self.assertEqual(result.candidate.kind, "modal_query")
+        self.assertEqual({a.relation.name
+                          for a in result.candidate.query_atoms},
+                         {"jet_po", "jet_do"})
+        self.assertIs(result.modal["answer"], True)   # nic to nezakazuje…
+        self.assertFalse(result.modal["grounded"])    # …ale nic nedokládá
         self.assertEqual(result.modal["operation"], "possible")
         # prázdná báze nic nezakazuje ⇒ je to možné
         self.assertTrue(result.modal["answer"])
@@ -103,14 +119,17 @@ class TestModalSemantics(unittest.TestCase):
     def test_moznost_nutnost_nemoznost(self):
         kb, prog, hud, clov = self._programmer_musician_kb()
         # Může být Petr programátor? → ano (∃ model)
-        _, _, a, _ = _run_modal(kb, prog, Operation.POSSIBLE, negated=False)
+        _, _, a, _ = _run_modal(kb, (prog,), AtomRef(prog),
+                                Operation.POSSIBLE, negated=False)
         self.assertTrue(a)
         # Musí být Petr programátor? → ne (∃ model, kde není)
-        _, res, a, _ = _run_modal(kb, prog, Operation.NECESSARY, negated=False)
+        _, res, a, _ = _run_modal(kb, (prog,), AtomRef(prog),
+                                  Operation.NECESSARY, negated=False)
         self.assertFalse(a)
         self.assertIsNotNone(res.counterexample)   # protipříklad existuje
         # Musí být Petr člověk? → ano (∀ model)
-        _, _, a, _ = _run_modal(kb, clov, Operation.NECESSARY, negated=False)
+        _, _, a, _ = _run_modal(kb, (clov,), AtomRef(clov),
+                                Operation.NECESSARY, negated=False)
         self.assertTrue(a)
 
     def test_nemoznost_pri_vyloučeni(self):
@@ -119,7 +138,8 @@ class TestModalSemantics(unittest.TestCase):
         kb.assert_candidate(Assertion(
             Literal(prog), Evidence(EvidenceKind.USER_ASSERTION),
             LEVEL_DOCUMENTED))
-        _, _, a, _ = _run_modal(kb, hud, Operation.IMPOSSIBLE, negated=False)
+        _, _, a, _ = _run_modal(kb, (hud,), AtomRef(hud),
+                                Operation.IMPOSSIBLE, negated=False)
         self.assertTrue(a)
 
 

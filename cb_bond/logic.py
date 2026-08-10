@@ -20,11 +20,15 @@ from pathlib import Path
 from typing import Any
 
 from cb_logic import KnowledgeBase, kb_from_json, kb_to_json
-from cb_interpret import (DialogueLearner, Operation, PatternStore,
+from cb_interpret import (Candidate, DialogueLearner, Operation, PatternStore,
                           StructuralSignature, cs_profile, render_explanation,
                           render_literal, render_truth)
 
 FORMAT = "conbond-logic/1"
+
+#: Příkaz okna/konzole pro každou volbu doptání — REST je posílá v
+#: `options[].command`, aby klikací klient věděl, co odeslat.
+COMMAND_OF_CHOICE = {"instance": ":instance", "class": ":trida"}
 
 
 class LogicBridge:
@@ -44,6 +48,10 @@ class LogicBridge:
             else:                                  # starý formát: holá báze
                 kb = kb_from_json(data)
         self.learner = DialogueLearner(kb, self.profile, patterns=patterns)
+        #: Poslední nejednoznačný dotaz (rozpracovaný dialog, ne znalost —
+        #: nepersistuje se). Jeden slot: volba se vztahuje k poslednímu
+        #: doptání, nová otázka ho přepíše.
+        self.pending_reference: Candidate | None = None
 
     # --- dialog ---------------------------------------------------------
 
@@ -69,6 +77,7 @@ class LogicBridge:
 
     def ask(self, text: str) -> dict[str, Any] | None:
         """Formální odpověď, doptání, nebo None — pak odpovídá retrieval."""
+        self.pending_reference = None
         tokens = self._tokens(text)
         if tokens is None:
             return None
@@ -78,9 +87,11 @@ class LogicBridge:
             return None
         if kind == "reference_ambiguous":
             ref = result.reference
+            self.pending_reference = result.candidate
             return {"kind": "reference_ambiguous", "subject": ref.subject_lemma,
                     "question": ref.question,
-                    "options": [{"choice": c, "popis": p}
+                    "options": [{"choice": c, "popis": p,
+                                 "command": COMMAND_OF_CHOICE[c]}
                                 for c, p in ref.options]}
         if kind == "needs_pattern":
             clar = result.clarification
@@ -100,8 +111,35 @@ class LogicBridge:
                     "models_true": modal["models_true"],
                     "models_false": modal["models_false"],
                     "has_counterexample": modal["has_counterexample"]}
+        output: dict[str, Any] = {"kind": kind}
+        output.update(self._query_output(result))
+        return output
+
+    def resolve_reference(self, choice: str) -> dict[str, Any]:
+        """Dokončí poslední doptání na referenci volbou člověka (§ 5).
+
+        Bez čekajícího doptání vrací hlášku, ne chybu: „není nač
+        odpovídat" je platný stav dialogu, ne rozbitá služba.
+        """
+        if choice not in COMMAND_OF_CHOICE:
+            raise ValueError(f"volba musí být instance|class, ne {choice!r}")
+        pending = self.pending_reference
+        if pending is None:
+            return {"kind": "no_pending_reference",
+                    "note": "žádné doptání na referenci nečeká"}
+        self.pending_reference = None
+        result = self.learner.resolve_reference(pending, choice)
         output: dict[str, Any] = {
-            "kind": kind,
+            "kind": "reference_resolved", "choice": choice,
+            "subject": pending.predication.subject.lemma,
+            "source_text": pending.source_text,
+        }
+        output.update(self._query_output(result))
+        return output
+
+    def _query_output(self, result) -> dict[str, Any]:
+        """Formální odpověď na dotaz — sdílí ji ask() i resolve_reference()."""
+        output: dict[str, Any] = {
             "truth": result.truth.name if result.truth is not None else None,
             "answer": (render_truth(result.truth, self.profile)
                        if result.truth is not None else None),
@@ -140,12 +178,13 @@ class LogicBridge:
 
     # --- stav a persistence --------------------------------------------
 
-    def state(self) -> dict[str, int]:
+    def state(self) -> dict[str, Any]:
         kb = self.learner.kb
         return {"facts": len(kb.own_facts()), "rules": len(kb.rules),
                 "derivations": len(kb.derivations),
                 "conflicts": len(kb.conflicts),
-                "patterns": len(self.learner.patterns.all())}
+                "patterns": len(self.learner.patterns.all()),
+                "pending_reference": self.pending_reference is not None}
 
     def save(self) -> None:
         """Atomicky přes .tmp + replace (vzor registry/cache)."""

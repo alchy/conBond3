@@ -5,6 +5,7 @@ import unittest
 from cb_logic import (Accepted, Conflicted, KnowledgeBase, Truth)
 from cb_interpret.learner import DialogueLearner
 from cb_interpret.tests import vzorky
+from cb_interpret.tests import vzorky_struct as vs
 
 
 def make_learner():
@@ -45,6 +46,17 @@ class TestLearn(unittest.TestCase):
 
 
 class TestAsk(unittest.TestCase):
+    def test_plny_kruh_genitiv(self):
+        # „Česka" se cestou učení ani dotazu nikde neztratí (4.1.2)
+        learner = make_learner()
+        r = learner.learn(vs.PRAHA_MESTO_CESKA,
+                          "Praha je hlavní město Česka.")
+        self.assertEqual(r.candidate.kind, "fact")
+        self.assertEqual(r.accepted, 3)
+        result = learner.ask(vs.JE_PRAHA_MESTO_CESKA,
+                             "Je Praha hlavní město Česka?")
+        self.assertEqual(result.truth, Truth.TRUE)
+
     def test_nevim_s_chybejici_premisou_pak_ano_s_vysvetlenim(self):
         learner = make_learner()
         learner.learn(vzorky.KAZDY_PROGRAMATOR,

@@ -15,6 +15,7 @@ from cb_bond.window import (
     BondWindows,
     format_answer,
     format_axes,
+    format_logic,
     format_sentence,
 )
 
@@ -90,6 +91,14 @@ class _Sluzba:
         self.zapomenuta.append(lemma)
         return {"lemma": lemma, "revoked": True}
 
+    def resolve_reference(self, choice):
+        self.rozreseno = choice
+        return {"kind": "reference_resolved", "choice": choice,
+                "subject": "auto", "source_text": "Je auto prostředek?",
+                "truth": "TRUE", "answer": "Ano.",
+                "explanations": ["auto je prostředek (doloženo: dialog)"],
+                "conflicted": False}
+
     def state(self):
         return {"facts": 1}
 
@@ -162,6 +171,33 @@ class TestFormatovani(unittest.TestCase):
             "kind": "modal_query", "operation": "possible", "answer": "Ano."})
         self.assertIn("logika (possible): Ano.",
                       "\n".join(format_answer(s_modalitou)))
+
+    def test_doptani_na_referenci_ukaze_prikazy(self):
+        radky = format_logic({
+            "kind": "reference_ambiguous", "subject": "auto",
+            "question": "Ptáš se na konkrétní auto, nebo na auta obecně?",
+            "options": [
+                {"choice": "instance", "popis": "konkrétní auto",
+                 "command": ":instance"},
+                {"choice": "class", "popis": "auto obecně (třída)",
+                 "command": ":trida"}]})
+        text = "\n".join(radky)
+        self.assertIn(":instance", text)
+        self.assertIn(":trida", text)
+
+    def test_rozresena_reference_ukaze_odpoved_i_dolozeni(self):
+        radky = format_logic({
+            "kind": "reference_resolved", "choice": "class",
+            "subject": "auto", "truth": "TRUE", "answer": "Ano.",
+            "explanations": ["auto je prostředek (doloženo: dialog)"],
+            "conflicted": False})
+        self.assertIn("Ano.", radky[0])
+        self.assertTrue(any("doloženo" in r for r in radky))
+
+    def test_bez_cekajiciho_doptani_je_hlaska(self):
+        radky = format_logic({"kind": "no_pending_reference",
+                              "note": "žádné doptání na referenci nečeká"})
+        self.assertIn("nečeká", radky[0])
 
 
 class TestPrepisOken(unittest.TestCase):
@@ -254,6 +290,15 @@ class TestPrepisOken(unittest.TestCase):
     def test_prikaz_zapomen_z_okna(self):
         self._vstup(":zapomen moci")
         self.assertEqual(self.sluzba.zapomenuta, ["moci"])
+
+    def test_prikaz_trida_dokonci_doptani(self):
+        self._vstup(":trida")
+        self.assertEqual(self.sluzba.rozreseno, "class")
+        self.assertIn("Ano.", self.okno.texty(DIALOG_ID))
+
+    def test_prikaz_instance_dokonci_doptani(self):
+        self._vstup(":instance")
+        self.assertEqual(self.sluzba.rozreseno, "instance")
 
     def test_neznamy_prikaz_je_hlaska_ne_otazka(self):
         self._vstup(":neco")

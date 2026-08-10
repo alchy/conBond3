@@ -74,6 +74,9 @@ class ApiHandler(BaseHTTPRequestHandler):
         if cesta in ("/v1/logic/pattern", "/v1/logic/forget"):
             self._logic_pattern(cesta)
             return
+        if cesta == "/v1/logic/resolve":
+            self._logic_resolve()
+            return
         if cesta not in ("/v1/ask", "/v1/context"):
             self._chyba(HTTP_NOT_FOUND, "not_found", f"neznámá cesta {cesta}")
             return
@@ -163,6 +166,24 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return
             self._json(HTTP_OK, self.server.service.teach_pattern(
                 lemma, operation, learned_from=telo.get("learned_from", "")))
+        except RuntimeError as e:
+            self._chyba(HTTP_UNAVAILABLE, "not_built", str(e))
+        except Exception as e:               # noqa: BLE001
+            self._neocekavana(e)
+
+    def _logic_resolve(self) -> None:
+        """Dokončení doptání na referenci — volba instance|class (§ 5)."""
+        telo = self._precti_telo()
+        if telo is None:
+            return
+        choice = telo.get("choice")
+        if choice not in ("instance", "class"):
+            self._chyba(HTTP_BAD_REQUEST, "invalid_request",
+                        "klíč 'choice' musí být instance|class")
+            return
+        try:
+            self._json(HTTP_OK,
+                       self.server.service.resolve_reference(choice))
         except RuntimeError as e:
             self._chyba(HTTP_UNAVAILABLE, "not_built", str(e))
         except Exception as e:               # noqa: BLE001

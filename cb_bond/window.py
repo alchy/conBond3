@@ -111,7 +111,20 @@ def format_logic(logika: dict[str, Any] | None) -> list[str]:
     if kind == "reference_ambiguous":
         radky = [f"  logika se ptá: {logika['question']}"]
         for volba in logika.get("options", ()):
-            radky.append(f"    · {volba['choice']} — {volba['popis']}")
+            prikaz = volba.get("command", volba["choice"])
+            radky.append(f"    · {prikaz} — {volba['popis']}")
+        radky.append("    (odpověz příkazem :instance, nebo :trida)")
+        return radky
+    if kind == "no_pending_reference":
+        return [f"  logika: {logika['note']}"]
+    if kind == "reference_resolved":
+        radky = [f"  logika ({logika['choice']}): {logika['answer']}"]
+        for vysvetleni in logika.get("explanations", ()):
+            radky.append(f"    {vysvetleni}")
+        for chybejici in logika.get("missing", ()):
+            radky.append(f"    chybí vědět: {chybejici}")
+        if logika.get("conflicted"):
+            radky.append("    pozor: k dotazu eviduji rozpor")
         return radky
     if kind == "needs_pattern":
         # Systém zná strukturu, ne mapování — ptá se z uzavřeného menu.
@@ -231,7 +244,8 @@ class BondWindows:
             self._pis(DIALOG_ID, [f"  chyba: {type(e).__name__}: {e}"])
 
     def _prikaz(self, radek: str) -> None:
-        """Příkazy okna — táž sada jako konzole (:context/:vzor/:zapomen/:state).
+        """Příkazy okna — táž sada jako konzole
+        (:context/:vzor/:zapomen/:instance/:trida/:state).
 
         Bez nich by v prohlížeči nešlo systému nic sdělit ani ho učit;
         okno by umělo jen otázky a dialog by byl jednosměrný.
@@ -254,13 +268,19 @@ class BondWindows:
             v = self.service.forget_word(zbytek)
             self._pis(DIALOG_ID, [f"  odvoláno: {v['lemma']!r}"
                                   + ("" if v["revoked"] else " (nebyl naučen)")])
+        elif jmeno in ("instance", "trida"):
+            # odpověď na doptání „instance, nebo třída?" (kap. § 5)
+            volba = "instance" if jmeno == "instance" else "class"
+            self._pis(DIALOG_ID, format_logic(
+                self.service.resolve_reference(volba)))
         elif jmeno == "state":
             self._pis(DIALOG_ID, [f"  {k}: {v}"
                                   for k, v in self.service.state().items()])
         else:
             self._pis(DIALOG_ID,
                       [f"  neznámý příkaz {jmeno!r}; "
-                       f"umím :context :vzor :zapomen :state"])
+                       f"umím :context :vzor :zapomen :instance :trida "
+                       f":state"])
 
     def _sdel(self, text: str) -> None:
         """Tvrzení od člověka → korpus, graf a formální báze se z něj učí.
