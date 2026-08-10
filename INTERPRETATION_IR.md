@@ -1,8 +1,11 @@
 # INTERPRETATION_IR — obecná sémantická interpretace (návrh + implementace)
 
 **Stav:** implementováno (`cb_interpret/predication.py`, `interpret.py`,
-`learner.py`); dokument odpovídá implementaci. Kopulové věty pokryté;
-slovesné složené přísudky a genitivní `nmod` jsou další iterace (HANDOVER).
+`learner.py`); dokument odpovídá implementaci. Pokryté jsou kopulové věty,
+slovesné složené přísudky (`verb_conjuncts` — advmod, více argumentů, holé
+pády; § 2b) i genitivní/holopádový `nmod` (§ 2). Doptání na referenci (§ 5)
+je zapojené v okně/konzoli (`:instance`/`:trida`) a REST
+(`POST /v1/logic/resolve`).
 Vzniká ze specifikace J. „od jednotlivých tvrzení k obecnému formálnímu
 modelu"; INTERPRETATION.md, LANGUAGE_LEARNING.md, kap. 8 návrhu, INV‑11.
 
@@ -40,8 +43,33 @@ Nad kopulovým stromem (kořen NOUN/PROPN + `cop`):
 - každý `amod` (ADJ) kořene → **Modifier** (vlastnost; nese vlastní polaritu).
 - každý `nmod` kořene s dítětem `case` (ADP) → **RelationMod** (vztah pojmenovaný
   předložkou, cíl = jméno nmod).
+- `nmod` bez `case` s featem `Case` → **RelationMod** pojmenovaný pádem
+  (`gen`, `dat`, …): „hlavní město **Česka**" → `gen(město, česko)`. Jméno
+  z UD hodnoty je strukturální — nepodsouvá posesivní čtení. Bez předložky
+  i pádu → `blockers` → `unparsed` s důvodem (pojistka).
 
 Rekurzivně, podle role vazby — žádný seznam slov.
+
+## 2b · Slovesné věty (`verb_conjuncts`)
+
+Týž mechanismus pro kořen VERB (`_verbal` i vložený přísudek `_operator`):
+
+```
+obj          sloveso(podmět, předmět)          znát(petr, jana)
+obl+case     sloveso_předložka(podmět, cíl)    jet_po(petr, dálnice)
+obl bez case sloveso_pád(podmět, cíl)          jet_ins(petr, auto)
+advmod       sloveso_příslovce(podmět)         jet_rychle(petr)
+bez argumentů  sloveso(podmět)                 spát(petr)
+```
+
+Vlastnost děje se jmenuje slovesem i příslovcem — holé `rychlý(petr)` by
+tvrdilo vlastnost podmětu, ne děje. Událostní reifikace (`Event(jede)`) by
+chtěla existenční kvantifikaci v dotazech, a to je hranice jádra
+(HANDOVER 4.2.3) — konjunktivní čtení je vědomá aproximace, táž jako
+u kopulového složeného přísudku. Vazba mimo výčet (`iobj`, `ccomp`, `aux`,
+rozvitý argument, …) → `unparsed` s důvodem. Negace složeného přísudku →
+`unparsed` (De Morgan guard). U `_operator` jde konjunkce jako JEDEN
+modální dotaz nad výrazem (`jet_po ∧ jet_do`).
 
 ## 3 · Snížení do logiky (zachová VŠECHNY části)
 
@@ -89,6 +117,14 @@ Kniha je dárek pro Petra.      → dárek(kniha) ∧ pro(kniha, petr)     (fakt
 - **třída** → „platí ∀x auto(x) → …?" ověří se **arbitrární instancí** (probe):
   předpokládej `auto(probe)`, odvoď, a je‑li konjunkce pro probe splněná ve
   všech modelech, univerzál platí (assumptions + inference — už existují).
+
+**Zapojení v UI (hotové):** `LogicBridge` drží **poslední nejednoznačný
+dotaz** (jeden slot, bez hodin — determinismus; nová otázka ho přepíše,
+`:context` ho nechává). Okno i konzole odpověď dokončí příkazem
+`:instance` / `:trida`; REST přes `POST /v1/logic/resolve`
+`{"choice": "instance"|"class"}`. Volby v odpovědi nesou i `command`
+pro klikací klienty. Slot se nepersistuje — je to rozpracovaný dialog,
+ne znalost.
 
 ## 6 · Modalita: „našel model" ≠ „nic to nezakazuje"
 
