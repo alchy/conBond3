@@ -47,6 +47,7 @@ class Candidate:
     negated: bool = False
     predication: Predication | None = None         # reference_ambiguous
     subject_lemma: str | None = None               # reference_ambiguous
+    subject_modifiers: tuple = ()                  # (lemma, negated) podmětu
 
 
 def interpret_sentence(tokens, text: str, *, patterns=None,
@@ -62,7 +63,11 @@ def interpret_sentence(tokens, text: str, *, patterns=None,
         return _unparsed(text, "chybí kořen rozboru")
     question = text.rstrip().endswith(question_mark)
 
-    if root.upos in NOMINAL_UPOS and _kids(children, root, "cop"):
+    has_cop = bool(_kids(children, root, "cop"))
+    has_pass = any(c.deprel == "aux:pass"
+                   for c in children.get(root.id, []))
+    if root.upos in NOMINAL_UPOS and (has_cop or has_pass):
+        # spona i trpné příčestí („je určen") jsou táž predikace
         pred = extract_copular(children, root, question)
         if pred is None:
             return _unparsed(text, "kopula bez podmětu")
@@ -97,26 +102,40 @@ def _lower_copular(pred: Predication, text: str, domain: str) -> Candidate:
     conjuncts, relations, entities = build_conjuncts(pred, subj_term)
     provenance = tuple((popis, token) for _, _, token, popis in conjuncts)
 
+    subject_mods = tuple((m.lemma, m.negated)
+                         for m in pred.subject_modifiers)
+
     if subj.kind is ReferenceKind.AMBIGUOUS:
         # obecné jméno v otázce — nejednoznačná reference → doptání (§5)
         return Candidate("reference_ambiguous", text, predication=pred,
                          subject_lemma=subj.lemma,
+                         subject_modifiers=subject_mods,
                          relations=tuple(relations), provenance=provenance,
                          note=f"reference {subj.lemma!r}: instance, nebo třída?")
 
     if subj.kind is ReferenceKind.INDIVIDUAL and not pred.is_question:
-        literals = tuple(Literal(atom, pos) for atom, pos, _, _ in conjuncts)
-        return Candidate("fact", text, literals=literals,
+        # přívlastek podmětu („starý Petr") je další fakt o jednotlivině
+        literals = list(Literal(atom, pos) for atom, pos, _, _ in conjuncts)
+        for lemma, neg in subject_mods:
+            rel = Relation(lemma, 1)
+            relations.append(rel)
+            literals.append(Literal(Atom(rel, (subj_term,)), not neg))
+        return Candidate("fact", text, literals=tuple(literals),
                          relations=tuple(relations),
                          entities=tuple(entities), provenance=provenance)
+
+    if subj.kind is ReferenceKind.INDIVIDUAL and subject_mods:
+        # otázka na rozvitou jednotlivinu — presupozice bez pohledu na
+        # bázi tady nejde vyhodnotit; poctivé odmítnutí
+        return _unparsed(text, "rozvitý podmět otázky mimo rozsah")
 
     if subj.kind is ReferenceKind.CLASS and not pred.is_question:
         subject_rel = Relation(subj.lemma, 1)
         relations.append(subject_rel)
         x = subj_term  # Variable("X")
+        body = _subject_body(subject_rel, subject_mods, x, relations)
         rules = tuple(
-            Rule(((x, domain),), AtomRef(Atom(subject_rel, (x,))),
-                 Literal(atom, pos))
+            Rule(((x, domain),), body, Literal(atom, pos))
             for atom, pos, _, _ in conjuncts)
         return Candidate("rule", text, rules=rules,
                          relations=tuple(relations), provenance=provenance)
@@ -168,6 +187,21 @@ def build_conjuncts(pred: Predication, subject_term):
     return conjuncts, relations, entities
 
 
+def _subject_body(subject_rel, subject_mods, x, relations) -> Expression:
+    """Tělo pravidla = POPIS podmětu: třída a její přívlastky.
+
+    „Dopravní prostředek je určen…" míří na věci, které jsou prostředek
+    A dopravní — přívlastek podmětu patří do podmínky, ne do hlavy.
+    """
+    exprs = [AtomRef(Atom(subject_rel, (x,)))]
+    for lemma, neg in subject_mods:
+        rel = Relation(lemma, 1)
+        relations.append(rel)
+        ref = AtomRef(Atom(rel, (x,)))
+        exprs.append(Not(ref) if neg else ref)
+    return conj(*exprs) if len(exprs) > 1 else exprs[0]
+
+
 def _ref(atom: Atom, positive: bool) -> Expression:
     ref = AtomRef(atom)
     return ref if positive else Not(ref)
@@ -193,9 +227,17 @@ def _verbal(children, root, text, question, domain) -> Candidate:
         # rozsah věty-jako-jednotky (týž guard jako u kopuly)
         return _unparsed(text, "zájmenný podmět slovesné věty mimo rozsah")
     prontypes: set = set()
-    for det in _kids(children, subject, "det"):
-        if det.feats and det.feats.get("PronType"):
-            prontypes |= set(det.feats["PronType"].split(","))
+    subject_mods: list[tuple[str, bool]] = []
+    for child in children.get(subject.id, []):
+        deprel = (child.deprel or "").split(":", 1)[0]
+        if deprel == "det":
+            if child.feats and child.feats.get("PronType"):
+                prontypes |= set(child.feats["PronType"].split(","))
+        elif deprel == "amod":
+            subject_mods.append((child.lemma, _negated(child)))
+        elif deprel in ("nmod", "appos", "acl", "conj"):
+            return _unparsed(text, f"rozvitý podmět ({child.deprel} "
+                                   f"{child.lemma!r}) mimo rozsah")
     if prontypes - {"Tot", "Neg"}:
         return _unparsed(text, "určený podmět slovesné věty mimo rozsah")
     negated = _negated(root) or "Neg" in prontypes
@@ -223,32 +265,41 @@ def _verbal(children, root, text, question, domain) -> Candidate:
                          literals=tuple(Literal(a, p)
                                         for a, p, _, _ in lowered),
                          subject_lemma=subject.lemma,
+                         subject_modifiers=tuple(subject_mods),
                          relations=tuple(relations),
                          entities=tuple(entities), provenance=provenance,
                          note=(f"reference {subject.lemma!r}: "
                                f"instance, nebo třída?"))
 
     if subject.upos != "PROPN":
-        # obecné jméno v tvrzení → třída → pravidla (jako u kopuly)
+        # obecné jméno v tvrzení → třída → pravidla (jako u kopuly);
+        # přívlastek podmětu patří do těla (popis podmětu)
         subject_rel = Relation(subject.lemma, 1)
         relations.append(subject_rel)
         x = subject_term  # Variable("X")
+        body = _subject_body(subject_rel, tuple(subject_mods), x, relations)
         rules = tuple(
-            Rule(((x, domain),), AtomRef(Atom(subject_rel, (x,))),
-                 Literal(atom, pos))
+            Rule(((x, domain),), body, Literal(atom, pos))
             for atom, pos, _, _ in lowered)
         return Candidate("rule", text, rules=rules,
                          relations=tuple(relations), provenance=provenance)
 
     if question:
+        if subject_mods:
+            return _unparsed(text, "rozvitý podmět otázky mimo rozsah")
         exprs = tuple(_ref(atom, pos) for atom, pos, _, _ in lowered)
         query_expr = conj(*exprs) if len(exprs) > 1 else exprs[0]
         return Candidate("query", text, query_expr=query_expr,
                          query_atoms=tuple(a for a, _, _, _ in lowered),
                          relations=tuple(relations),
                          entities=tuple(entities), provenance=provenance)
-    literals = tuple(Literal(atom, pos) for atom, pos, _, _ in lowered)
-    return Candidate("fact", text, literals=literals,
+    literals = list(Literal(atom, pos) for atom, pos, _, _ in lowered)
+    for lemma, neg in subject_mods:
+        # přívlastek podmětu („starý Petr") je další fakt o jednotlivině
+        rel = Relation(lemma, 1)
+        relations.append(rel)
+        literals.append(Literal(Atom(rel, (subject_term,)), not neg))
+    return Candidate("fact", text, literals=tuple(literals),
                      relations=tuple(relations), entities=tuple(entities),
                      provenance=provenance)
 

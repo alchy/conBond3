@@ -7,7 +7,7 @@ adjektiva, předložky, entity), aby se ověřovala schopnost, ne jeden příkla
 import unittest
 
 from cb_logic import (Atom, AtomRef, Entity, Literal, Relation, Value,
-                      Variable)
+                      Variable, to_text)
 from cb_interpret.interpret import interpret_sentence
 from cb_interpret.predication import ReferenceKind
 from cb_interpret.tests import vzorky
@@ -219,6 +219,50 @@ class TestVerbalRules(unittest.TestCase):
         c = interpret_sentence(vs.OBSAHUJE_CITRON,
                                "Obsahuje citron vitamíny?")
         self.assertEqual(c.kind, "unparsed")
+
+
+class TestPassiveParticiple(unittest.TestCase):
+    """Trpné příčestí (aux:pass) a přívlastek podmětu — po demu J."""
+
+    def test_pasivum_da_pravidla_s_privlastkem_podmetu_v_tele(self):
+        c = interpret_sentence(vs.PROSTREDEK_URCEN,
+                               "Dopravní prostředek je určen k přepravě.")
+        self.assertEqual(c.kind, "rule")
+        heads = {r.head.atom.relation.name for r in c.rules}
+        self.assertEqual(heads, {"určený", "k"})
+        # „dopravní" patří do TĚLA pravidla (popis podmětu), ne do hlavy
+        self.assertLessEqual({"prostředek", "dopravní"}, relnames(c))
+        for rule in c.rules:
+            self.assertIn("dopravní", to_text(rule.body))
+
+    def test_rozvity_cil_vztahu_je_unparsed_ne_tichy(self):
+        # „k přepravě nákladů a osob" — genitivy a koordinace pod cílem
+        # vztahu zatím rozklad neunese → poctivé odmítnutí
+        c = interpret_sentence(
+            vs.PROSTREDEK_URCEN_DLOUHY,
+            "Dopravní prostředek je určen k přepravě nákladů a osob.")
+        self.assertEqual(c.kind, "unparsed")
+        self.assertIn("rozvitý cíl", c.note)
+
+    def test_pasivni_otazka_se_dopta(self):
+        c = interpret_sentence(vs.JE_AUTO_URCENO,
+                               "Je auto určeno k přepravě?")
+        self.assertEqual(c.kind, "reference_ambiguous")
+        self.assertEqual(c.subject_lemma, "auto")
+
+    def test_generalizace_unseen_pasivum(self):
+        c = interpret_sentence(vs.NUZ_VYROBEN, "Nůž je vyroben z oceli.")
+        self.assertEqual(c.kind, "rule")
+        heads = {r.head.atom.relation.name for r in c.rules}
+        self.assertEqual(heads, {"vyrobený", "z"})
+
+    def test_slovesna_veta_s_privlastkem_podmetu(self):
+        c = interpret_sentence(vs.PROSTREDEK_SLOUZI,
+                               "Dopravní prostředek slouží k přepravě.")
+        self.assertEqual(c.kind, "rule")
+        [rule] = c.rules
+        self.assertEqual(rule.head.atom.relation, Relation("sloužit_k", 2))
+        self.assertIn("dopravní", to_text(rule.body))
 
 
 class TestGenitiveNmod(unittest.TestCase):

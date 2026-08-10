@@ -62,6 +62,23 @@ class TestAsk(unittest.TestCase):
             learner.resolve_reference(result.candidate, "instance").truth,
             Truth.TRUE)
 
+    def test_plny_kruh_pasivum_pres_retez_pravidel(self):
+        # Auto je dopravní prostředek. + Dopravní prostředek je určen
+        # k přepravě. → Je auto určeno k přepravě? → třída → Ano
+        # (tělo prostředek(X) ∧ dopravní(X) se naplní řetězem pravidel)
+        learner = make_learner()
+        learner.learn(vs.AUTO_PROSTREDEK, "Auto je dopravní prostředek.")
+        learner.learn(vs.PROSTREDEK_URCEN,
+                      "Dopravní prostředek je určen k přepravě.")
+        result = learner.ask(vs.JE_AUTO_URCENO, "Je auto určeno k přepravě?")
+        self.assertEqual(result.candidate.kind, "reference_ambiguous")
+        self.assertEqual(
+            learner.resolve_reference(result.candidate, "class").truth,
+            Truth.TRUE)
+        self.assertEqual(
+            learner.resolve_reference(result.candidate, "instance").truth,
+            Truth.TRUE)
+
     def test_plny_kruh_genitiv(self):
         # „Česka" se cestou učení ani dotazu nikde neztratí (4.1.2)
         learner = make_learner()

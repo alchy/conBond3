@@ -60,6 +60,9 @@ class Predication:
     #: Kusy, které extrakce neunese — lowering je promění v `unparsed`
     #: s důvodem (tiché zahození mění význam).
     blockers: tuple[str, ...] = ()
+    #: Přívlastky PODMĚTU („dopravní prostředek") — patří do popisu
+    #: podmětu (tělo pravidla / presupozice), ne do přísudku.
+    subject_modifiers: tuple[Modifier, ...] = ()
 
 
 def _kids(children, token, deprel):
@@ -78,15 +81,34 @@ def _prontypes(token) -> set:
     return set(token.feats["PronType"].split(","))
 
 
+#: Vazby pod podmětem, které nesou význam a extrakce je zatím neunese —
+#: tiché zahození by měnilo popis podmětu („auto mého otce" ≠ „auto").
+_SUBJECT_BLOCKING = {"nmod", "appos", "acl", "conj"}
+
+
 def extract_copular(children, root, question: bool) -> Predication | None:
-    """Strom kopulové věty → Predication; None, když chybí podmět."""
+    """Strom kopulové/pasivní věty → Predication; None, když chybí podmět.
+
+    Vedle spony (`cop`) unese i trpné příčestí (`aux:pass`): „je určen"
+    je táž predikace „podmět JE hlava s vlastnostmi a vztahy".
+    """
     subjects = _kids(children, root, "nsubj")
     if not subjects:
         return None
     subject = subjects[0]
     prontypes: set = set()
-    for det in _kids(children, subject, "det"):
-        prontypes |= _prontypes(det)
+    subject_modifiers = []
+    blockers = []
+    for child in children.get(subject.id, []):
+        deprel = (child.deprel or "").split(":", 1)[0]
+        if deprel == "det":
+            prontypes |= _prontypes(child)
+        elif deprel == "amod":
+            subject_modifiers.append(Modifier(child.lemma, child.id,
+                                              _negated(child)))
+        elif deprel in _SUBJECT_BLOCKING:
+            blockers.append(f"rozvitý podmět ({child.deprel} "
+                            f"{child.lemma!r}) mimo rozsah")
 
     kind = _reference_kind(subject, question, prontypes)
     reference = Reference(subject.lemma, subject.upos, kind, subject.id)
@@ -95,14 +117,22 @@ def extract_copular(children, root, question: bool) -> Predication | None:
         Modifier(a.lemma, a.id, _negated(a))
         for a in _kids(children, root, "amod"))
     relations = []
-    blockers = []
     if subject.upos == "PRON":
         # Zájmenný podmět není reference na entitu: „Co je auto?" je
         # definiční otázka, „To je pes." odkaz do rozhovoru — definice
         # i koreference jsou mimo rozsah věty-jako-jednotky. Doptání
         # „konkrétní co?" by bylo nesmysl (zapsáno po demu).
         blockers.append("zájmenný podmět kopulové věty mimo rozsah")
-    for nmod in _kids(children, root, "nmod"):
+    # nmod (u jmenné hlavy) i obl (u trpného příčestí) jsou týž vztah
+    for nmod in _kids(children, root, "nmod") + _kids(children, root, "obl"):
+        rozvite = [c for c in children.get(nmod.id, [])
+                   if (c.deprel or "").split(":", 1)[0] != "case"]
+        if rozvite:
+            # „k přepravě nákladů a osob" — genitivy/koordinace pod cílem
+            # vztahu zatím rozklad neunese; zahodit je by měnilo význam
+            blockers.append(f"rozvitý cíl vztahu ({nmod.lemma!r}) "
+                            f"mimo rozsah")
+            continue
         cases = _kids(children, nmod, "case")
         if cases:
             relations.append(RelationMod(cases[0].lemma, nmod.lemma,
@@ -115,11 +145,14 @@ def extract_copular(children, root, question: bool) -> Predication | None:
         else:
             blockers.append(f"vazba nmod bez předložky i pádu "
                             f"({nmod.lemma!r}) mimo rozsah")
-    negated = _negated(root) or any(_negated(c)
-                                    for c in _kids(children, root, "cop"))
+    negated = (_negated(root)
+               or any(_negated(c) for c in _kids(children, root, "cop"))
+               or any(_negated(c) for c in children.get(root.id, [])
+                      if c.deprel == "aux:pass"))
     return Predication(reference, root.lemma, root.id, modifiers,
                        tuple(relations), negated, question,
-                       frozenset(prontypes), tuple(blockers))
+                       frozenset(prontypes), tuple(blockers),
+                       tuple(subject_modifiers))
 
 
 def _reference_kind(subject, question: bool, prontypes: set) -> ReferenceKind:
