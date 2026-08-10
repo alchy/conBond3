@@ -184,6 +184,55 @@ class TestRules(unittest.TestCase):
         self.assertEqual(heads, {"zvíře", "domácí"})
 
 
+class TestGenitiveNmod(unittest.TestCase):
+    """Holý genitiv je vztah, ne tiché zahození — HANDOVER 4.1.2."""
+
+    def test_genitiv_jednotlivina_da_tri_fakty(self):
+        c = interpret_sentence(vs.PRAHA_MESTO_CESKA,
+                               "Praha je hlavní město Česka.")
+        self.assertEqual(c.kind, "fact")
+        rel = {l.atom.relation.name for l in c.literals}
+        self.assertEqual(rel, {"město", "hlavní", "gen"})   # „Česka" žije
+        gen = [l for l in c.literals if l.atom.relation.name == "gen"][0]
+        self.assertEqual(gen.atom.args, (Entity("praha"), Entity("česko")))
+
+    def test_genitiv_otazka(self):
+        c = interpret_sentence(vs.JE_PRAHA_MESTO_CESKA,
+                               "Je Praha hlavní město Česka?")
+        self.assertEqual(c.kind, "query")
+        self.assertEqual({a.relation.name for a in c.query_atoms},
+                         {"město", "hlavní", "gen"})
+
+    def test_genitiv_trida_da_pravidla(self):
+        c = interpret_sentence(vs.KLIC_SOUCAST_ZAMKU,
+                               "Klíč je součást zámku.")
+        self.assertEqual(c.kind, "rule")
+        heads = {r.head.atom.relation.name for r in c.rules}
+        self.assertEqual(heads, {"součást", "gen"})
+        gen = [r for r in c.rules if r.head.atom.relation.name == "gen"][0]
+        self.assertEqual(gen.head.atom.args[1], Value("zámek"))
+
+    def test_nmod_bez_predlozky_i_padu_je_unparsed(self):
+        import dataclasses
+        bez_padu = tuple(
+            dataclasses.replace(t, feats=None) if t.deprel == "nmod" else t
+            for t in vs.PRAHA_MESTO_CESKA)
+        c = interpret_sentence(bez_padu, "Praha je hlavní město Česka.")
+        self.assertEqual(c.kind, "unparsed")   # pojistka, ne tiché zahození
+
+    def test_generalizace_unseen_trida(self):
+        c = interpret_sentence(vs.KNIHA_MAJETEK, "Kniha je majetek knihovny.")
+        self.assertEqual(c.kind, "rule")
+        self.assertEqual({r.head.atom.relation.name for r in c.rules},
+                         {"majetek", "gen"})
+
+    def test_generalizace_unseen_jednotlivina(self):
+        c = interpret_sentence(vs.VLTAVA_REKA, "Vltava je řeka Česka.")
+        self.assertEqual(c.kind, "fact")
+        self.assertEqual({l.atom.relation.name for l in c.literals},
+                         {"řeka", "gen"})
+
+
 class TestQueries(unittest.TestCase):
     def test_kopulova_otazka_propn(self):
         c = interpret_sentence(vzorky.JE_PETR_CLOVEK, "Je Petr člověk?")

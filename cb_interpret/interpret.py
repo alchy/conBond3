@@ -77,6 +77,10 @@ def interpret_sentence(tokens, text: str, *, patterns=None,
 
 def _lower_copular(pred: Predication, text: str, domain: str) -> Candidate:
     """Predikace → konjunkce faktů/pravidel/dotazu; zachová VŠE."""
+    if pred.blockers:
+        # Tiché zahození mění význam — kus, který extrakce neunese,
+        # větu poctivě shodí (pojistka, expanze § 2.3).
+        return _unparsed(text, pred.blockers[0])
     head_positive = not (pred.negated or "Neg" in pred.determiner_prontypes)
     has_extra = bool(pred.modifiers or pred.relations)
     # Negace složeného přísudku má nejednoznačný dosah (De Morgan) — raději
@@ -148,7 +152,7 @@ def build_conjuncts(pred: Predication, subject_term):
         conjuncts.append((Atom(rel, (subject_term,)), not mod.negated,
                           mod.token_id, _txt(mod.lemma, pred.subject)))
     for rmod in pred.relations:
-        rel = Relation(rmod.preposition, 2)
+        rel = Relation(rmod.marker, 2)
         relations.append(rel)
         if rmod.target_upos == "PROPN":
             target: object = Entity(rmod.target_lemma.lower(),
@@ -158,7 +162,7 @@ def build_conjuncts(pred: Predication, subject_term):
             target = Value(rmod.target_lemma)
         conjuncts.append((Atom(rel, (subject_term, target)), True,
                           rmod.token_id,
-                          f"{rmod.preposition}(…, {rmod.target_lemma})"))
+                          f"{rmod.marker}(…, {rmod.target_lemma})"))
     return conjuncts, relations, entities
 
 

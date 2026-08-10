@@ -35,8 +35,13 @@ class Modifier:
 
 @dataclass(frozen=True)
 class RelationMod:
-    """Předložková vazba (nmod+case) jako binární vztah k cíli."""
-    preposition: str
+    """Vazba nmod jako binární vztah k cíli.
+
+    marker: co vztah pojmenovalo — předložka (nmod+case), nebo pádový
+    marker holého pádu (`gen`, `dat`, …). Jméno z UD hodnoty Case je
+    strukturální a nepodsouvá posesivní čtení, které věta nemá.
+    """
+    marker: str
     target_lemma: str
     target_upos: str
     token_id: int
@@ -52,6 +57,9 @@ class Predication:
     negated: bool
     is_question: bool
     determiner_prontypes: frozenset
+    #: Kusy, které extrakce neunese — lowering je promění v `unparsed`
+    #: s důvodem (tiché zahození mění význam).
+    blockers: tuple[str, ...] = ()
 
 
 def _kids(children, token, deprel):
@@ -87,16 +95,25 @@ def extract_copular(children, root, question: bool) -> Predication | None:
         Modifier(a.lemma, a.id, _negated(a))
         for a in _kids(children, root, "amod"))
     relations = []
+    blockers = []
     for nmod in _kids(children, root, "nmod"):
         cases = _kids(children, nmod, "case")
         if cases:
             relations.append(RelationMod(cases[0].lemma, nmod.lemma,
                                          nmod.upos, nmod.id))
+        elif nmod.feats and nmod.feats.get("Case"):
+            # holý pád (genitiv „město Česka") pojmenuje vztah sám —
+            # strukturálně, žádný seznam slov
+            relations.append(RelationMod(nmod.feats["Case"].lower(),
+                                         nmod.lemma, nmod.upos, nmod.id))
+        else:
+            blockers.append(f"vazba nmod bez předložky i pádu "
+                            f"({nmod.lemma!r}) mimo rozsah")
     negated = _negated(root) or any(_negated(c)
                                     for c in _kids(children, root, "cop"))
     return Predication(reference, root.lemma, root.id, modifiers,
                        tuple(relations), negated, question,
-                       frozenset(prontypes))
+                       frozenset(prontypes), tuple(blockers))
 
 
 def _reference_kind(subject, question: bool, prontypes: set) -> ReferenceKind:

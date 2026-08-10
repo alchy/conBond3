@@ -114,6 +114,48 @@ AUTO_MUZE_JET_DO_MESTA = (  # Auto může jet po dálnici do města.
     Token(id=8, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=2, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
 )
 
+PRAHA_MESTO_CESKA = (  # Praha je hlavní město Česka.
+    Token(id=1, form='Praha', lemma='Praha', upos='PROPN', xpos='NNFS1-----A----', feats={'Case': 'Nom', 'Gender': 'Fem', 'NameType': 'Geo', 'Number': 'Sing'}, head=4, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=4, deprel='cop', deps=None, misc=None),
+    Token(id=3, form='hlavní', lemma='hlavní', upos='ADJ', xpos='AANS1----1A----', feats={'Case': 'Nom', 'Degree': 'Pos', 'Gender': 'Neut', 'Number': 'Sing', 'Polarity': 'Pos'}, head=4, deprel='amod', deps=None, misc=None),
+    Token(id=4, form='město', lemma='město', upos='NOUN', xpos='NNNS1-----A----', feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=5, form='Česka', lemma='Česko', upos='PROPN', xpos='NNNS2-----A----', feats={'Case': 'Gen', 'Gender': 'Neut', 'NameType': 'Geo', 'Number': 'Sing'}, head=4, deprel='nmod', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=6, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=4, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+JE_PRAHA_MESTO_CESKA = (  # Je Praha hlavní město Česka?
+    Token(id=1, form='Je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=4, deprel='cop', deps=None, misc=None),
+    Token(id=2, form='Praha', lemma='Praha', upos='PROPN', xpos='NNFS1-----A----', feats={'Case': 'Nom', 'Gender': 'Fem', 'NameType': 'Geo', 'Number': 'Sing'}, head=4, deprel='nsubj', deps=None, misc=None),
+    Token(id=3, form='hlavní', lemma='hlavní', upos='ADJ', xpos='AANS1----1A----', feats={'Case': 'Nom', 'Degree': 'Pos', 'Gender': 'Neut', 'Number': 'Sing', 'Polarity': 'Pos'}, head=4, deprel='amod', deps=None, misc=None),
+    Token(id=4, form='město', lemma='město', upos='NOUN', xpos='NNNS1-----A----', feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=5, form='Česka', lemma='Česko', upos='PROPN', xpos='NNNS2-----A----', feats={'Case': 'Gen', 'Gender': 'Neut', 'NameType': 'Geo', 'Number': 'Sing'}, head=4, deprel='nmod', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=6, form='?', lemma='?', upos='PUNCT', xpos='Z:-------------', feats=None, head=4, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+KLIC_SOUCAST_ZAMKU = (  # Klíč je součást zámku.
+    Token(id=1, form='Klíč', lemma='klíč', upos='NOUN', xpos='NNIS1-----A----', feats={'Animacy': 'Inan', 'Case': 'Nom', 'Gender': 'Masc', 'Number': 'Sing'}, head=3, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=3, deprel='cop', deps=None, misc=None),
+    Token(id=3, form='součást', lemma='součást', upos='NOUN', xpos='NNFS1-----A----', feats={'Case': 'Nom', 'Gender': 'Fem', 'Number': 'Sing'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=4, form='zámku', lemma='zámek', upos='NOUN', xpos='NNIS2-----A----', feats={'Animacy': 'Inan', 'Case': 'Gen', 'Gender': 'Masc', 'Number': 'Sing'}, head=3, deprel='nmod', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=5, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=3, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+KNIHA_MAJETEK = (  # Kniha je majetek knihovny.   (generalizace — unseen)
+    Token(id=1, form='Kniha', lemma='kniha', upos='NOUN', xpos='NNFS1-----A----', feats={'Case': 'Nom', 'Gender': 'Fem', 'Number': 'Sing'}, head=3, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=3, deprel='cop', deps=None, misc=None),
+    Token(id=3, form='majetek', lemma='majetek', upos='NOUN', xpos='NNIS1-----A----', feats={'Animacy': 'Inan', 'Case': 'Nom', 'Gender': 'Masc', 'Number': 'Sing'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=4, form='knihovny', lemma='knihovna', upos='NOUN', xpos='NNFS2-----A----', feats={'Case': 'Gen', 'Gender': 'Fem', 'Number': 'Sing'}, head=3, deprel='nmod', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=5, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=3, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+VLTAVA_REKA = (  # Vltava je řeka Česka.   (generalizace — unseen)
+    Token(id=1, form='Vltava', lemma='Vltava', upos='PROPN', xpos='NNFS1-----A----', feats={'Case': 'Nom', 'Gender': 'Fem', 'NameType': 'Geo', 'Number': 'Sing'}, head=3, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=3, deprel='cop', deps=None, misc=None),
+    Token(id=3, form='řeka', lemma='řeka', upos='NOUN', xpos='NNFS1-----A----', feats={'Case': 'Nom', 'Gender': 'Fem', 'Number': 'Sing'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=4, form='Česka', lemma='Česko', upos='PROPN', xpos='NNNS2-----A----', feats={'Case': 'Gen', 'Gender': 'Neut', 'NameType': 'Geo', 'Number': 'Sing'}, head=3, deprel='nmod', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=5, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=3, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
 JE_PETR_ZKUSENY = (  # Je Petr zkušený programátor?
     Token(id=1, form='Je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=4, deprel='cop', deps=None, misc=None),
     Token(id=2, form='Petr', lemma='Petr', upos='PROPN', xpos='NNMS1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'NameType': 'Giv', 'Number': 'Sing'}, head=4, deprel='nsubj', deps=None, misc=None),
