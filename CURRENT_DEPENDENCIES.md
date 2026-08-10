@@ -2,7 +2,7 @@
 
 Ověřeno grepem importů v produkčním kódu (bez testů a skriptů, není-li řečeno jinak).
 Formát dle zadání §51: komponenta → závislost → důvod → směr/mechanismus.
-Cílový stav po stavbě reasoning vrstvy: `TARGET_DEPENDENCIES.md` (vznikne ve fázi 1).
+Stav po stavbě reasoning vrstvy (cb_logic, cb_interpret): `TARGET_DEPENDENCIES.md`.
 
 ## 1 · Graf mezi moduly
 

@@ -165,6 +165,8 @@ rozešlo se něco v datech — čísla jsou zmražená schválně.
 | `cb-field` | věta jako pole vážených aktivací na osách | knihovna | 42300 rezervováno (službou zatím není) |
 | `cb-bond` | graf faktů, párování, odpověď, dialog | `./cb-bond.py` | 42400 API · 42401 okna |
 | `cb-config` | načtení a ověření konfigurace | knihovna | — |
+| `cb-logic` | formální jádro: znalost, logika, modely, provenience | knihovna | — |
+| `cb-interpret` | věta → kandidátní tvrzení; učení z dialogu | knihovna | — |
 
 Adresář bez `cb-*.py` v kořeni je knihovna — nemá co obsluhovat.
 
