@@ -338,12 +338,42 @@ class TestQueries(unittest.TestCase):
         c = interpret_sentence(vzorky.KOLIK_HODIN, "Kolik je hodin?")
         self.assertEqual(c.kind, "unparsed")
 
-    def test_tazaci_zajmeno_neni_reference(self):
-        # „Co je auto?" — zájmenný podmět je definiční otázka, ne odkaz
-        # na entitu; doptání „konkrétní co?" je nesmysl (zapsáno po demu J.)
-        c = interpret_sentence(vs.CO_JE_AUTO, "Co je auto?")
+    def test_ukazovaci_zajmeno_je_mimo_rozsah(self):
+        # „To je auto." — odkaz do rozhovoru (koreference) je mimo rozsah;
+        # tiché čtení „to" jako třídy by vyrábělo pravidla to(X) → …
+        import dataclasses
+        to_je_auto = tuple(
+            dataclasses.replace(t, lemma="to",
+                                feats=dict(t.feats, PronType="Dem"))
+            if t.upos == "PRON" else t for t in vs.CO_JE_AUTO)
+        c = interpret_sentence(to_je_auto, "To je auto.")
         self.assertEqual(c.kind, "unparsed")
         self.assertIn("zájmenný podmět", c.note)
+
+
+class TestDefinitionQuery(unittest.TestCase):
+    """Definiční otázky „Kdo/Co je X?" — výčet z báze (po demu J.)."""
+
+    def test_kdo_je_propn(self):
+        # kořen kdo (PRON Int) + nsubj Hrabal
+        c = interpret_sentence(vs.KDO_JE_HRABAL, "Kdo je Hrabal?")
+        self.assertEqual(c.kind, "definition_query")
+        self.assertEqual(c.subject_lemma, "Hrabal")
+        self.assertEqual(c.subject_upos, "PROPN")
+
+    def test_co_je_to_noun(self):
+        # „to" je discourse — nesmí rozbít čtení
+        c = interpret_sentence(vs.CO_JE_TO_VITAMIN, "Co je to vitamín?")
+        self.assertEqual(c.kind, "definition_query")
+        self.assertEqual(c.subject_lemma, "vitamín")
+        self.assertEqual(c.subject_upos, "NOUN")
+
+    def test_obraceny_tvar_stromu(self):
+        # „Co je auto?" — kořen auto, nsubj co: týž druh otázky
+        c = interpret_sentence(vs.CO_JE_AUTO, "Co je auto?")
+        self.assertEqual(c.kind, "definition_query")
+        self.assertEqual(c.subject_lemma, "auto")
+        self.assertEqual(c.subject_upos, "NOUN")
 
 
 if __name__ == "__main__":

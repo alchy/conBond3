@@ -117,6 +117,12 @@ def format_logic(logika: dict[str, Any] | None) -> list[str]:
         return radky
     if kind == "no_pending_reference":
         return [f"  logika: {logika['note']}"]
+    if kind == "definition":
+        # výčet z báze; prázdný je poctivé nevím, ne mlčení
+        if not logika.get("known"):
+            return [f"  logika: o {logika['subject']} nic nevím"]
+        return ["  logika ví:"] + [f"    {radek}"
+                                   for radek in logika["known"]]
     if kind == "reference_resolved":
         radky = [f"  logika ({logika['choice']}): {logika['answer']}"]
         for vysvetleni in logika.get("explanations", ()):

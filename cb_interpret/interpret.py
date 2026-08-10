@@ -46,8 +46,9 @@ class Candidate:
     signature: StructuralSignature | None = None
     negated: bool = False
     predication: Predication | None = None         # reference_ambiguous
-    subject_lemma: str | None = None               # reference_ambiguous
+    subject_lemma: str | None = None               # reference_ambiguous/definice
     subject_modifiers: tuple = ()                  # (lemma, negated) podmětu
+    subject_upos: str | None = None                # definice: PROPN × NOUN
 
 
 def interpret_sentence(tokens, text: str, *, patterns=None,
@@ -66,7 +67,27 @@ def interpret_sentence(tokens, text: str, *, patterns=None,
     has_cop = bool(_kids(children, root, "cop"))
     has_pass = any(c.deprel == "aux:pass"
                    for c in children.get(root.id, []))
+    if root.upos == "PRON" and question and has_cop and _interrogative(root):
+        # „Kdo je Hrabal?" / „Co je to vitamín?" — kořen je tázací
+        # zájmeno, popisovaný je nsubj → definiční otázka (výčet z báze)
+        described = [c for c in _kids(children, root, "nsubj")
+                     if c.upos in ("NOUN", "PROPN")]
+        if described:
+            target = described[0]
+            return Candidate("definition_query", text,
+                             subject_lemma=target.lemma,
+                             subject_upos=target.upos,
+                             note=f"definiční otázka na {target.lemma!r}")
     if root.upos in NOMINAL_UPOS and (has_cop or has_pass):
+        subjects = _kids(children, root, "nsubj")
+        if (question and subjects and subjects[0].upos == "PRON"
+                and _interrogative(subjects[0])):
+            # obrácený tvar téže otázky: „Co je auto?" — kořen auto,
+            # nsubj co; popisovaný je kořen
+            return Candidate("definition_query", text,
+                             subject_lemma=root.lemma,
+                             subject_upos=root.upos,
+                             note=f"definiční otázka na {root.lemma!r}")
         # spona i trpné příčestí („je určen") jsou táž predikace
         pred = extract_copular(children, root, question)
         if pred is None:
@@ -441,6 +462,11 @@ def _kids(children, token, deprel):
     return [c for c in children.get(token.id, [])
             if c.deprel and (c.deprel == deprel
                              or c.deprel.startswith(deprel + ":"))]
+
+
+def _interrogative(token) -> bool:
+    return bool(token.feats) and "Int" in token.feats.get(
+        "PronType", "").split(",")
 
 
 def _negated(token) -> bool:

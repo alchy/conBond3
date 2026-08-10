@@ -204,6 +204,18 @@ class TestFormatovani(unittest.TestCase):
                               "note": "žádné doptání na referenci nečeká"})
         self.assertIn("nečeká", radky[0])
 
+    def test_definice_vypise_co_baze_vi(self):
+        radky = format_logic({"kind": "definition", "subject": "Hrabal",
+                              "known": ["hrabal je spisovatel"]})
+        text = "\n".join(radky)
+        self.assertIn("logika ví", text)
+        self.assertIn("hrabal je spisovatel", text)
+
+    def test_definice_bez_znalosti(self):
+        radky = format_logic({"kind": "definition", "subject": "vitamín",
+                              "known": []})
+        self.assertIn("nevím", "\n".join(radky))
+
 
 class TestPrepisOken(unittest.TestCase):
 

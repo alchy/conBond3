@@ -116,6 +116,17 @@ Kniha je dárek pro Petra.      → dárek(kniha) ∧ pro(kniha, petr)     (fakt
 - **obecné jméno, otázka** → **AMBIGUOUS**: nesmí se svévolně zvolit. Systém
   označí nejednoznačnost a **doptá se** (§ 5).
 
+## 4b · Definiční otázky („Kdo/Co je X?")
+
+Tázací zájmeno s kopulou je **výčet z báze**, ne pravdivostní dotaz —
+oba tvary stromu („Kdo je Hrabal?": kořen `kdo` + nsubj; „Co je auto?":
+kořen `auto` + nsubj `co`) dají `definition_query`. Jednotlivina →
+pravdivé literály o entitě (fakta i odvozené); třída → hlavy pravidel,
+jejichž tělo o třídě mluví, zobrazené na jménu třídy. Prázdný výčet je
+poctivé „nevím". Jiná zájmena (Dem „To je pes.") zůstávají mimo rozsah
+(koreference). Enumerace „Jaké znáš spisovatele?" (2. osoba) zatím
+není — jiná operace (výčet instancí třídy), kandidát na další krok.
+
 ## 5 · Doptání na referenci
 
 `Je auto dopravní prostředek?` → nejednoznačné → dotaz:

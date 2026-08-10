@@ -254,6 +254,28 @@ PROSTREDEK_SLOUZI = (  # Dopravní prostředek slouží k přepravě.
     Token(id=6, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=3, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
 )
 
+KDO_JE_HRABAL = (  # Kdo je Hrabal?
+    Token(id=1, form='Kdo', lemma='kdo', upos='PRON', xpos='PQ--1----------', feats={'Animacy': 'Anim', 'Case': 'Nom', 'PronType': 'Int,Rel'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=2, form='je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=1, deprel='cop', deps=None, misc=None),
+    Token(id=3, form='Hrabal', lemma='Hrabal', upos='PROPN', xpos='NNMS1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'NameType': 'Giv', 'Number': 'Sing'}, head=1, deprel='nsubj', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=4, form='?', lemma='?', upos='PUNCT', xpos='Z:-------------', feats=None, head=1, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+CO_JE_TO_VITAMIN = (  # Co je to vitamín?
+    Token(id=1, form='Co', lemma='co', upos='PRON', xpos='PQ--1----------', feats={'Animacy': 'Inan', 'Case': 'Nom', 'PronType': 'Int,Rel'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=2, form='je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=1, deprel='cop', deps=None, misc=None),
+    Token(id=3, form='to', lemma='to', upos='DET', xpos='PDXXX----------', feats={'PronType': 'Dem'}, head=1, deprel='discourse', deps=None, misc=None),
+    Token(id=4, form='vitamín', lemma='vitamín', upos='NOUN', xpos='NNIS1-----A----', feats={'Animacy': 'Inan', 'Case': 'Nom', 'Gender': 'Masc', 'Number': 'Sing'}, head=1, deprel='nsubj', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=5, form='?', lemma='?', upos='PUNCT', xpos='Z:-------------', feats=None, head=1, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+HRABAL_SPISOVATEL = (  # Hrabal je spisovatel.
+    Token(id=1, form='Hrabal', lemma='Hrabal', upos='PROPN', xpos='NNMS1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'NameType': 'Giv', 'Number': 'Sing'}, head=3, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=3, deprel='cop', deps=None, misc=None),
+    Token(id=3, form='spisovatel', lemma='spisovatel', upos='NOUN', xpos='NNMS1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'Number': 'Sing'}, head=0, deprel='root', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=4, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=3, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
 JE_PETR_ZKUSENY = (  # Je Petr zkušený programátor?
     Token(id=1, form='Je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=4, deprel='cop', deps=None, misc=None),
     Token(id=2, form='Petr', lemma='Petr', upos='PROPN', xpos='NNMS1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'NameType': 'Giv', 'Number': 'Sing'}, head=4, deprel='nsubj', deps=None, misc=None),

@@ -62,6 +62,29 @@ class TestAsk(unittest.TestCase):
             learner.resolve_reference(result.candidate, "instance").truth,
             Truth.TRUE)
 
+    def test_definice_jednotliviny_z_faktu(self):
+        # Hrabal je spisovatel. → Kdo je Hrabal? → „hrabal je spisovatel"
+        learner = make_learner()
+        learner.learn(vs.HRABAL_SPISOVATEL, "Hrabal je spisovatel.")
+        result = learner.ask(vs.KDO_JE_HRABAL, "Kdo je Hrabal?")
+        self.assertEqual(result.candidate.kind, "definition_query")
+        rel = {lit.atom.relation.name for lit in result.definition}
+        self.assertEqual(rel, {"spisovatel"})
+
+    def test_definice_tridy_z_pravidel(self):
+        # Auto je dopravní prostředek. → Co je auto? → hlavy pravidel
+        learner = make_learner()
+        learner.learn(vs.AUTO_PROSTREDEK, "Auto je dopravní prostředek.")
+        result = learner.ask(vs.CO_JE_AUTO, "Co je auto?")
+        rel = {lit.atom.relation.name for lit in result.definition}
+        self.assertEqual(rel, {"prostředek", "dopravní"})
+
+    def test_definice_bez_znalosti_je_prazdna(self):
+        learner = make_learner()
+        result = learner.ask(vs.CO_JE_TO_VITAMIN, "Co je to vitamín?")
+        self.assertEqual(result.candidate.kind, "definition_query")
+        self.assertEqual(result.definition, ())
+
     def test_plny_kruh_pasivum_pres_retez_pravidel(self):
         # Auto je dopravní prostředek. + Dopravní prostředek je určen
         # k přepravě. → Je auto určeno k přepravě? → třída → Ano

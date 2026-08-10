@@ -102,6 +102,12 @@ class LogicBridge:
                 "options": [{"operation": op.value, "popis": popis}
                             for op, popis in clar.options],
             }
+        if kind == "definition_query":
+            # výčet z báze: „Kdo je Hrabal?" → co o něm víme (po demu)
+            return {"kind": "definition",
+                    "subject": result.candidate.subject_lemma,
+                    "known": [render_literal(lit, self.profile)
+                              for lit in result.definition]}
         if kind == "modal_query":
             modal = result.modal
             answer = ("Ano." if modal["answer"] is True

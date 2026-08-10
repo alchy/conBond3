@@ -17,9 +17,9 @@ from cb_logic import (Accepted, Assertion, Atom, AtomRef, Conflicted, Entity,
                       Evidence, EvidenceKind, Explanation, InferenceResult,
                       KnowledgeBase, LEVEL_DEFINITION, LEVEL_DOCUMENTED,
                       Literal, ModalResult, ModalVerdict, Not, Provenance,
-                      Rejected, Relation, Truth, Variable, WhyNotResult,
-                      classify_query, evaluate_partial, infer_forward, why,
-                      why_not, with_assumptions)
+                      Rejected, Relation, Truth, Value, Variable,
+                      WhyNotResult, atoms, classify_query, evaluate_partial,
+                      infer_forward, why, why_not, with_assumptions)
 from cb_interpret.clarify import (ClarificationRequest, ReferenceClarification,
                                   build_clarification,
                                   build_reference_clarification)
@@ -50,6 +50,7 @@ class AskResult:
     modal: dict | None = None
     clarification: ClarificationRequest | None = None
     reference: ReferenceClarification | None = None
+    definition: tuple[Literal, ...] | None = None   # definiční výčet
 
 
 def _run_modal(kb: KnowledgeBase, atoms, expr, operation: Operation,
@@ -159,7 +160,46 @@ class DialogueLearner:
             return self._answer_modal(candidate)
         if candidate.kind == "query":
             return self._answer_query(candidate)
+        if candidate.kind == "definition_query":
+            return self._answer_definition(candidate)
         return AskResult(candidate, None, (), None)
+
+    def _answer_definition(self, candidate: Candidate) -> AskResult:
+        """Definiční otázka „Kdo/Co je X?" — výčet, ne pravdivostní dotaz.
+
+        Jednotlivina: pravdivé literály o entitě (fakta i odvozené).
+        Třída: hlavy pravidel, jejichž tělo o třídě mluví — zobrazené
+        na jménu třídy. Prázdný výčet je poctivé „nevím", ne chyba.
+        """
+        lemma = candidate.subject_lemma
+        if candidate.subject_upos == "PROPN":
+            entity = Entity(lemma.lower())
+            known: list[Literal] = []
+            seen = set()
+            candidates = [lit for lit, _ in self.kb.own_facts()]
+            candidates += [d.conclusion for d in self.kb.derivations]
+            for literal in candidates:
+                if entity not in literal.atom.args:
+                    continue
+                value = self.kb.truth_of(literal.atom)
+                holds = (value is Truth.TRUE if literal.positive
+                         else value is Truth.FALSE)
+                key = (literal.atom, literal.positive)
+                if holds and key not in seen:
+                    seen.add(key)
+                    known.append(literal)
+            return AskResult(candidate, None, (), None,
+                             definition=tuple(known))
+        known = []
+        for rule, _ in self.kb.rules:
+            if lemma not in {a.relation.name for a in atoms(rule.body)}:
+                continue
+            head = rule.head
+            display = tuple(Value(lemma) if isinstance(arg, Variable)
+                            else arg for arg in head.atom.args)
+            known.append(Literal(Atom(head.atom.relation, display),
+                                 head.positive))
+        return AskResult(candidate, None, (), None, definition=tuple(known))
 
     def resolve_reference(self, candidate: Candidate,
                           choice: str) -> AskResult:
