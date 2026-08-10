@@ -95,6 +95,18 @@ def format_answer(odpoved: dict[str, Any]) -> list[str]:
             for jmeno, hodnota in odpoved["decomposition"].items()))
     if odpoved.get("missing"):
         radky.append(f"  chybí: {', '.join(odpoved['missing'])}")
+    logika = odpoved.get("logic")
+    if logika:
+        # Formální vrstva stojí vedle retrieval cesty — když odpoví,
+        # patří její verdikt i řetěz do téhož okna, ne do logu.
+        if logika.get("answer"):
+            radky.append(f"  logika: {logika['answer']}")
+        for vysvetleni in logika.get("explanations", ()):
+            radky.append(f"    {vysvetleni}")
+        for chybejici in logika.get("missing", ()):
+            radky.append(f"    chybělo by: {chybejici}")
+        if logika.get("conflicted"):
+            radky.append("    pozor: k dotazu eviduji rozpor")
     return radky
 
 

@@ -109,6 +109,23 @@ class TestFormatovani(unittest.TestCase):
 
         self.assertIn("mlčí", text)
 
+    def test_formalni_odpoved_je_v_okne_videt(self):
+        s_logikou = dict(ODPOVED, logic={
+            "kind": "query", "truth": "TRUE", "answer": "Ano.",
+            "explanations": ["petr je člověk, protože petr je programátor "
+                             "(doloženo: dialog)"],
+            "conflicted": False})
+
+        text = "\n".join(format_answer(s_logikou))
+
+        self.assertIn("logika: Ano.", text)
+        self.assertIn("protože", text)
+
+    def test_bez_logiky_se_okno_nemeni(self):
+        bez = dict(ODPOVED)
+        bez.pop("logic", None)
+        self.assertNotIn("logika", "\n".join(format_answer(bez)))
+
 
 class TestPrepisOken(unittest.TestCase):
 
