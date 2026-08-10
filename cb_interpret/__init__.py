@@ -10,10 +10,17 @@ from cb_interpret.interpret import Candidate, interpret_sentence
 from cb_interpret.learner import AskResult, DialogueLearner, LearnResult
 from cb_interpret.render import (render_explanation, render_literal,
                                  render_truth)
+from cb_interpret.patterns import (LearnedPattern, OPERATION_MENU, Operation,
+                                   PatternStatus, PatternStore,
+                                   StructuralSignature, Trigger)
+from cb_interpret.clarify import ClarificationRequest, build_clarification
 
 __all__ = [
     "LanguageProfile", "cs_profile", "load_profile",
     "Candidate", "interpret_sentence",
     "AskResult", "DialogueLearner", "LearnResult",
     "render_explanation", "render_literal", "render_truth",
+    "LearnedPattern", "OPERATION_MENU", "Operation", "PatternStatus",
+    "PatternStore", "StructuralSignature", "Trigger",
+    "ClarificationRequest", "build_clarification",
 ]

@@ -87,3 +87,44 @@ VSICHNI_PROGRAMATORI = (  # Všichni programátoři jsou lidé.
     Token(id=4, form='lidé', lemma='lidé', upos='NOUN', xpos='NNMP1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'Number': 'Plur'}, head=0, deprel='root', deps=None, misc={'SpaceAfter': 'No'}),
     Token(id=5, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=4, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
 )
+
+# --- modální věty (operátorová slovesa), UDPipe 2026-08-10 ---
+
+MUZE_AUTO_JET = (  # Auto může jet na silnici.
+    Token(id=1, form='Auto', lemma='auto', upos='NOUN', xpos='NNNS1-----A----', feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing'}, head=2, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='může', lemma='moci', upos='VERB', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=3, form='jet', lemma='jet', upos='VERB', xpos='Vf--------A-I--', feats={'Aspect': 'Imp', 'Polarity': 'Pos', 'VerbForm': 'Inf'}, head=2, deprel='xcomp', deps=None, misc=None),
+    Token(id=4, form='na', lemma='na', upos='ADP', xpos='RR--6----------', feats={'AdpType': 'Prep', 'Case': 'Loc'}, head=5, deprel='case', deps=None, misc=None),
+    Token(id=5, form='silnici', lemma='silnice', upos='NOUN', xpos='NNFS6-----A----', feats={'Case': 'Loc', 'Gender': 'Fem', 'Number': 'Sing'}, head=3, deprel='obl', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=6, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=2, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+MUZE_PETR_PRIJIT = (  # Petr může přijít.
+    Token(id=1, form='Petr', lemma='Petr', upos='PROPN', xpos='NNMS1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'NameType': 'Giv', 'Number': 'Sing'}, head=2, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='může', lemma='moci', upos='VERB', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=3, form='přijít', lemma='přijít', upos='VERB', xpos='Vf--------A-P--', feats={'Aspect': 'Perf', 'Polarity': 'Pos', 'VerbForm': 'Inf'}, head=2, deprel='xcomp', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=4, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=2, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+MUZE_ANNA_HRAT = (  # Anna může hrát na housle.
+    Token(id=1, form='Anna', lemma='Anna', upos='PROPN', xpos='NNFS1-----A----', feats={'Case': 'Nom', 'Gender': 'Fem', 'NameType': 'Giv', 'Number': 'Sing'}, head=2, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='může', lemma='moci', upos='VERB', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=3, form='hrát', lemma='hrát', upos='VERB', xpos='Vf--------A-I--', feats={'Aspect': 'Imp', 'Polarity': 'Pos', 'VerbForm': 'Inf'}, head=2, deprel='xcomp', deps=None, misc=None),
+    Token(id=4, form='na', lemma='na', upos='ADP', xpos='RR--4----------', feats={'AdpType': 'Prep', 'Case': 'Acc'}, head=5, deprel='case', deps=None, misc=None),
+    Token(id=5, form='housle', lemma='housle', upos='NOUN', xpos='NNFP4-----A----', feats={'Case': 'Acc', 'Gender': 'Fem', 'Number': 'Plur'}, head=3, deprel='obl', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=6, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=2, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+NEMUZE_PETR_PRIJIT = (  # Petr nemůže přijít.
+    Token(id=1, form='Petr', lemma='Petr', upos='PROPN', xpos='NNMS1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'NameType': 'Giv', 'Number': 'Sing'}, head=2, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='nemůže', lemma='moci', upos='VERB', xpos='VB-S---3P-NAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Neg', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=3, form='přijít', lemma='přijít', upos='VERB', xpos='Vf--------A-P--', feats={'Aspect': 'Perf', 'Polarity': 'Pos', 'VerbForm': 'Inf'}, head=2, deprel='xcomp', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=4, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=2, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
+MUSI_STROJ_PRACOVAT = (  # Stroj musí pracovat.
+    Token(id=1, form='Stroj', lemma='stroj', upos='NOUN', xpos='NNIS1-----A----', feats={'Animacy': 'Inan', 'Case': 'Nom', 'Gender': 'Masc', 'Number': 'Sing'}, head=2, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='musí', lemma='muset', upos='VERB', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=0, deprel='root', deps=None, misc=None),
+    Token(id=3, form='pracovat', lemma='pracovat', upos='VERB', xpos='Vf--------A-I--', feats={'Aspect': 'Imp', 'Polarity': 'Pos', 'VerbForm': 'Inf'}, head=2, deprel='xcomp', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=4, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=2, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
