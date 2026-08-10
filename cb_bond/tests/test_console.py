@@ -31,6 +31,14 @@ class _Sluzba:
         self.kontexty.append(text)
         return {"sentences": 2913, "edges": 9}
 
+    def resolve_reference(self, choice):
+        self.rozreseno = choice
+        return {"kind": "reference_resolved", "choice": choice,
+                "subject": "auto", "source_text": "Je auto prostředek?",
+                "truth": "TRUE", "answer": "Ano.",
+                "explanations": ["auto je prostředek (doloženo: dialog)"],
+                "conflicted": False}
+
     def state(self):
         return {"sentences": 2912, "edges": 16074, "lemmas": 5695}
 
@@ -98,6 +106,21 @@ class TestPrikazy(unittest.TestCase):
         konzole.run()
 
         self.assertEqual(konzole.service.dotazy, [])
+
+    def test_trida_dokonci_doptani_na_referenci(self):
+        konzole, vystup = _konzole(":trida\n")
+
+        konzole.run()
+
+        self.assertEqual(konzole.service.rozreseno, "class")
+        self.assertIn("Ano.", vystup.getvalue())
+
+    def test_instance_dokonci_doptani_na_referenci(self):
+        konzole, _ = _konzole(":instance\n")
+
+        konzole.run()
+
+        self.assertEqual(konzole.service.rozreseno, "instance")
 
 
 if __name__ == "__main__":
