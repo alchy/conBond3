@@ -189,18 +189,33 @@ class BondWindows:
     def ask(self, text: str) -> dict[str, Any]:
         """Otázka → přepsaná okna a rozsvícený graf.
 
-        Okna se přepisují **všechna tři naráz**, protože patří k téže
-        otázce. Kdyby se přepisovala postupně, šlo by přečíst rozklad
-        jedné otázky vedle vět jiné.
+        Věty a osy patří k POSLEDNÍ otázce — před zápisem se okna smažou,
+        jinak by se kandidáti minulého cyklu míchali s novými a člověk by
+        četl řazení přes dvě otázky. Dialog je dialog: historie zůstává.
         """
         odpoved = self.service.ask(text, top=self.top)
         self._pis(DIALOG_ID, format_answer(odpoved))
-        self._pis(SENTENCES_ID,
-                  [format_sentence(v) for v in odpoved["sentences"]]
-                  or ["(žádná kandidátní věta)"])
-        self._pis(AXES_ID, format_axes(odpoved["axes"]))
+        self._prepis(SENTENCES_ID, "kandidátní věty",
+                     [format_sentence(v) for v in odpoved["sentences"]]
+                     or ["(žádná kandidátní věta)"])
+        self._prepis(AXES_ID, "použité vertikály",
+                     format_axes(odpoved["axes"]))
         self._rozsvit(odpoved)
         return odpoved
+
+    def _prepis(self, window_id: str, title: str,
+                radky: list[str]) -> None:
+        """Smaž okno a naplň ho znovu — nejlepší kandidát je tak nahoře.
+
+        Protokol viewbase mazání nemá; znovuotevření okna s týmž id ale
+        frontend obslouží jako „zavři staré, vytvoř prázdné" (ověřeno
+        v bundlu), takže open_terminal + zápis JE přepsání obsahu.
+        """
+        from viewbase import TerminalWindow
+
+        self.window.open_terminal(
+            TerminalWindow(window_id, title=title, input=False))
+        self._pis(window_id, radky)
 
     def _rozsvit(self, odpoved: dict[str, Any]) -> None:
         """Rozsvítí v grafu uzly kandidátních vět.

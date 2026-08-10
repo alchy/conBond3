@@ -49,6 +49,11 @@ class _Okno:
 
     def open_terminal(self, window, on_input=None):
         self.otevrena.append(window.window_id)
+        # Frontend při open_window pro existující id staré okno ZAVŘE a
+        # vytvoří prázdné (ověřeno v bundlu: get(id)?.close(); adopt(new)).
+        # Atrapa to zrcadlí — znovuotevření maže dřívější zápisy.
+        self.zapsano = [(w, t) for w, t in self.zapsano
+                        if w != window.window_id]
         # callback si SCHOVEJ — atrapa, která ho zahodí, promění test
         # v ozdobu: přesně takhle prošla vada, kdy `_na_vstup` čekala
         # řetězec, zatímco viewbase posílá objekt události s `.line`
@@ -255,6 +260,48 @@ class TestPrepisOken(unittest.TestCase):
         self.okna.ask("Kdo?")
 
         self.assertEqual(self.sluzba.dotazy, [("Kdo?", 5)])
+
+    def test_kandidati_stareho_cyklu_se_smazou(self):
+        # Okno vět patří k POSLEDNÍ otázce — kandidáti minulého cyklu by
+        # se s novými míchali a člověk by četl řazení přes dvě otázky.
+        druha = dict(ODPOVED, sentences=[
+            {"position": 3, "lemma": "spát", "score": 1.10,
+             "text": "Petr spí."}])
+        self.okna.attach()
+
+        self.okna.ask("Kde byl pokřtěn Ježíš?")
+        self.sluzba.odpoved = druha
+        self.okna.ask("Spí Petr?")
+
+        text = self.okno.texty(SENTENCES_ID)
+        self.assertIn("[spát]", text)
+        self.assertNotIn("[říci]", text)          # starý cyklus zmizel
+        self.assertNotIn("[přijít]", text)
+        # dialog je dialog — historie obou otázek zůstává
+        self.assertIn("Kde byl pokřtěn Ježíš?", self.okno.texty(DIALOG_ID))
+        self.assertIn("Spí Petr?", self.okno.texty(DIALOG_ID))
+
+    def test_osy_stareho_cyklu_se_smazou(self):
+        druha = dict(ODPOVED, axes=[{"axis": "WORD=VERB:spát",
+                                     "coverage": 0.5}])
+        self.okna.attach()
+
+        self.okna.ask("Kde byl pokřtěn Ježíš?")
+        self.sluzba.odpoved = druha
+        self.okna.ask("Spí Petr?")
+
+        text = self.okno.texty(AXES_ID)
+        self.assertIn("spát", text)
+        self.assertNotIn("pokřtěný", text)
+
+    def test_nejpravdepodobnejsi_veta_je_nahore(self):
+        self.okna.attach()
+
+        self.okna.ask("Kde byl pokřtěn Ježíš?")
+
+        radky = self.okno.texty(SENTENCES_ID).splitlines()
+        self.assertIn("[říci]", radky[0])         # 2.366 nad 1.904
+        self.assertIn("[přijít]", radky[1])
 
     def _vstup(self, radek):
         import types
