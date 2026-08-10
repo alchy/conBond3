@@ -216,9 +216,53 @@ class BondWindows:
         if not radek:
             return
         try:
-            self.ask(radek)
+            if radek.startswith(":"):
+                self._prikaz(radek)
+            else:
+                self.ask(radek)
         except Exception as e:                # noqa: BLE001
             self._pis(DIALOG_ID, [f"  chyba: {type(e).__name__}: {e}"])
+
+    def _prikaz(self, radek: str) -> None:
+        """Příkazy okna — táž sada jako konzole (:context/:vzor/:zapomen/:state).
+
+        Bez nich by v prohlížeči nešlo systému nic sdělit ani ho učit;
+        okno by umělo jen otázky a dialog by byl jednosměrný.
+        """
+        jmeno, _, zbytek = radek[1:].partition(" ")
+        zbytek = zbytek.strip()
+        if jmeno == "context" and zbytek:
+            stav = self.service.context(zbytek)
+            logika = stav.get("logic") or {}
+            radky = [f": {zbytek}",
+                     f"  korpus +{stav.get('added_sentences', 0)} vět · "
+                     f"graf +{stav.get('added_edges', 0)} hran"]
+            if logika.get("outcome"):
+                radky.append(f"  logika — {logika['kind']}: {logika['outcome']}")
+                for fakt in logika.get("derived", ()):
+                    radky.append(f"    odvozeno: {fakt}")
+            self._pis(DIALOG_ID, radky)
+        elif jmeno == "vzor":
+            casti = zbytek.split()
+            if len(casti) != 2 or casti[1] not in (
+                    "possible", "necessary", "impossible"):
+                self._pis(DIALOG_ID,
+                          ["  :vzor <slovo> <possible|necessary|impossible>"])
+                return
+            v = self.service.teach_pattern(casti[0], casti[1])
+            self._pis(DIALOG_ID, [f"  naučeno: {v['lemma']!r} → "
+                                  f"{v['operation']} ({v['status']})"])
+        elif jmeno == "zapomen" and zbytek:
+            v = self.service.forget_word(zbytek)
+            self._pis(DIALOG_ID, [f"  odvoláno: {v['lemma']!r}"
+                                  + ("" if v["revoked"] else " (nebyl naučen)")])
+        elif jmeno == "state":
+            self._pis(DIALOG_ID, [f"  {k}: {v}"
+                                  for k, v in self.service.state().items()])
+        else:
+            self._pis(DIALOG_ID,
+                      [f"  neznámý příkaz {jmeno!r}; "
+                       f"umím :context :vzor :zapomen :state"])
 
     def _pis(self, window_id: str, radky: list[str]) -> None:
         self.window.terminal_write(window_id, "\n".join(radky))

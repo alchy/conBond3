@@ -63,6 +63,7 @@ class GraphMirror:
         self.window = window
         self._typy: set = set()
         self._hrany: set = set()
+        self._uzly: set = set()
 
     def emit(self, delta: dict) -> None:
         """Jedna delta grafu → jedno volání okna."""
@@ -72,6 +73,7 @@ class GraphMirror:
             upos, lemma = _rozloz(klic)
             self._zaved_typ(upos)
             self.window.add_node(klic, type=upos, label=lemma)
+            self._uzly.add(klic)
         elif op == "edge":
             # Provenience jde do okna jako `origin`, ne `source`:
             # GraphWindow.add_edge(source, target, **meta) používá
@@ -88,9 +90,18 @@ class GraphMirror:
                                  deprel=delta["deprel"],
                                  origin=delta["source"])
         elif op == "style":
+            # Uzel přibylý za běhu (věta z dialogu) nemusí být v obrázku —
+            # dožeň ho, než ho rozsvítíš. Glow na neznámý uzel viewBase
+            # odmítá výjimkou; obrázek má graf dohnat, ne na něm spadnout.
+            self._zajisti_uzel(delta["id"])
             self.window.update_node(delta["id"], glow=delta["glow"])
         else:
             raise ValueError(f"neznámá operace delty: {delta!r}")
+
+    def _zajisti_uzel(self, klic: str) -> None:
+        """Uzel, který v obrázku ještě není, do něj doplní (na požádání)."""
+        if klic not in self._uzly:
+            self.emit({"op": "node", "id": klic})
 
     def _zaved_typ(self, upos: str) -> None:
         """Zavede typ uzlu při prvním setkání.
