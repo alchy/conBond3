@@ -141,6 +141,32 @@ class TestDotaz(Zaklad):
         self.assertLessEqual(len(telo["sentences"]), 1)
 
 
+class TestLogicResolve(Zaklad):
+    """`POST /v1/logic/resolve` — dokončení doptání na referenci (§ 5)."""
+
+    def post(self, cesta: str, telo: dict):
+        data = json.dumps(telo, ensure_ascii=False).encode("utf-8")
+        pozadavek = urllib.request.Request(
+            self.adresa + cesta, data=data, method="POST",
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(pozadavek, timeout=10) as r:
+            return r.status, json.loads(r.read().decode("utf-8"))
+
+    def test_spatna_volba_je_400(self):
+        with self.assertRaises(urllib.error.HTTPError) as chyba:
+            self.post("/v1/logic/resolve", {"choice": "cokoliv"})
+        self.assertEqual(chyba.exception.code, 400)
+
+    def test_bez_formalni_vrstvy_je_503(self):
+        # fixtura nemá module.logic → služba to řekne typovaně, ne 500
+        self.service.build()
+        with self.assertRaises(urllib.error.HTTPError) as chyba:
+            self.post("/v1/logic/resolve", {"choice": "class"})
+        self.assertEqual(chyba.exception.code, 503)
+        telo = json.loads(chyba.exception.read().decode("utf-8"))
+        self.assertEqual(telo["error"]["type"], "not_built")
+
+
 class TestNeznamaCesta(Zaklad):
 
     def test_neznama_cesta_je_404_s_JSON_chybou(self):

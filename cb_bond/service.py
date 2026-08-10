@@ -282,6 +282,17 @@ class BondService:
                     method="forget_word", result="ok", output=vysledek)
         return vysledek
 
+    def resolve_reference(self, choice: str) -> dict[str, Any]:
+        """Dokončí poslední doptání formální vrstvy na referenci (§ 5)."""
+        if self.logic is None:
+            raise RuntimeError("formální vrstva neběží (chybí module.logic)")
+        vysledek = self.logic.resolve_reference(choice)
+        self._oznam(f"reference rozřešena: {choice} → "
+                    f"{vysledek.get('answer') or vysledek['kind']}",
+                    method="resolve_reference", result="ok",
+                    output=vysledek)
+        return vysledek
+
     def _pole_otazky(self, text: str):
         """Otázka jako pole nad TÝMŽ registrem jako korpus.
 

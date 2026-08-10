@@ -113,6 +113,10 @@ class BondClient:
         """Odvolá jazykový vzor slova; formální operace zůstává."""
         return self._post("/v1/logic/forget", {"lemma": lemma})
 
+    def resolve_reference(self, choice: str) -> dict[str, Any]:
+        """Dokončí doptání na referenci volbou instance|class (§ 5)."""
+        return self._post("/v1/logic/resolve", {"choice": choice})
+
     def state(self) -> dict[str, Any]:
         """Statistiky obsahu — vět, hran, lemmat, os, vazeb."""
         return self._get("/v1/state")

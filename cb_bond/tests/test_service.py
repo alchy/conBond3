@@ -304,6 +304,12 @@ class TestDotaz(Zaklad):
             prazdna.ask(OTAZKA_KREST.source)
         self.assertIn("postaven", str(chyba.exception))
 
+    def test_resolve_reference_bez_logiky_je_chyba(self):
+        # rozřešit referenci do neexistující vrstvy by bylo tiché
+        # nedorozumění — táž zásada jako u teach_pattern
+        with self.assertRaises(RuntimeError):
+            self.service.resolve_reference("class")
+
 
 class TestStavPoStavbe(Zaklad):
     """Čísla, která uvidí člověk ve `status`."""
