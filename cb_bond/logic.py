@@ -76,6 +76,12 @@ class LogicBridge:
         kind = result.candidate.kind
         if kind == "unparsed":
             return None
+        if kind == "reference_ambiguous":
+            ref = result.reference
+            return {"kind": "reference_ambiguous", "subject": ref.subject_lemma,
+                    "question": ref.question,
+                    "options": [{"choice": c, "popis": p}
+                                for c, p in ref.options]}
         if kind == "needs_pattern":
             clar = result.clarification
             return {

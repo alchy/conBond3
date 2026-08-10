@@ -103,14 +103,14 @@ class TestModalSemantics(unittest.TestCase):
     def test_moznost_nutnost_nemoznost(self):
         kb, prog, hud, clov = self._programmer_musician_kb()
         # Může být Petr programátor? → ano (∃ model)
-        _, _, a = _run_modal(kb, prog, Operation.POSSIBLE, negated=False)
+        _, _, a, _ = _run_modal(kb, prog, Operation.POSSIBLE, negated=False)
         self.assertTrue(a)
         # Musí být Petr programátor? → ne (∃ model, kde není)
-        _, res, a = _run_modal(kb, prog, Operation.NECESSARY, negated=False)
+        _, res, a, _ = _run_modal(kb, prog, Operation.NECESSARY, negated=False)
         self.assertFalse(a)
         self.assertIsNotNone(res.counterexample)   # protipříklad existuje
         # Musí být Petr člověk? → ano (∀ model)
-        _, _, a = _run_modal(kb, clov, Operation.NECESSARY, negated=False)
+        _, _, a, _ = _run_modal(kb, clov, Operation.NECESSARY, negated=False)
         self.assertTrue(a)
 
     def test_nemoznost_pri_vyloučeni(self):
@@ -119,7 +119,7 @@ class TestModalSemantics(unittest.TestCase):
         kb.assert_candidate(Assertion(
             Literal(prog), Evidence(EvidenceKind.USER_ASSERTION),
             LEVEL_DOCUMENTED))
-        _, _, a = _run_modal(kb, hud, Operation.IMPOSSIBLE, negated=False)
+        _, _, a, _ = _run_modal(kb, hud, Operation.IMPOSSIBLE, negated=False)
         self.assertTrue(a)
 
 

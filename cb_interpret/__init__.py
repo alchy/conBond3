@@ -13,7 +13,12 @@ from cb_interpret.render import (render_explanation, render_literal,
 from cb_interpret.patterns import (LearnedPattern, OPERATION_MENU, Operation,
                                    PatternStatus, PatternStore,
                                    StructuralSignature, Trigger)
-from cb_interpret.clarify import ClarificationRequest, build_clarification
+from cb_interpret.clarify import (ClarificationRequest, ReferenceClarification,
+                                  build_clarification,
+                                  build_reference_clarification)
+from cb_interpret.predication import (Modifier, Predication, Reference,
+                                      ReferenceKind, RelationMod,
+                                      extract_copular)
 
 __all__ = [
     "LanguageProfile", "cs_profile", "load_profile",
@@ -22,5 +27,8 @@ __all__ = [
     "render_explanation", "render_literal", "render_truth",
     "LearnedPattern", "OPERATION_MENU", "Operation", "PatternStatus",
     "PatternStore", "StructuralSignature", "Trigger",
-    "ClarificationRequest", "build_clarification",
+    "ClarificationRequest", "ReferenceClarification", "build_clarification",
+    "build_reference_clarification",
+    "Modifier", "Predication", "Reference", "ReferenceKind", "RelationMod",
+    "extract_copular",
 ]

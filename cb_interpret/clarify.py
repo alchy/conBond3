@@ -33,3 +33,26 @@ def build_clarification(signature: StructuralSignature) -> ClarificationRequest:
                 f"ale neznám jeho sémantické mapování. "
                 f"Jakou operaci tato konstrukce vyjadřuje?")
     return ClarificationRequest(signature, question, OPERATION_MENU)
+
+
+@dataclass(frozen=True)
+class ReferenceClarification:
+    """Doptání na referenci: konkrétní instance, nebo třída (§5)."""
+    subject_lemma: str
+    question: str
+    options: tuple[tuple[str, str], ...]
+
+    def to_json_object(self) -> dict:
+        return {"subject": self.subject_lemma, "question": self.question,
+                "options": [{"choice": c, "popis": p}
+                            for c, p in self.options]}
+
+
+def build_reference_clarification(subject_lemma: str) -> ReferenceClarification:
+    """Systém nesmí význam svévolně zvolit — nabídne obě čtení."""
+    return ReferenceClarification(
+        subject_lemma,
+        f"Ptáš se na konkrétní {subject_lemma} (instanci), nebo na "
+        f"{subject_lemma} obecně (třídu)?",
+        (("instance", f"konkrétní {subject_lemma}"),
+         ("class", f"{subject_lemma} obecně (třída)")))

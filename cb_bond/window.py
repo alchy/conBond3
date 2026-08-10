@@ -108,6 +108,11 @@ def format_logic(logika: dict[str, Any] | None) -> list[str]:
     if not logika:
         return []
     kind = logika.get("kind")
+    if kind == "reference_ambiguous":
+        radky = [f"  logika se ptá: {logika['question']}"]
+        for volba in logika.get("options", ()):
+            radky.append(f"    · {volba['choice']} — {volba['popis']}")
+        return radky
     if kind == "needs_pattern":
         # Systém zná strukturu, ne mapování — ptá se z uzavřeného menu.
         radky = [f"  logika se ptá: {logika['question']}"]
