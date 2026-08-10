@@ -257,6 +257,13 @@ class TestQueries(unittest.TestCase):
         c = interpret_sentence(vzorky.KOLIK_HODIN, "Kolik je hodin?")
         self.assertEqual(c.kind, "unparsed")
 
+    def test_tazaci_zajmeno_neni_reference(self):
+        # „Co je auto?" — zájmenný podmět je definiční otázka, ne odkaz
+        # na entitu; doptání „konkrétní co?" je nesmysl (zapsáno po demu J.)
+        c = interpret_sentence(vs.CO_JE_AUTO, "Co je auto?")
+        self.assertEqual(c.kind, "unparsed")
+        self.assertIn("zájmenný podmět", c.note)
+
 
 if __name__ == "__main__":
     unittest.main()

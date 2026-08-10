@@ -96,6 +96,12 @@ def extract_copular(children, root, question: bool) -> Predication | None:
         for a in _kids(children, root, "amod"))
     relations = []
     blockers = []
+    if subject.upos == "PRON":
+        # Zájmenný podmět není reference na entitu: „Co je auto?" je
+        # definiční otázka, „To je pes." odkaz do rozhovoru — definice
+        # i koreference jsou mimo rozsah věty-jako-jednotky. Doptání
+        # „konkrétní co?" by bylo nesmysl (zapsáno po demu).
+        blockers.append("zájmenný podmět kopulové věty mimo rozsah")
     for nmod in _kids(children, root, "nmod"):
         cases = _kids(children, nmod, "case")
         if cases:

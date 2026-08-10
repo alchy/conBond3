@@ -156,6 +156,13 @@ VLTAVA_REKA = (  # Vltava je řeka Česka.   (generalizace — unseen)
     Token(id=5, form='.', lemma='.', upos='PUNCT', xpos='Z:-------------', feats=None, head=3, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
 )
 
+CO_JE_AUTO = (  # Co je auto?   (definiční otázka — mimo rozsah)
+    Token(id=1, form='Co', lemma='co', upos='PRON', xpos='PQ--1----------', feats={'Animacy': 'Inan', 'Case': 'Nom', 'PronType': 'Int,Rel'}, head=3, deprel='nsubj', deps=None, misc=None),
+    Token(id=2, form='je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=3, deprel='cop', deps=None, misc=None),
+    Token(id=3, form='auto', lemma='auto', upos='NOUN', xpos='NNNS1-----A----', feats={'Case': 'Nom', 'Gender': 'Neut', 'Number': 'Sing'}, head=0, deprel='root', deps=None, misc={'SpaceAfter': 'No'}),
+    Token(id=4, form='?', lemma='?', upos='PUNCT', xpos='Z:-------------', feats=None, head=3, deprel='punct', deps=None, misc={'SpaceAfter': 'No'}),
+)
+
 JE_PETR_ZKUSENY = (  # Je Petr zkušený programátor?
     Token(id=1, form='Je', lemma='být', upos='AUX', xpos='VB-S---3P-AAI--', feats={'Aspect': 'Imp', 'Mood': 'Ind', 'Number': 'Sing', 'Person': '3', 'Polarity': 'Pos', 'Tense': 'Pres', 'VerbForm': 'Fin', 'Voice': 'Act'}, head=4, deprel='cop', deps=None, misc=None),
     Token(id=2, form='Petr', lemma='Petr', upos='PROPN', xpos='NNMS1-----A----', feats={'Animacy': 'Anim', 'Case': 'Nom', 'Gender': 'Masc', 'NameType': 'Giv', 'Number': 'Sing'}, head=4, deprel='nsubj', deps=None, misc=None),
