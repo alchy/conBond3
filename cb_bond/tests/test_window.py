@@ -238,6 +238,19 @@ class TestPrepisOken(unittest.TestCase):
         self.assertIn("odvozeno: petr je člověk",
                       self.okno.texty(DIALOG_ID))
 
+    def test_tvrzeni_bez_otazniku_se_UCI_ne_pta(self):
+        """Věta bez '?' je sdělení → context (učení), ne ask (kap. 19.1)."""
+        self._vstup("Petr je programátor.")
+        self.assertEqual(self.sluzba.kontexty, ["Petr je programátor."])
+        self.assertEqual(self.sluzba.dotazy, [])
+        self.assertIn("odvozeno: petr je člověk",
+                      self.okno.texty(DIALOG_ID))
+
+    def test_otazka_s_otaznikem_se_PTA(self):
+        self._vstup("Je Petr člověk?")
+        self.assertEqual(self.sluzba.dotazy, [("Je Petr člověk?", 5)])
+        self.assertEqual(self.sluzba.kontexty, [])
+
     def test_prikaz_zapomen_z_okna(self):
         self._vstup(":zapomen moci")
         self.assertEqual(self.sluzba.zapomenuta, ["moci"])

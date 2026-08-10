@@ -218,8 +218,10 @@ class BondWindows:
         try:
             if radek.startswith(":"):
                 self._prikaz(radek)
+            elif radek.rstrip().endswith("?"):
+                self.ask(radek)          # otázka → odpověď
             else:
-                self.ask(radek)
+                self._sdel(radek)        # tvrzení → uč se (kap. 19.1)
         except Exception as e:                # noqa: BLE001
             self._pis(DIALOG_ID, [f"  chyba: {type(e).__name__}: {e}"])
 
@@ -232,16 +234,7 @@ class BondWindows:
         jmeno, _, zbytek = radek[1:].partition(" ")
         zbytek = zbytek.strip()
         if jmeno == "context" and zbytek:
-            stav = self.service.context(zbytek)
-            logika = stav.get("logic") or {}
-            radky = [f": {zbytek}",
-                     f"  korpus +{stav.get('added_sentences', 0)} vět · "
-                     f"graf +{stav.get('added_edges', 0)} hran"]
-            if logika.get("outcome"):
-                radky.append(f"  logika — {logika['kind']}: {logika['outcome']}")
-                for fakt in logika.get("derived", ()):
-                    radky.append(f"    odvozeno: {fakt}")
-            self._pis(DIALOG_ID, radky)
+            self._sdel(zbytek)
         elif jmeno == "vzor":
             casti = zbytek.split()
             if len(casti) != 2 or casti[1] not in (
@@ -263,6 +256,26 @@ class BondWindows:
             self._pis(DIALOG_ID,
                       [f"  neznámý příkaz {jmeno!r}; "
                        f"umím :context :vzor :zapomen :state"])
+
+    def _sdel(self, text: str) -> None:
+        """Tvrzení od člověka → korpus, graf a formální báze se z něj učí.
+
+        Věta bez otazníku je sdělení, ne otázka (kap. 19.1): systém ji
+        má přijmout a naučit se z ní, ne ji hledat v korpusu. Co přijala
+        formální vrstva a co z toho odvodila, se ukáže v okně.
+        """
+        stav = self.service.context(text)
+        logika = stav.get("logic") or {}
+        radky = [f"! {text}",
+                 f"  korpus +{stav.get('added_sentences', 0)} vět · "
+                 f"graf +{stav.get('added_edges', 0)} hran"]
+        if logika.get("outcome"):
+            radky.append(f"  logika — {logika['kind']}: {logika['outcome']}")
+            for fakt in logika.get("derived", ()):
+                radky.append(f"    odvozeno: {fakt}")
+        elif logika.get("note"):
+            radky.append(f"  logika — neinterpretováno: {logika['note']}")
+        self._pis(DIALOG_ID, radky)
 
     def _pis(self, window_id: str, radky: list[str]) -> None:
         self.window.terminal_write(window_id, "\n".join(radky))
