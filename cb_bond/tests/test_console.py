@@ -122,6 +122,21 @@ class TestPrikazy(unittest.TestCase):
 
         self.assertEqual(konzole.service.rozreseno, "instance")
 
+    def test_chyba_prikazu_se_vypise_a_konzole_bezi_dal(self):
+        # Zapsáno po reálném pádu: stará služba bez /v1/logic/resolve
+        # hodila RuntimeError a spadla celá konzole. Chyba se píše do
+        # výstupu jako u otázky — člověk čte dál, nehledá traceback.
+        konzole, vystup = _konzole(":trida\nKdo?\n")
+
+        def chyba(choice):
+            raise RuntimeError("neznámá cesta /v1/logic/resolve")
+        konzole.service.resolve_reference = chyba
+
+        konzole.run()
+
+        self.assertIn("chyba", vystup.getvalue())
+        self.assertEqual(konzole.service.dotazy, ["Kdo?"])   # běží dál
+
 
 if __name__ == "__main__":
     unittest.main()

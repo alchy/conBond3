@@ -47,7 +47,14 @@ class Console:
             if not text:
                 continue
             if text.startswith(":"):
-                if not self._prikaz(text):
+                # Chyba příkazu se píše do výstupu jako u otázky — pád
+                # celé konzole by člověku vzal i rozečtený dialog.
+                try:
+                    pokracovat = self._prikaz(text)
+                except Exception as e:            # noqa: BLE001
+                    self._pis(f"  chyba: {type(e).__name__}: {e}")
+                    continue
+                if not pokracovat:
                     return 0
                 continue
             self._otazka(text)
