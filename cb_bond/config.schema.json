@@ -180,6 +180,7 @@
         "promotion",
         "relations",
         "state",
+        "logic",
         "seed"
       ],
       "properties": {
@@ -441,6 +442,19 @@
             "save_on_accept": {
               "description": "Ukládat jen PŘIJATÝ stav promoce. Vrácený cyklus se neukládá vůbec.",
               "type": "boolean"
+            }
+          }
+        },
+        "logic": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kb_file"
+          ],
+          "properties": {
+            "kb_file": {
+              "description": "Kam se persistuje formální báze znalostí (cb_logic, JSON round-trip). Znalost z dialogu musí přežít restart — bez toho je učení jen stav procesu (ARCHITECTURE_REVIEW P5).",
+              "type": "string"
             }
           }
         },

@@ -1,6 +1,7 @@
 # INTERPRETATION — interpretace jazyka, učení z dialogu, integrace (návrh, fáze 9–11)
 
-**Stav:** návrh; implementuje se v témž kroku (pokyn „pokračuj s implementací").
+**Stav:** implementováno (`cb_interpret/`, `cb_bond/logic.py`, integrace
+v `cb_bond/service.py`); dokument odpovídá implementaci.
 **Vzniká z:** zadání §8–§10, §47; ARCHITECTURE_REVIEW P1/P2; KNOWLEDGE_MODEL § 4
 (Assertion); README-ARCHITECTURE_OVERVIEW kap. 6 (jazyk v profilech), INV-11.
 

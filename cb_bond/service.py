@@ -71,6 +71,7 @@ class BondService:
         self.verbose = verbose
         self.corpus = None
         self.graph = None
+        self.logic = None
         self._files: tuple[Path, ...] = ()
         self._matcher = None
         self._responder = None
@@ -127,6 +128,14 @@ class BondService:
             self.graph.add_sentence(pole)
         self.invalidate()
 
+        # Formální vrstva stojí VEDLE retrieval cesty; bez konfigurace
+        # (testovací fixtury) služba běží jako dřív a `logic` je None.
+        nastaveni_logiky = self.config["module"].get("logic")
+        if nastaveni_logiky is not None:
+            from cb_bond.logic import LogicBridge
+            self.logic = LogicBridge(self.parser,
+                                     nastaveni_logiky["kb_file"])
+
         stav = self.state()
         self._oznam(f"postaveno: {stav['sentences']} vět · "
                     f"{stav['edges']} hran · {stav['axes']} os",
@@ -182,6 +191,8 @@ class BondService:
             "sentences": self._kandidatni_vety(vysledek, kolik),
             "axes": [{"axis": osa, "coverage": float(hodnota)}
                      for osa, hodnota in pokryti.items()],
+            "logic": (self.logic.ask(text)
+                      if self.logic is not None else None),
         }
         self._oznam(
             f"otázka {text!r} → {vystup['answer']!r} ({vystup['outcome']})",
@@ -217,6 +228,8 @@ class BondService:
         # a celek se znaménkem plus by znamenal něco úplně jiného.
         stav["added_sentences"] = stav["sentences"] - pred["sentences"]
         stav["added_edges"] = stav["edges"] - pred["edges"]
+        stav["logic"] = (self.logic.context(text)
+                         if self.logic is not None else None)
         self._oznam(f"kontext: {text!r} → korpus {stav['sentences']} vět "
                     f"(+{stav['added_sentences']}) · "
                     f"graf +{stav['added_edges']} hran",
