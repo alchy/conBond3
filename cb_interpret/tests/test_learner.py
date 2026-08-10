@@ -79,6 +79,15 @@ class TestAsk(unittest.TestCase):
         rel = {lit.atom.relation.name for lit in result.definition}
         self.assertEqual(rel, {"prostředek", "dopravní"})
 
+    def test_definice_tridy_se_neopakuje(self):
+        # dvakrát sdělené pravidlo nesmí výčet zdvojit (zapsáno po demu)
+        learner = make_learner()
+        learner.learn(vs.AUTO_PROSTREDEK, "Auto je dopravní prostředek.")
+        learner.learn(vs.AUTO_PROSTREDEK, "Auto je dopravní prostředek.")
+        result = learner.ask(vs.CO_JE_AUTO, "Co je auto?")
+        self.assertEqual(len(result.definition),
+                         len(set(result.definition)))
+
     def test_definice_bez_znalosti_je_prazdna(self):
         learner = make_learner()
         result = learner.ask(vs.CO_JE_TO_VITAMIN, "Co je to vitamín?")

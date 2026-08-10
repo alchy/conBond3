@@ -191,14 +191,18 @@ class DialogueLearner:
             return AskResult(candidate, None, (), None,
                              definition=tuple(known))
         known = []
+        seen = set()
         for rule, _ in self.kb.rules:
             if lemma not in {a.relation.name for a in atoms(rule.body)}:
                 continue
             head = rule.head
             display = tuple(Value(lemma) if isinstance(arg, Variable)
                             else arg for arg in head.atom.args)
-            known.append(Literal(Atom(head.atom.relation, display),
-                                 head.positive))
+            literal = Literal(Atom(head.atom.relation, display),
+                              head.positive)
+            if literal not in seen:      # dvakrát sdělené pravidlo
+                seen.add(literal)
+                known.append(literal)
         return AskResult(candidate, None, (), None, definition=tuple(known))
 
     def resolve_reference(self, candidate: Candidate,
