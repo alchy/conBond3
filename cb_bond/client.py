@@ -103,6 +103,16 @@ class BondClient:
         """
         return self._post("/v1/context", {"text": text})
 
+    def teach_pattern(self, lemma: str, operation: str) -> dict[str, Any]:
+        """Naučí jazykový vzor operátoru (LANGUAGE_LEARNING.md)."""
+        return self._post("/v1/logic/pattern",
+                          {"lemma": lemma, "operation": operation,
+                           "learned_from": "konzole"})
+
+    def forget_word(self, lemma: str) -> dict[str, Any]:
+        """Odvolá jazykový vzor slova; formální operace zůstává."""
+        return self._post("/v1/logic/forget", {"lemma": lemma})
+
     def state(self) -> dict[str, Any]:
         """Statistiky obsahu — vět, hran, lemmat, os, vazeb."""
         return self._get("/v1/state")

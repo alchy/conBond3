@@ -91,6 +91,7 @@
       "load_on_start": true,
       "save_on_accept": true
     },
+    "logic": {"kb_file": "cb_bond/persistent-logic/kb.json"},
     "seed": 328
   }
 }

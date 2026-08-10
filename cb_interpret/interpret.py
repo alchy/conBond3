@@ -1,0 +1,273 @@
+"""Interpretace věty — obecné strukturální vzory nad UD.
+
+Kód nezná jediné slovo přirozeného jazyka: rozhoduje strom (deprel),
+slovní druhy (upos) a rysy (PronType, Polarity). Jména relací a entit
+vznikají z lemmat vstupu — vrstva jen NAVRHUJE (INV-11).
+
+Zásada (INTERPRETATION_IR.md): tichého zjednodušení, které mění význam,
+se vrstva nedopustí. Kopulová věta se složeným přísudkem se rozloží na
+strukturovanou reprezentaci (predikace) a sníží do konjunkce faktů/pravidel
+tak, aby se NEZTRATILY přívlastky ani předložkové vztahy. Co vzor neunese,
+je `unparsed` s důvodem; nejednoznačná reference je doptání, ne hádání.
+Každý formální kus nese provenienci (které tokeny ho vytvořily).
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+from cb_logic import (Atom, AtomRef, Entity, Expression, Literal, Not,
+                      Relation, Rule, Value, Variable, conj, from_literal)
+from cb_interpret.patterns import Operation, StructuralSignature
+from cb_interpret.predication import (Predication, Reference, ReferenceKind,
+                                      extract_copular)
+
+NOMINAL_UPOS = {"NOUN", "PROPN", "ADJ"}
+
+
+@dataclass(frozen=True)
+class Candidate:
+    """Kandidátní interpretace jedné věty; není to znalost.
+
+    kind: fact | rule | query | modal_query | needs_pattern |
+          reference_ambiguous | unparsed
+    """
+    kind: str
+    source_text: str
+    literals: tuple[Literal, ...] = ()             # fact: konjunkce faktů
+    rules: tuple[Rule, ...] = ()                   # rule: konjunkce pravidel
+    query_expr: Expression | None = None           # query: výraz k vyhodnocení
+    query_atoms: tuple[Atom, ...] = ()             # atomy dotazu (vysvětlení)
+    literal: Literal | None = None                 # modal: propozice
+    relations: tuple[Relation, ...] = ()
+    entities: tuple[Entity, ...] = ()
+    provenance: tuple[tuple[str, int], ...] = ()   # (formální kus, token)
+    note: str | None = None
+    operation: Operation | None = None
+    signature: StructuralSignature | None = None
+    negated: bool = False
+    predication: Predication | None = None         # reference_ambiguous
+
+
+def interpret_sentence(tokens, text: str, *, patterns=None,
+                       domain: str = "entita",
+                       question_mark: str = "?") -> Candidate:
+    children: dict[int, list] = {}
+    root = None
+    for token in tokens:
+        if token.head == 0:
+            root = token
+        children.setdefault(token.head, []).append(token)
+    if root is None:
+        return _unparsed(text, "chybí kořen rozboru")
+    question = text.rstrip().endswith(question_mark)
+
+    if root.upos in NOMINAL_UPOS and _kids(children, root, "cop"):
+        pred = extract_copular(children, root, question)
+        if pred is None:
+            return _unparsed(text, "kopula bez podmětu")
+        return _lower_copular(pred, text, domain)
+    if root.upos == "VERB" and _kids(children, root, "xcomp"):
+        return _operator(children, root, text, patterns)
+    if root.upos == "VERB":
+        return _verbal(children, root, text, question)
+    return _unparsed(text, f"vzor věty mimo rozsah (kořen {root.upos})")
+
+
+# --- kopulová predikace (obecná, se složeným přísudkem) -----------------
+
+def _lower_copular(pred: Predication, text: str, domain: str) -> Candidate:
+    """Predikace → konjunkce faktů/pravidel/dotazu; zachová VŠE."""
+    head_positive = not (pred.negated or "Neg" in pred.determiner_prontypes)
+    has_extra = bool(pred.modifiers or pred.relations)
+    # Negace složeného přísudku má nejednoznačný dosah (De Morgan) — raději
+    # unparsed než tiché zjednodušení, které mění význam.
+    if not head_positive and has_extra:
+        return _unparsed(text, "negace složeného přísudku mimo rozsah")
+
+    subj = pred.subject
+    if subj.kind is ReferenceKind.INDIVIDUAL:
+        subj_term: object = _entity_from(subj)
+    else:
+        subj_term = Variable("X")
+    conjuncts, relations, entities = build_conjuncts(pred, subj_term)
+    provenance = tuple((popis, token) for _, _, token, popis in conjuncts)
+
+    if subj.kind is ReferenceKind.AMBIGUOUS:
+        # obecné jméno v otázce — nejednoznačná reference → doptání (§5)
+        return Candidate("reference_ambiguous", text, predication=pred,
+                         relations=tuple(relations), provenance=provenance,
+                         note=f"reference {subj.lemma!r}: instance, nebo třída?")
+
+    if subj.kind is ReferenceKind.INDIVIDUAL and not pred.is_question:
+        literals = tuple(Literal(atom, pos) for atom, pos, _, _ in conjuncts)
+        return Candidate("fact", text, literals=literals,
+                         relations=tuple(relations),
+                         entities=tuple(entities), provenance=provenance)
+
+    if subj.kind is ReferenceKind.CLASS and not pred.is_question:
+        subject_rel = Relation(subj.lemma, 1)
+        relations.append(subject_rel)
+        x = subj_term  # Variable("X")
+        rules = tuple(
+            Rule(((x, domain),), AtomRef(Atom(subject_rel, (x,))),
+                 Literal(atom, pos))
+            for atom, pos, _, _ in conjuncts)
+        return Candidate("rule", text, rules=rules,
+                         relations=tuple(relations), provenance=provenance)
+
+    # INDIVIDUAL otázka → dotaz nad konjunkcí atomů
+    exprs = tuple(_ref(atom, pos) for atom, pos, _, _ in conjuncts)
+    query_expr = conj(*exprs) if len(exprs) > 1 else exprs[0]
+    return Candidate("query", text, query_expr=query_expr,
+                     query_atoms=tuple(a for a, _, _, _ in conjuncts),
+                     relations=tuple(relations), entities=tuple(entities),
+                     provenance=provenance)
+
+
+def build_conjuncts(pred: Predication, subject_term):
+    """Konjunkty predikace pro daný podmět — sdílené lowering i probe.
+
+    Vrací (konjunkty, relace, entity), kde konjunkt je
+    (atom, positive, token, popis). Podmět přichází zvenčí, takže totéž
+    jde použít pro entitu i pro arbitrární instanci (třídní čtení).
+    """
+    head_positive = not (pred.negated or "Neg" in pred.determiner_prontypes)
+    conjuncts: list[tuple[Atom, bool, int, str]] = []
+    relations: list[Relation] = []
+    entities: list = []
+    if isinstance(subject_term, Entity):
+        entities.append(subject_term)
+
+    head_rel = Relation(pred.head_lemma, 1)
+    relations.append(head_rel)
+    conjuncts.append((Atom(head_rel, (subject_term,)), head_positive,
+                      pred.head_token, _txt(pred.head_lemma, pred.subject)))
+    for mod in pred.modifiers:
+        rel = Relation(mod.lemma, 1)
+        relations.append(rel)
+        conjuncts.append((Atom(rel, (subject_term,)), not mod.negated,
+                          mod.token_id, _txt(mod.lemma, pred.subject)))
+    for rmod in pred.relations:
+        rel = Relation(rmod.preposition, 2)
+        relations.append(rel)
+        if rmod.target_upos == "PROPN":
+            target: object = Entity(rmod.target_lemma.lower(),
+                                    label=rmod.target_lemma)
+            entities.append(target)
+        else:
+            target = Value(rmod.target_lemma)
+        conjuncts.append((Atom(rel, (subject_term, target)), True,
+                          rmod.token_id,
+                          f"{rmod.preposition}(…, {rmod.target_lemma})"))
+    return conjuncts, relations, entities
+
+
+def _ref(atom: Atom, positive: bool) -> Expression:
+    ref = AtomRef(atom)
+    return ref if positive else Not(ref)
+
+
+def _txt(lemma: str, subj: Reference) -> str:
+    return f"{lemma}({subj.lemma})"
+
+
+def _entity_from(ref: Reference) -> Entity:
+    return Entity(ref.lemma.lower(), label=ref.lemma)
+
+
+# --- slovesné věty ------------------------------------------------------
+
+def _verbal(children, root, text, question) -> Candidate:
+    subjects = _kids(children, root, "nsubj")
+    if not subjects:
+        return _unparsed(text, "sloveso bez podmětu")
+    subject = subjects[0]
+    if _kids(children, subject, "det"):
+        return _unparsed(text, "určený podmět slovesné věty mimo rozsah")
+    if subject.upos != "PROPN":
+        return _unparsed(text, "obecný podmět slovesné věty mimo rozsah")
+    entity = _entity(subject)
+    negated = _negated(root)
+    atom, entities, relation = _predicate_atom(children, root, entity)
+    if question:
+        return Candidate("query", text, query_expr=_ref(atom, not negated),
+                         query_atoms=(atom,), relations=(relation,),
+                         entities=entities,
+                         provenance=((f"{relation.name}(…)", root.id),))
+    return Candidate("fact", text, literals=(Literal(atom, not negated),),
+                     relations=(relation,), entities=entities,
+                     provenance=((f"{relation.name}(…)", root.id),))
+
+
+def _operator(children, root, text, patterns) -> Candidate:
+    """Operátorové sloveso s xcomp: matrix podmět řídí vložený přísudek."""
+    subjects = _kids(children, root, "nsubj")
+    if not subjects:
+        return _unparsed(text, "operátorové sloveso bez podmětu")
+    subject_entity = _entity(subjects[0])
+    xcomp = _kids(children, root, "xcomp")[0]
+    atom, entities, relation = _predicate_atom(children, xcomp, subject_entity)
+    negated = _negated(root)
+    signature = StructuralSignature(
+        root.lemma, has_xcomp=True,
+        has_obj=bool(_kids(children, xcomp, "obj")),
+        has_obl=bool(_kids(children, xcomp, "obl")))
+    literal = Literal(atom)
+
+    matched = patterns.match(signature) if patterns is not None else None
+    if matched is not None:
+        return Candidate("modal_query", text, literal=literal,
+                         operation=matched.operation, negated=negated,
+                         relations=(relation,), entities=entities,
+                         signature=signature)
+    return Candidate("needs_pattern", text, literal=literal, negated=negated,
+                     relations=(relation,), entities=entities,
+                     signature=signature,
+                     note=f"neznámé mapování operátoru {root.lemma!r}")
+
+
+def _predicate_atom(children, verb, subject_entity):
+    entities = [subject_entity]
+    objects = _kids(children, verb, "obj")
+    obliques = _kids(children, verb, "obl")
+    if objects:
+        relation = Relation(verb.lemma, 2)
+        second, extra = _term_for(objects[0])
+    else:
+        with_case = [o for o in obliques if _kids(children, o, "case")]
+        if with_case:
+            oblique = with_case[0]
+            adposition = _kids(children, oblique, "case")[0]
+            relation = Relation(f"{verb.lemma}_{adposition.lemma}", 2)
+            second, extra = _term_for(oblique)
+        else:
+            relation = Relation(verb.lemma, 1)
+            second, extra = None, ()
+    entities.extend(extra)
+    args = (subject_entity,) if second is None else (subject_entity, second)
+    return Atom(relation, args), tuple(entities), relation
+
+
+def _kids(children, token, deprel):
+    return [c for c in children.get(token.id, [])
+            if c.deprel and (c.deprel == deprel
+                             or c.deprel.startswith(deprel + ":"))]
+
+
+def _negated(token) -> bool:
+    return bool(token.feats) and token.feats.get("Polarity") == "Neg"
+
+
+def _entity(token) -> Entity:
+    return Entity(token.lemma.lower(), label=token.form)
+
+
+def _term_for(token):
+    if token.upos == "PROPN":
+        entity = _entity(token)
+        return entity, (entity,)
+    return Value(token.lemma), ()
+
+
+def _unparsed(text: str, note: str) -> Candidate:
+    return Candidate("unparsed", text, note=note)

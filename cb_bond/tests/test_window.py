@@ -62,16 +62,36 @@ class _Okno:
 
 
 class _Sluzba:
-    """Atrapa fasády — vrací hotovou odpověď."""
+    """Atrapa fasády — vrací hotovou odpověď a zaznamenává volání."""
 
     def __init__(self, odpoved=ODPOVED):
         self.odpoved = odpoved
         self.dotazy = []
+        self.kontexty = []
+        self.vzory = []
+        self.zapomenuta = []
         self.graph = object()
 
     def ask(self, text, *, top=None):
         self.dotazy.append((text, top))
         return dict(self.odpoved, question=text)
+
+    def context(self, text):
+        self.kontexty.append(text)
+        return {"sentences": 1, "added_sentences": 1, "added_edges": 2,
+                "logic": {"kind": "fact", "outcome": "accepted",
+                          "derived": ["petr je člověk"]}}
+
+    def teach_pattern(self, lemma, operation, *, learned_from=""):
+        self.vzory.append((lemma, operation))
+        return {"lemma": lemma, "operation": operation, "status": "hypothesis"}
+
+    def forget_word(self, lemma):
+        self.zapomenuta.append(lemma)
+        return {"lemma": lemma, "revoked": True}
+
+    def state(self):
+        return {"facts": 1}
 
 
 class TestFormatovani(unittest.TestCase):
@@ -108,6 +128,40 @@ class TestFormatovani(unittest.TestCase):
         text = "\n".join(format_answer(ticho))
 
         self.assertIn("mlčí", text)
+
+    def test_formalni_odpoved_je_v_okne_videt(self):
+        s_logikou = dict(ODPOVED, logic={
+            "kind": "query", "truth": "TRUE", "answer": "Ano.",
+            "explanations": ["petr je člověk, protože petr je programátor "
+                             "(doloženo: dialog)"],
+            "conflicted": False})
+
+        text = "\n".join(format_answer(s_logikou))
+
+        self.assertIn("logika: Ano.", text)
+        self.assertIn("protože", text)
+
+    def test_bez_logiky_se_okno_nemeni(self):
+        bez = dict(ODPOVED)
+        bez.pop("logic", None)
+        self.assertNotIn("logika", "\n".join(format_answer(bez)))
+
+    def test_doptani_ukaze_menu_operaci(self):
+        s_doptanim = dict(ODPOVED, logic={
+            "kind": "needs_pattern", "lemma": "moci",
+            "question": "Jakou operaci to vyjadřuje?",
+            "options": [{"operation": "possible", "popis": "aspoň v jednom"},
+                        {"operation": "necessary", "popis": "ve všech"}]})
+        text = "\n".join(format_answer(s_doptanim))
+        self.assertIn("logika se ptá", text)
+        self.assertIn("possible", text)
+        self.assertIn(":vzor moci", text)
+
+    def test_modalni_odpoved(self):
+        s_modalitou = dict(ODPOVED, logic={
+            "kind": "modal_query", "operation": "possible", "answer": "Ano."})
+        self.assertIn("logika (possible): Ano.",
+                      "\n".join(format_answer(s_modalitou)))
 
 
 class TestPrepisOken(unittest.TestCase):
@@ -165,6 +219,46 @@ class TestPrepisOken(unittest.TestCase):
         self.okna.ask("Kdo?")
 
         self.assertEqual(self.sluzba.dotazy, [("Kdo?", 5)])
+
+    def _vstup(self, radek):
+        import types
+        self.okna.attach()
+        self.okno.callbacky[DIALOG_ID](
+            types.SimpleNamespace(window_id=DIALOG_ID, line=radek))
+
+    def test_prikaz_vzor_uci_z_okna(self):
+        self._vstup(":vzor moci possible")
+        self.assertEqual(self.sluzba.vzory, [("moci", "possible")])
+        self.assertEqual(self.sluzba.dotazy, [])          # nešlo to jako otázka
+        self.assertIn("naučeno", self.okno.texty(DIALOG_ID))
+
+    def test_prikaz_context_z_okna(self):
+        self._vstup(":context Petr je programátor.")
+        self.assertEqual(self.sluzba.kontexty, ["Petr je programátor."])
+        self.assertIn("odvozeno: petr je člověk",
+                      self.okno.texty(DIALOG_ID))
+
+    def test_tvrzeni_bez_otazniku_se_UCI_ne_pta(self):
+        """Věta bez '?' je sdělení → context (učení), ne ask (kap. 19.1)."""
+        self._vstup("Petr je programátor.")
+        self.assertEqual(self.sluzba.kontexty, ["Petr je programátor."])
+        self.assertEqual(self.sluzba.dotazy, [])
+        self.assertIn("odvozeno: petr je člověk",
+                      self.okno.texty(DIALOG_ID))
+
+    def test_otazka_s_otaznikem_se_PTA(self):
+        self._vstup("Je Petr člověk?")
+        self.assertEqual(self.sluzba.dotazy, [("Je Petr člověk?", 5)])
+        self.assertEqual(self.sluzba.kontexty, [])
+
+    def test_prikaz_zapomen_z_okna(self):
+        self._vstup(":zapomen moci")
+        self.assertEqual(self.sluzba.zapomenuta, ["moci"])
+
+    def test_neznamy_prikaz_je_hlaska_ne_otazka(self):
+        self._vstup(":neco")
+        self.assertEqual(self.sluzba.dotazy, [])
+        self.assertIn("neznámý příkaz", self.okno.texty(DIALOG_ID))
 
 
 try:

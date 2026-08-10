@@ -165,6 +165,8 @@ rozešlo se něco v datech — čísla jsou zmražená schválně.
 | `cb-field` | věta jako pole vážených aktivací na osách | knihovna | 42300 rezervováno (službou zatím není) |
 | `cb-bond` | graf faktů, párování, odpověď, dialog | `./cb-bond.py` | 42400 API · 42401 okna |
 | `cb-config` | načtení a ověření konfigurace | knihovna | — |
+| `cb-logic` | formální jádro: znalost, logika, modely, provenience | knihovna | — |
+| `cb-interpret` | věta → kandidátní tvrzení; učení z dialogu | knihovna | — |
 
 Adresář bez `cb-*.py` v kořeni je knihovna — nemá co obsluhovat.
 
@@ -179,7 +181,11 @@ vnitřku.
 
 | chci vědět | čti |
 |---|---|
+| **stav reasoning vrstvy a co teď řešit** | **`HANDOVER.md`** |
 | proč je systém takhle navržený | `README-ARCHITECTURE_OVERVIEW.md` |
+| audit + cílová architektura reasoningu | `ARCHITECTURE_REVIEW.md` |
+| formální jádro (znalost, logika, modely) | `KNOWLEDGE_MODEL.md`, `LOGIC_SEMANTICS.md`, `INFERENCE_ENGINE.md`, `MODEL_REASONING.md` |
+| jazyk → tvrzení, učení z dialogu | `INTERPRETATION.md`, `INTERPRETATION_IR.md`, `LANGUAGE_LEARNING.md` |
 | pravidla, která platí pro každý modul | `README-MODULES.md` |
 | jak se ptát a co znamená rozklad skóre | `README-BOND.md` |
 | co je pole věty a jak vzniká | `README-FIELD.md` |

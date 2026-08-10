@@ -95,6 +95,43 @@ def format_answer(odpoved: dict[str, Any]) -> list[str]:
             for jmeno, hodnota in odpoved["decomposition"].items()))
     if odpoved.get("missing"):
         radky.append(f"  chybí: {', '.join(odpoved['missing'])}")
+    radky.extend(format_logic(odpoved.get("logic")))
+    return radky
+
+
+def format_logic(logika: dict[str, Any] | None) -> list[str]:
+    """Řádky formální vrstvy — podle druhu: odpověď, modalita, doptání.
+
+    Formální vrstva stojí vedle retrieval cesty; když má co říct, patří
+    její verdikt, řetěz i doptání do téhož okna, ne do logu.
+    """
+    if not logika:
+        return []
+    kind = logika.get("kind")
+    if kind == "reference_ambiguous":
+        radky = [f"  logika se ptá: {logika['question']}"]
+        for volba in logika.get("options", ()):
+            radky.append(f"    · {volba['choice']} — {volba['popis']}")
+        return radky
+    if kind == "needs_pattern":
+        # Systém zná strukturu, ne mapování — ptá se z uzavřeného menu.
+        radky = [f"  logika se ptá: {logika['question']}"]
+        for volba in logika.get("options", ()):
+            radky.append(f"    · {volba['operation']} — {volba['popis']}")
+        radky.append(f"    (nauč příkazem  :vzor {logika['lemma']} "
+                     f"<possible|necessary|impossible>)")
+        return radky
+    if kind == "modal_query":
+        return [f"  logika ({logika['operation']}): {logika['answer']}"]
+    radky = []
+    if logika.get("answer"):
+        radky.append(f"  logika: {logika['answer']}")
+    for vysvetleni in logika.get("explanations", ()):
+        radky.append(f"    {vysvetleni}")
+    for chybejici in logika.get("missing", ()):
+        radky.append(f"    chybí vědět: {chybejici}")
+    if logika.get("conflicted"):
+        radky.append("    pozor: k dotazu eviduji rozpor")
     return radky
 
 
@@ -184,9 +221,66 @@ class BondWindows:
         if not radek:
             return
         try:
-            self.ask(radek)
+            if radek.startswith(":"):
+                self._prikaz(radek)
+            elif radek.rstrip().endswith("?"):
+                self.ask(radek)          # otázka → odpověď
+            else:
+                self._sdel(radek)        # tvrzení → uč se (kap. 19.1)
         except Exception as e:                # noqa: BLE001
             self._pis(DIALOG_ID, [f"  chyba: {type(e).__name__}: {e}"])
+
+    def _prikaz(self, radek: str) -> None:
+        """Příkazy okna — táž sada jako konzole (:context/:vzor/:zapomen/:state).
+
+        Bez nich by v prohlížeči nešlo systému nic sdělit ani ho učit;
+        okno by umělo jen otázky a dialog by byl jednosměrný.
+        """
+        jmeno, _, zbytek = radek[1:].partition(" ")
+        zbytek = zbytek.strip()
+        if jmeno == "context" and zbytek:
+            self._sdel(zbytek)
+        elif jmeno == "vzor":
+            casti = zbytek.split()
+            if len(casti) != 2 or casti[1] not in (
+                    "possible", "necessary", "impossible"):
+                self._pis(DIALOG_ID,
+                          ["  :vzor <slovo> <possible|necessary|impossible>"])
+                return
+            v = self.service.teach_pattern(casti[0], casti[1])
+            self._pis(DIALOG_ID, [f"  naučeno: {v['lemma']!r} → "
+                                  f"{v['operation']} ({v['status']})"])
+        elif jmeno == "zapomen" and zbytek:
+            v = self.service.forget_word(zbytek)
+            self._pis(DIALOG_ID, [f"  odvoláno: {v['lemma']!r}"
+                                  + ("" if v["revoked"] else " (nebyl naučen)")])
+        elif jmeno == "state":
+            self._pis(DIALOG_ID, [f"  {k}: {v}"
+                                  for k, v in self.service.state().items()])
+        else:
+            self._pis(DIALOG_ID,
+                      [f"  neznámý příkaz {jmeno!r}; "
+                       f"umím :context :vzor :zapomen :state"])
+
+    def _sdel(self, text: str) -> None:
+        """Tvrzení od člověka → korpus, graf a formální báze se z něj učí.
+
+        Věta bez otazníku je sdělení, ne otázka (kap. 19.1): systém ji
+        má přijmout a naučit se z ní, ne ji hledat v korpusu. Co přijala
+        formální vrstva a co z toho odvodila, se ukáže v okně.
+        """
+        stav = self.service.context(text)
+        logika = stav.get("logic") or {}
+        radky = [f"! {text}",
+                 f"  korpus +{stav.get('added_sentences', 0)} vět · "
+                 f"graf +{stav.get('added_edges', 0)} hran"]
+        if logika.get("outcome"):
+            radky.append(f"  logika — {logika['kind']}: {logika['outcome']}")
+            for fakt in logika.get("derived", ()):
+                radky.append(f"    odvozeno: {fakt}")
+        elif logika.get("note"):
+            radky.append(f"  logika — neinterpretováno: {logika['note']}")
+        self._pis(DIALOG_ID, radky)
 
     def _pis(self, window_id: str, radky: list[str]) -> None:
         self.window.terminal_write(window_id, "\n".join(radky))

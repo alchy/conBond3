@@ -125,6 +125,26 @@ class TestZrcadlo(unittest.TestCase):
         with self.assertRaises(ValueError):
             zrcadlo.emit({"op": "cosi", "id": "x"})
 
+    def test_glow_na_uzel_pribyly_z_dialogu_ho_nejdriv_zalozi(self):
+        """viewBase glow na neznámý uzel odmítá — obrázek má graf DOHNAT,
+
+        ne na něm spadnout. Věta z dialogu přidá do grafu uzel, který
+        okno ještě nezná; illuminate ho musí založit, ne shodit službu.
+        """
+        class _StriktniOkno(_Okno):
+            def update_node(self, node_id, **meta):
+                if node_id not in {n[0] for n in self.nodes}:
+                    raise ValueError(f"Uzel '{node_id}' neexistuje")
+                super().update_node(node_id, **meta)
+
+        okno = _StriktniOkno()
+        zrcadlo = GraphMirror(okno)
+
+        zrcadlo.emit({"op": "style", "id": "NOUN:programátor", "glow": 1.0})
+
+        self.assertIn("NOUN:programátor", {n[0] for n in okno.nodes})
+        self.assertEqual(len(okno.updates), 1)
+
     def test_zrcadleni_grafu_dohoni_co_uz_v_nem_je(self):
         # graf postavený bez zrcadla se dá zrcadlit dodatečně
         graf = KnowledgeGraph()

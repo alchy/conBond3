@@ -59,6 +59,7 @@ DATA_PATH_KEYS = (
     ("module", "corpus", "directory"),
     ("module", "relations", "dictionary_dir"),
     ("module", "state", "registry_dir"),
+    ("module", "logic", "kb_file"),
 )
 
 __all__ = ["load", "corpus_dir", "ConfigError", "MODULE_DIR",

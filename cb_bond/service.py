@@ -71,6 +71,7 @@ class BondService:
         self.verbose = verbose
         self.corpus = None
         self.graph = None
+        self.logic = None
         self._files: tuple[Path, ...] = ()
         self._matcher = None
         self._responder = None
@@ -127,6 +128,14 @@ class BondService:
             self.graph.add_sentence(pole)
         self.invalidate()
 
+        # Formální vrstva stojí VEDLE retrieval cesty; bez konfigurace
+        # (testovací fixtury) služba běží jako dřív a `logic` je None.
+        nastaveni_logiky = self.config["module"].get("logic")
+        if nastaveni_logiky is not None:
+            from cb_bond.logic import LogicBridge
+            self.logic = LogicBridge(self.parser,
+                                     nastaveni_logiky["kb_file"])
+
         stav = self.state()
         self._oznam(f"postaveno: {stav['sentences']} vět · "
                     f"{stav['edges']} hran · {stav['axes']} os",
@@ -182,6 +191,8 @@ class BondService:
             "sentences": self._kandidatni_vety(vysledek, kolik),
             "axes": [{"axis": osa, "coverage": float(hodnota)}
                      for osa, hodnota in pokryti.items()],
+            "logic": (self.logic.ask(text)
+                      if self.logic is not None else None),
         }
         self._oznam(
             f"otázka {text!r} → {vystup['answer']!r} ({vystup['outcome']})",
@@ -217,6 +228,8 @@ class BondService:
         # a celek se znaménkem plus by znamenal něco úplně jiného.
         stav["added_sentences"] = stav["sentences"] - pred["sentences"]
         stav["added_edges"] = stav["edges"] - pred["edges"]
+        stav["logic"] = (self.logic.context(text)
+                         if self.logic is not None else None)
         self._oznam(f"kontext: {text!r} → korpus {stav['sentences']} vět "
                     f"(+{stav['added_sentences']}) · "
                     f"graf +{stav['added_edges']} hran",
@@ -244,6 +257,30 @@ class BondService:
                  "decomposition": {klic: float(hodnota) for klic, hodnota
                                    in k.decomposition().items()}}
                 for k in poradi]
+
+    def teach_pattern(self, lemma: str, operation: str, *,
+                      learned_from: str = "") -> dict[str, Any]:
+        """Naučí jazykový vzor operátoru (LANGUAGE_LEARNING.md).
+
+        Při chybě: `RuntimeError`, když formální vrstva neběží — učit vzor
+        do neexistující vrstvy by bylo tiché nedorozumění.
+        """
+        if self.logic is None:
+            raise RuntimeError("formální vrstva neběží (chybí module.logic)")
+        vysledek = self.logic.teach_pattern(lemma, operation,
+                                            learned_from=learned_from)
+        self._oznam(f"naučen vzor {lemma!r} → {operation}",
+                    method="teach_pattern", result="ok", output=vysledek)
+        return vysledek
+
+    def forget_word(self, lemma: str) -> dict[str, Any]:
+        """Odvolá jazykový vzor slova; formální operace zůstává."""
+        if self.logic is None:
+            raise RuntimeError("formální vrstva neběží (chybí module.logic)")
+        vysledek = self.logic.forget_word(lemma)
+        self._oznam(f"odvolán vzor {lemma!r}",
+                    method="forget_word", result="ok", output=vysledek)
+        return vysledek
 
     def _pole_otazky(self, text: str):
         """Otázka jako pole nad TÝMŽ registrem jako korpus.
