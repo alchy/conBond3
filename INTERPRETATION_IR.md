@@ -113,10 +113,18 @@ Kniha je dárek pro Petra.      → dárek(kniha) ∧ pro(kniha, petr)     (fakt
 `Je auto dopravní prostředek?` → nejednoznačné → dotaz:
 > „Ptáš se na **konkrétní auto** (instanci), nebo na **auta obecně** (třídu)?"
 
-- **instance** → dotaz `prostředek(auto) ∧ dopravní(auto)` nad bází.
+- **instance** → dotaz `prostředek(a) ∧ dopravní(a)` nad kopií báze
+  s **presupozicí členství** `auto(a)`: kdo se ptá na „konkrétní auto",
+  jeho auto‑ství nezpochybňuje — členství zakládá reference sama, takže
+  pravidla třídy se na referent vztahují a doptání „je auto auto?"
+  nemůže vzniknout.
 - **třída** → „platí ∀x auto(x) → …?" ověří se **arbitrární instancí** (probe):
   předpokládej `auto(probe)`, odvoď, a je‑li konjunkce pro probe splněná ve
   všech modelech, univerzál platí (assumptions + inference — už existují).
+
+Obě čtení tedy sdílejí týž mechanismus (kopie báze + assumption +
+inference); liší se jen tím, čí členství se předpokládá — referentu,
+nebo arbitrární instance.
 
 **Zapojení v UI (hotové):** `LogicBridge` drží **poslední nejednoznačný
 dotaz** (jeden slot, bez hodin — determinismus; nová otázka ho přepíše,

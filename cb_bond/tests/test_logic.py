@@ -252,12 +252,14 @@ class TestReferenceResolution(unittest.TestCase):
         self.assertEqual(vysledek["subject"], "auto")
         self.assertFalse(self.bridge.state()["pending_reference"])
 
-    def test_volba_instance_bez_znalosti_je_nevim(self):
+    def test_volba_instance_dedi_z_pravidel_pres_presupozici(self):
+        # členství referentu zakládá reference sama — žádné
+        # „chybí vědět: auto je auto" (zapsáno po demu)
         self.bridge.context("Auto je dopravní prostředek.")
         self.bridge.ask("Je auto dopravní prostředek?")
         vysledek = self.bridge.resolve_reference("instance")
-        self.assertEqual(vysledek["truth"], "UNKNOWN")
-        self.assertEqual(vysledek["answer"], "Nevím.")
+        self.assertEqual(vysledek["truth"], "TRUE")
+        self.assertEqual(vysledek["answer"], "Ano.")
 
     def test_bez_cekajiciho_doptani_je_hlaska_ne_chyba(self):
         vysledek = self.bridge.resolve_reference("class")
@@ -286,14 +288,13 @@ class TestReferenceResolution(unittest.TestCase):
     def test_chybejici_premisy_se_neopakuji(self):
         # Zapsáno po demu: dvakrát sdělené pravidlo → why_not navrhne
         # tutéž premisu vícekrát a okno vypsalo „chybí vědět" třikrát.
-        self.bridge.context("Auto je dopravní prostředek.")
-        self.bridge.context("Auto je dopravní prostředek.")
-        self.bridge.ask("Je auto dopravní prostředek?")
-        vysledek = self.bridge.resolve_reference("instance")
-        self.assertEqual(vysledek["truth"], "UNKNOWN")
-        self.assertTrue(vysledek["missing"])
-        self.assertEqual(len(vysledek["missing"]),
-                         len(set(vysledek["missing"])))
+        self.bridge.context("Každý programátor je člověk.")
+        self.bridge.context("Každý programátor je člověk.")
+        odpoved = self.bridge.ask("Je Petr člověk?")
+        self.assertEqual(odpoved["truth"], "UNKNOWN")
+        self.assertTrue(odpoved["missing"])
+        self.assertEqual(len(odpoved["missing"]),
+                         len(set(odpoved["missing"])))
 
 
 class TestLearnedPatterns(unittest.TestCase):

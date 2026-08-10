@@ -163,28 +163,30 @@ class DialogueLearner:
 
     def resolve_reference(self, candidate: Candidate,
                           choice: str) -> AskResult:
-        """Rozřeší nejednoznačnou referenci po volbě uživatele (§5)."""
+        """Rozřeší nejednoznačnou referenci po volbě uživatele (§5).
+
+        Obě čtení sdílejí presupozici členství: co je řečeno jménem
+        „auto", JE auto — u třídy se předpokládá arbitrární instance
+        (probe), u instance referent sám. Doptávat se „je auto auto?"
+        je nesmysl; členství zakládá reference sama.
+        """
         pred = candidate.predication
+        subject_rel = Relation(pred.subject.lemma, 1)
         if choice == "instance":
-            subject_term = Entity(pred.subject.lemma.lower())
-            conjuncts, relations, entities = build_conjuncts(pred,
-                                                             subject_term)
+            referent = Entity(pred.subject.lemma.lower())
+            view = self._assumed_view(candidate, subject_rel, referent)
+            conjuncts, relations, entities = build_conjuncts(pred, referent)
             query = _query_from(conjuncts)
-            return self._answer_query(Candidate(
+            result = self._answer_query(Candidate(
                 "query", candidate.source_text, query_expr=query[0],
                 query_atoms=query[1], relations=tuple(relations),
-                entities=tuple(entities)))
+                entities=tuple(entities)), kb=view)
+            # bez řetězu vysvětlení — symetrie s třídním čtením; řetěz by
+            # jen opakoval presupozici („auto je auto (za předpokladu)")
+            return AskResult(result.candidate, result.truth, (),
+                             result.why_not, conflicted=result.conflicted)
         # třída: „platí ∀x subj(x) → …?" ověříme arbitrární instancí (probe)
-        view = self.kb.copy()
-        subject_rel = Relation(pred.subject.lemma, 1)
-        for rel in tuple(candidate.relations) + (subject_rel,):
-            try:
-                view.declare_relation(rel)
-            except ValueError:
-                pass
-        view.extend_domain(self.domain, (PROBE,))
-        view = with_assumptions(view, (Literal(Atom(subject_rel, (PROBE,))),))
-        infer_forward(view)
+        view = self._assumed_view(candidate, subject_rel, PROBE)
         conjuncts, _, _ = build_conjuncts(pred, PROBE)
         values = [view.truth_of(atom) if pos
                   else _flip(view.truth_of(atom))
@@ -196,6 +198,21 @@ class DialogueLearner:
         else:
             truth = Truth.UNKNOWN
         return AskResult(candidate, truth, (), None)
+
+    def _assumed_view(self, candidate: Candidate, subject_rel: Relation,
+                      entity: Entity) -> KnowledgeBase:
+        """Kopie báze s presupozicí členství subject_rel(entity)."""
+        view = self.kb.copy()
+        for rel in tuple(candidate.relations) + (subject_rel,):
+            try:
+                view.declare_relation(rel)
+            except ValueError:
+                pass
+        view.extend_domain(self.domain, (entity,))
+        view = with_assumptions(view,
+                                (Literal(Atom(subject_rel, (entity,))),))
+        infer_forward(view)
+        return view
 
     # --- vnitřní odpovědi ----------------------------------------------
 
@@ -216,33 +233,35 @@ class DialogueLearner:
                  else Truth.FALSE if answer is False else Truth.UNKNOWN)
         return AskResult(candidate, truth, (), None, modal=modal)
 
-    def _answer_query(self, candidate: Candidate) -> AskResult:
+    def _answer_query(self, candidate: Candidate, *,
+                      kb: KnowledgeBase | None = None) -> AskResult:
+        kb = self.kb if kb is None else kb
         partial = {}
         for atom in candidate.query_atoms:
-            value = self.kb.truth_of(atom)
+            value = kb.truth_of(atom)
             if value is not Truth.UNKNOWN:
                 partial[atom] = value is Truth.TRUE
         truth = evaluate_partial(candidate.query_expr, partial)
-        conflicted = any(self.kb.is_conflicted(a)
+        conflicted = any(kb.is_conflicted(a)
                          for a in candidate.query_atoms)
         explanations: tuple[Explanation, ...] = ()
         why_not_result: WhyNotResult | None = None
         if truth is Truth.TRUE:
             expl: list[Explanation] = []
             for atom in candidate.query_atoms:
-                lit = Literal(atom, self.kb.truth_of(atom) is Truth.TRUE)
-                expl.extend(why(self.kb, lit)[:1])
+                lit = Literal(atom, kb.truth_of(atom) is Truth.TRUE)
+                expl.extend(why(kb, lit)[:1])
             explanations = tuple(expl)
         elif truth is Truth.FALSE:
             expl = []
             for atom in candidate.query_atoms:
-                if self.kb.truth_of(atom) is Truth.FALSE:
-                    expl.extend(why(self.kb, Literal(atom, False))[:1])
+                if kb.truth_of(atom) is Truth.FALSE:
+                    expl.extend(why(kb, Literal(atom, False))[:1])
             explanations = tuple(expl)
         else:
             for atom in candidate.query_atoms:
-                if self.kb.truth_of(atom) is Truth.UNKNOWN:
-                    why_not_result = why_not(self.kb, Literal(atom, True))
+                if kb.truth_of(atom) is Truth.UNKNOWN:
+                    why_not_result = why_not(kb, Literal(atom, True))
                     break
         return AskResult(candidate, truth, explanations, why_not_result,
                          conflicted=conflicted)

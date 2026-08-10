@@ -42,11 +42,24 @@ class TestReferenceResolution(unittest.TestCase):
         self.assertNotIn("__probe__",
                          [e.id for _, e in _entities(self.learner.kb)])
 
-    def test_instance_bez_znalosti_je_nevim(self):
+    def test_instance_dedi_z_pravidel_pres_presupozici(self):
+        # „konkrétní auto" JE auto už tím, jak je pojmenované — členství
+        # zakládá reference sama. Doptávat se „je auto auto?" je nesmysl;
+        # pravidla třídy se na referent vztahují bez další premisy.
         candidate = self.learner.ask(
             vs.JE_AUTO_PROSTREDEK, "Je auto dopravní prostředek?").candidate
         result = self.learner.resolve_reference(candidate, "instance")
-        # o konkrétním autu nic nevíme (auto(auto) nebylo tvrzeno)
+        self.assertEqual(result.truth, Truth.TRUE)
+        # báze se nezměnila (presupozice žila jen v kopii)
+        self.assertNotIn("auto",
+                         [e.id for _, e in _entities(self.learner.kb)])
+
+    def test_instance_bez_jakekoli_znalosti_je_nevim(self):
+        # prázdná báze: presupozice členství sama odpověď nedává
+        learner = make_learner()
+        candidate = learner.ask(
+            vs.JE_AUTO_PROSTREDEK, "Je auto dopravní prostředek?").candidate
+        result = learner.resolve_reference(candidate, "instance")
         self.assertEqual(result.truth, Truth.UNKNOWN)
 
 
