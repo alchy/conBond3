@@ -1,9 +1,10 @@
 # INTERPRETATION_IR — obecná sémantická interpretace (návrh + implementace)
 
-**Stav:** implementuje se (`cb_interpret/predication.py` + rozšíření
-`interpret.py`/`learner.py`). Vzniká ze specifikace J. „od jednotlivých
-tvrzení k obecnému formálnímu modelu"; INTERPRETATION.md, LANGUAGE_LEARNING.md,
-kap. 8 návrhu (formální mezireprezentace), INV‑11.
+**Stav:** implementováno (`cb_interpret/predication.py`, `interpret.py`,
+`learner.py`); dokument odpovídá implementaci. Kopulové věty pokryté;
+slovesné složené přísudky a genitivní `nmod` jsou další iterace (HANDOVER).
+Vzniká ze specifikace J. „od jednotlivých tvrzení k obecnému formálnímu
+modelu"; INTERPRETATION.md, LANGUAGE_LEARNING.md, kap. 8 návrhu, INV‑11.
 
 Zásada: **tichého zjednodušení, které mění význam, se vrstva nesmí dopustit.**
 Buď vytvoří strukturovanou reprezentaci, nebo část označí za neznámou, nebo

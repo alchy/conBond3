@@ -181,7 +181,11 @@ vnitřku.
 
 | chci vědět | čti |
 |---|---|
+| **stav reasoning vrstvy a co teď řešit** | **`HANDOVER.md`** |
 | proč je systém takhle navržený | `README-ARCHITECTURE_OVERVIEW.md` |
+| audit + cílová architektura reasoningu | `ARCHITECTURE_REVIEW.md` |
+| formální jádro (znalost, logika, modely) | `KNOWLEDGE_MODEL.md`, `LOGIC_SEMANTICS.md`, `INFERENCE_ENGINE.md`, `MODEL_REASONING.md` |
+| jazyk → tvrzení, učení z dialogu | `INTERPRETATION.md`, `INTERPRETATION_IR.md`, `LANGUAGE_LEARNING.md` |
 | pravidla, která platí pro každý modul | `README-MODULES.md` |
 | jak se ptát a co znamená rozklad skóre | `README-BOND.md` |
 | co je pole věty a jak vzniká | `README-FIELD.md` |

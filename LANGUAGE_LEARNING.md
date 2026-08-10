@@ -1,8 +1,9 @@
 # LANGUAGE_LEARNING — učení jazykových mapování, ne logické sémantiky
 
-**Stav:** implementuje se (`cb_interpret/patterns.py`, `clarify.py`, rozšíření
-`interpret.py`/`learner.py`). Vzniká ze specifikace J. + kap. 22–27 návrhu
-(meta‑učení referenčního jazyka), INV‑11, kap. 41 (žádná modální logika).
+**Stav:** implementováno (`cb_interpret/patterns.py`, `clarify.py`,
+`interpret.py`, `learner.py`; integrace `cb_bond/logic.py`, REST, konzole,
+okno); dokument odpovídá implementaci. Vzniká ze specifikace J. + kap. 22–27
+návrhu (meta‑učení referenčního jazyka), INV‑11, kap. 41 (žádná modální logika).
 
 ## Zásada
 
