@@ -387,35 +387,48 @@ protokol jsou tři programy v JEDNOM jazyce, ne tři mechanismy. conBond3
 tenhle princip nakousl (vzory jako JSON s proveniencí, kb.json) — tady se
 povyšuje na nosnou formu.
 
-**Jak (meta).** Tři vrstvy programu nad jedním jádrem:
+**Jak (meta).** Konvence zápisu (rozhodnutí J.): klíčová slova, role,
+operace a anotace **anglicky** — jako identifikátory v kódu; **lexikální
+materiál z dialogu** (lemmata, jména, pojmenování veličin) zůstává
+českými daty — přejmenovat „auto" na „car" by falšovalo provenienci;
+**komentáře česky**. A tvrdé syntaktické pravidlo, aby česká data jasně
+vynikla nad definicí struktur: **co je v uvozovkách, je naučený jazyk;
+co je bez uvozovek, je struktura.** Nic českého se nesmí objevit bez
+uvozovek, nic strukturního v uvozovkách — na první pohled (i pro
+zvýrazňovač syntaxe) je vidět, co je pevné jádro a co vyrostlo dialogem.
+Identifikátory uzlů (`e17`, `a1`) jsou neprůhledná id; lidsky čitelná
+přípona (`e_filip`) je jen pohodlí bez významu. Tři vrstvy programu nad
+jedním jádrem:
 
 ```
 # ONTO — znalostní program (fakta, pravidla, identita)
-entita e17.
-jmenuje_se e17 {"Hrabal", "Bohumil Hrabal"}.          @dialog(t12, potvrzeno)
-patri e17 group(spisovatel).                          @dialog(t12)
-group(DP) := group(prostredek) AND vlastnost(dopravni).
-pravidlo r4: pro r v group(jezdit):
-    omezeni(kudy r) = V  =>  rychlost(r) <= V.        @potvrzeno(t31)
-leta := vztah(letat · kdo:(group(ptak) NOT group{e_tucnak})).  @oprava(k7)
+entity e17.
+name e17 {"Hrabal", "Bohumil Hrabal"}.                @dialog(t12, confirmed)
+member e17 group("spisovatel").                       @dialog(t12)
+group DP := group("prostředek") AND property("dopravní").
+rule r4: for r in group("jezdit"):
+    (rel:"omezení" · of:via(r) · limit:V)  =>  measure(r,"rychlost") <= V.
+                                                      @confirmed(t31)
+rule p1b: (rel:"létat" · who:(group("pták") NOT group{e_tucnak})).
+                                                      @revision(k7)
 
 # LEX — jazykový program (učená mapování; nikdy nová sémantika)
-cteni  "obsahovat" [Sing×Plur] -> role(kdo:1, co:2).  @anotace(t9)
-slovo  "nejvýše"   -> komparator(<=).                 @potvrzeno(t30)
-role   "kudy" ~ "po"+Loc.                             @hypoteza
+reading "obsahovat" [Sg×Pl] -> roles(who:1, what:2).  @annotation(t9)
+word    "nejvýše"   -> comparator(<=).                @confirmed(t30)
+role    "kudy" ~ prep("po")+Loc.                      @hypothesis
 
 # DIA — dialogový automat (deklarativní stavy doptání)
-stav ceka_na_referenci(zminka, kandidati):
-    otazka  "Myslíš {kandidati}?"
-    odpoved -> pripoj_assign(zminka)                  # odpověď = anotace
-stav ceka_na_potvrzeni_hypotezy(pravidlo):
-    otazka  "Mám z toho usoudit: {pravidlo}?"
-    ano -> pripoj(pravidlo); ne -> zapamatuj_odmitnuti
+state awaiting_reference(mention, candidates):
+    ask "Myslíš {candidates}?"          # otázky člověku se renderují česky
+    answer -> attach_assign(mention)                  # odpověď = anotace
+state awaiting_rule_confirmation(rule):
+    ask "Mám z toho usoudit: {rule}?"
+    yes -> attach(rule);  no -> remember_rejection
 ```
 
 Interpret je **stratifikovaný**: čte LEX, aby rozuměl větě; čte ONTO, aby
 odpověděl; čte DIA, aby vedl rozhovor. Učicí operace (z doptání, anotací,
-oprav konfliktů) smí jen `pripoj` / `odvolej` řádky — kód smí generovat
+oprav konfliktů) smí jen `attach` / `revoke` řádky — kód smí generovat
 kód (potvrzená hypotéza zapíše pravidlo), ale nikdy měnit interpret.
 Meta‑kód NENÍ obecný programovací jazyk: žádné smyčky ani rekurze
 v uživatelském prostoru, jen deklarace — terminace je zaručená konstrukcí
@@ -431,57 +444,60 @@ vyhodnocení/index, kdykoli znovu sestavitelné.
 u každého tahu je vidět, CO přesně se připsalo a s jakou proveniencí):
 
 ```
-%% conbond4-metakod v0.1          # verze gramatiky — mění se jen rozhodnutím
-%% žurnál: dialog-2026-08-11      # přehrání žurnálu ⇒ týž program (I-16)
+%% conbond4-metacode v0.1         # verze gramatiky — mění se jen rozhodnutím
+%% journal: dialog-2026-08-11     # přehrání žurnálu ⇒ týž program (I-16)
 
 # ——— t1   ! „Filip má auto."
-entita e_filip.                               @zminka(t1, "Filip")
-entita a1.                                    @instanciace(t1, "auto" neurčitě)
-patri a1 group(auto).                         @presupozice(t1)
-vztah r1 = (mit · kdo:e_filip · co:a1).       @rekl(t1)
+entity e_filip.                                @mention(t1, "Filip")
+entity a1.                                     @instantiate(t1, "auto" neurčitě)
+member a1 group("auto").                       @presuppose(t1)
+relation r1 = (rel:"mít" · who:e_filip · what:a1).      @stated(t1)
 
 # ——— t2   ! „Filipovo auto je modré."
-#   určitý popis restrikce(group(auto) · co_ma:e_filip) → jediný kandidát a1
-patri a1 group(modry).                        @rekl(t2, rozreseni:a1)
+#   určitý popis restrict(group("auto") · owned_by:e_filip) → jediný a1
+member a1 group("modrý").                      @stated(t2, resolved:a1)
 
 # ——— t3   ! „Filip má Ford."
 #   zmínka „Ford" bez uzlu i skupiny → nic se nepřipisuje;
-#   DIA přejde do stavu ceka_na_referenci(„Ford", kandidati:{a1, novy})
+#   DIA → awaiting_reference("Ford", candidates:{a1, new})
 #   >>> „Ford neznám. Je to to modré auto, co Filip má, nebo něco dalšího?"
 
 # ——— t4   ! „Je to to auto."
-jmenuje_se a1 +{"Ford"}.                      @assign(t4, potvrzeno)
+name a1 +{"Ford"}.                             @assign(t4, confirmed)
 
 # ——— t5   ? „Co je Ford?"
-#   dotaz NIC nepřipisuje (I-12); vyhodnocení: „Ford"→a1, okoli(a1)
+#   dotaz NIC nepřipisuje (I-12); vyhodnocení: „Ford"→a1, okolí(a1)
 #   >>> „Ford je auto — modré, a má ho Filip."
 
 # ——— t10  ! „Dálnice má omezenou rychlost na 130 km/h."
-velicina rychlost osa(km/h).                  @Chronos-vzor: doména „míry"
-hodnota v130 = 130 km/h.                      # číselný literál = primitiv
-vztah r7 = (omezeni · ceho:group(dalnice)
-            · velicina:rychlost · mez:v130).  @rekl(t10)
-# LEX (naučeno dřív):  slovo "omezená rychlost" -> komparator(<=).  @t8
+quantity "rychlost" axis(km/h).                # doména měr (specialista)
+value v130 = 130 km/h.                         # číselný literál = primitiv
+relation r7 = (rel:"omezení" · of:group("dálnice")
+               · quantity:"rychlost" · limit:v130).     @stated(t10)
+# LEX (naučeno dřív):  word "omezená rychlost" -> comparator(<=).   @t8
 
 # ——— t11  ? „Jak rychle může jezdit auto po dálnici?"
-#   dedukce z ONTO: auto⊆DP, (jezdit·kdo:DP·kudy:dalnice) — ale r7 mluví
-#   o dálnici, ne o jízdách → MEZERA → DIA: ceka_na_potvrzeni_hypotezy
+#   dedukce z ONTO: auto⊆DP, (rel:"jezdit" · who:DP · via:group("dálnice"))
+#   — ale r7 mluví o dálnici, ne o jízdách → MEZERA
+#   DIA → awaiting_rule_confirmation
 #   >>> „Mám usoudit: co jede po místě s omezením V, jede nejvýše V?"
 
 # ——— t12  ! „Ano."
-pravidlo p3: pro r v group(jezdit):
-    (omezeni · ceho:kudy(r) · mez:V) => rychlost(r) <= V.   @potvrzeno(t12)
-#   >>> „Nejvýše 130 km/h."     [důvod: auto⊆DP (t…), jezdí po dálnici,
-#                                r7, p3 — řetěz se renderuje, § 8]
+rule p3: for r in group("jezdit"):
+    (rel:"omezení" · of:via(r) · limit:V) => measure(r,"rychlost") <= V.
+                                               @confirmed(t12)
+#   >>> „Nejvýše 130 km/h."     [důvod: auto⊆DP, jezdí po dálnici, r7, p3
+#                                — řetěz se renderuje, § 8]
 
 # ——— t20  konflikt k7: „Tučňák nelétá." × odvození z p1 („Ptáci létají.")
-odvolej p1.                                   @oprava(k7, volba:zuzit)
-pravidlo p1b: (letat · kdo:(group(ptak) NOT group{e_tucnak})).  @oprava(k7)
+revoke p1.                                     @revision(k7, choice:narrow)
+rule p1b: (rel:"létat" · who:(group("pták") NOT group{e_tucnak})).
+                                               @revision(k7)
 #   staré p1 zůstává v historii s odvoláním — nic se nemaže, jen neplatí
 ```
 
-Za povšimnutí: jediné operace učení jsou `pripoj` (nový řádek) a
-`odvolej` (zneplatnění s důvodem); otázky nepíší nic; každý řádek nese
+Za povšimnutí: jediné operace učení jsou `attach` (nový řádek) a
+`revoke` (zneplatnění s důvodem); otázky nepíší nic; každý řádek nese
 `@provenienci` s tahem; a celý stav systému v kterémkoli okamžiku je
 tenhle soubor — nic víc.
 
