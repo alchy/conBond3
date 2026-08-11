@@ -461,6 +461,14 @@ kandiduje buď na novou anonymní entitu s **presupozicí členství**
 (kdo se ptá na „konkrétní auto", jeho auto‑ství nezpochybňuje — poučení
 z opravy „auto je auto"), nebo na group samotnou.
 
+Zvláštní síla kaskády: **určité popisy**. „Filipovo auto", „to modré
+auto" jsou termy `restrikce(group(auto) · vlastník:(e_filip))` — rozřeší
+se na už zavedený uzel, je‑li známý kandidát jediný; při více kandidátech
+doptání („které z jeho dvou aut?"); při žádném podle kontextu buď nová
+instance, nebo „o žádném Filipově autě nevím". Neurčitá zmínka
+v tvrzení („Filip má auto") naopak **instanciuje** nový anonymní prvek
+množiny — viz dialog F (§ 6.12).
+
 ### 5.4 Stavba struktury
 
 **Co chceme.** Z vybraného čtení a rozřešených zmínek vzniká struktura:
@@ -839,6 +847,42 @@ Dokládá: konflikt jako stav s nabídkou oprav; **výjimky unese samotná
 algebra groups** (`NOT`), bez nemonotónní logiky — a po opravě systém
 odpovídá konzistentně včetně vysvětlení, PROČ se pravidlo na tučňáka
 nevztahuje.
+
+**Dialog F — instance z množiny, vršení popisu a neznámé jméno.**
+
+```
+! Filip má auto.
+      „auto" NEURČITĚ → instanciace: nový anonymní uzel (a1),
+      (a1) patří_do group(auto);  vztah(mít · kdo:(e_filip) · co:(a1))
+! Filipovo auto je modré.
+      „Filipovo auto" = určitý popis: restrikce(group(auto) ·
+      co_má:(e_filip)) → jediný známý kandidát (a1)
+      → vlastnost modrý se VRŠÍ na (a1) — táž identita, druhá věta
+      (kdyby Filip měl auta dvě → doptání „které?")
+! Filip má Ford.
+      zmínka„Ford" nemá uzel ani skupinu — tiše se nezakládá NIC:
+→ „Ford neznám. Patří do nějaké skupiny, kterou znám? Je to to modré
+   auto, co Filip má, nebo něco dalšího?"
+      kandidáti na rozřešení: (a1) [aktivace + sdílený vlastník] × nový uzel
+! Je to to auto.
+      jmenuje_se(a1) += „Ford"        [assign potvrzen, dialog]
+? Co má Filip?
+→ „Modré auto Ford."
+      výčet vztahů mít(kdo:(e_filip)) → (a1); odpověď = SYNTÉZA
+      nashromážděného popisu uzlu (členství + vlastnost + jméno),
+      ne echo jedné věty (§ 6.5, § 8)
+
+Alternativní větev:  ! „Ford je jiné auto."
+      → nový uzel (a2) ∈ group(auto), jmenuje_se „Ford"
+? Co má Filip?   → „Dvě auta: jedno modré a jedno jménem Ford."
+```
+
+Dokládá: neurčitá zmínka **instanciuje** anonymní prvek množiny (proto
+identita ≠ jméno — uzel žije dřív, než má jméno); určitý popis se
+rozřešuje na zavedený uzel a znalost se na něm **vrší napříč větami**;
+neznámé jméno vede na doptání po členství/totožnosti, nikdy na tiché
+založení; a odpověď na „Co má X?" je složený popis uzlu — přesně to
+„vysvětlování datových vazeb", které je cílem konceptu.
 
 ---
 
