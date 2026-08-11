@@ -368,6 +368,123 @@ byl v Praze v poledne, byl tam i v jednu?" → NEVÍM), žádná kauzalita
 z časové následnosti (po tom ≠ proto). Obě zúžení jsou zapsaná a
 odmítají se s důvodem, ne tiše.
 
+### 3.7 Meta‑kód: zápis, který roste učením
+
+**Co chceme.** Vnitřní reprezentace je **textový meta‑kód** — deklarativní
+jazyk nad termovou gramatikou § 3.0, interpretovaný pevným jádrem. Vše
+naučené je řádek kódu s proveniencí; báze znalostí JE program. Klíčové
+rozlišení: **učením se mění program, nikdy jazyk.** Gramatika a interpret
+jsou malé pevné jádro (verzované, změna jen vědomým rozhodnutím — I‑13);
+učení smí řádky přidávat a odvolávat, nikdy předefinovat konstruktory
+nebo vyhodnocení.
+
+**Proč.** (1) *Persistence = zdrojový kód*: čitelná, diffovatelná,
+verzovatelná — „ukaž, co ses naučil" je výpis programu, ne dump.
+(2) *Deterministické přehrání*: žurnál dialogu + pevný interpret ⇒ týž
+program ⇒ tytéž odpovědi — základ měření i ladění. (3) *Jednotnost místo
+if/then* (§ 3.0 dotažené do konce): znalost, jazykové vzory i dialogový
+protokol jsou tři programy v JEDNOM jazyce, ne tři mechanismy. conBond3
+tenhle princip nakousl (vzory jako JSON s proveniencí, kb.json) — tady se
+povyšuje na nosnou formu.
+
+**Jak (meta).** Tři vrstvy programu nad jedním jádrem:
+
+```
+# ONTO — znalostní program (fakta, pravidla, identita)
+entita e17.
+jmenuje_se e17 {"Hrabal", "Bohumil Hrabal"}.          @dialog(t12, potvrzeno)
+patri e17 group(spisovatel).                          @dialog(t12)
+group(DP) := group(prostredek) AND vlastnost(dopravni).
+pravidlo r4: pro r v group(jezdit):
+    omezeni(kudy r) = V  =>  rychlost(r) <= V.        @potvrzeno(t31)
+leta := vztah(letat · kdo:(group(ptak) NOT group{e_tucnak})).  @oprava(k7)
+
+# LEX — jazykový program (učená mapování; nikdy nová sémantika)
+cteni  "obsahovat" [Sing×Plur] -> role(kdo:1, co:2).  @anotace(t9)
+slovo  "nejvýše"   -> komparator(<=).                 @potvrzeno(t30)
+role   "kudy" ~ "po"+Loc.                             @hypoteza
+
+# DIA — dialogový automat (deklarativní stavy doptání)
+stav ceka_na_referenci(zminka, kandidati):
+    otazka  "Myslíš {kandidati}?"
+    odpoved -> pripoj_assign(zminka)                  # odpověď = anotace
+stav ceka_na_potvrzeni_hypotezy(pravidlo):
+    otazka  "Mám z toho usoudit: {pravidlo}?"
+    ano -> pripoj(pravidlo); ne -> zapamatuj_odmitnuti
+```
+
+Interpret je **stratifikovaný**: čte LEX, aby rozuměl větě; čte ONTO, aby
+odpověděl; čte DIA, aby vedl rozhovor. Učicí operace (z doptání, anotací,
+oprav konfliktů) smí jen `pripoj` / `odvolej` řádky — kód smí generovat
+kód (potvrzená hypotéza zapíše pravidlo), ale nikdy měnit interpret.
+Meta‑kód NENÍ obecný programovací jazyk: žádné smyčky ani rekurze
+v uživatelském prostoru, jen deklarace — terminace je zaručená konstrukcí
+(mez rozhodnutelnosti, I‑13).
+
+**Rizika řečená předem:** bujení gramatiky (každá feature „jen jeden nový
+konstruktor") — proto změny gramatiky jen rozhodnutím a s verzí v hlavičce
+každého souboru; a dvojí pravda (graf v paměti × kód na disku) — proto
+**kód je jediný zdroj pravdy**, běhový graf je jeho deterministické
+vyhodnocení/index, kdykoli znovu sestavitelné.
+
+**Meta‑ukázka: program rostoucí dialogem** (spojuje dialogy F a A —
+u každého tahu je vidět, CO přesně se připsalo a s jakou proveniencí):
+
+```
+%% conbond4-metakod v0.1          # verze gramatiky — mění se jen rozhodnutím
+%% žurnál: dialog-2026-08-11      # přehrání žurnálu ⇒ týž program (I-16)
+
+# ——— t1   ! „Filip má auto."
+entita e_filip.                               @zminka(t1, "Filip")
+entita a1.                                    @instanciace(t1, "auto" neurčitě)
+patri a1 group(auto).                         @presupozice(t1)
+vztah r1 = (mit · kdo:e_filip · co:a1).       @rekl(t1)
+
+# ——— t2   ! „Filipovo auto je modré."
+#   určitý popis restrikce(group(auto) · co_ma:e_filip) → jediný kandidát a1
+patri a1 group(modry).                        @rekl(t2, rozreseni:a1)
+
+# ——— t3   ! „Filip má Ford."
+#   zmínka „Ford" bez uzlu i skupiny → nic se nepřipisuje;
+#   DIA přejde do stavu ceka_na_referenci(„Ford", kandidati:{a1, novy})
+#   >>> „Ford neznám. Je to to modré auto, co Filip má, nebo něco dalšího?"
+
+# ——— t4   ! „Je to to auto."
+jmenuje_se a1 +{"Ford"}.                      @assign(t4, potvrzeno)
+
+# ——— t5   ? „Co je Ford?"
+#   dotaz NIC nepřipisuje (I-12); vyhodnocení: „Ford"→a1, okoli(a1)
+#   >>> „Ford je auto — modré, a má ho Filip."
+
+# ——— t10  ! „Dálnice má omezenou rychlost na 130 km/h."
+velicina rychlost osa(km/h).                  @Chronos-vzor: doména „míry"
+hodnota v130 = 130 km/h.                      # číselný literál = primitiv
+vztah r7 = (omezeni · ceho:group(dalnice)
+            · velicina:rychlost · mez:v130).  @rekl(t10)
+# LEX (naučeno dřív):  slovo "omezená rychlost" -> komparator(<=).  @t8
+
+# ——— t11  ? „Jak rychle může jezdit auto po dálnici?"
+#   dedukce z ONTO: auto⊆DP, (jezdit·kdo:DP·kudy:dalnice) — ale r7 mluví
+#   o dálnici, ne o jízdách → MEZERA → DIA: ceka_na_potvrzeni_hypotezy
+#   >>> „Mám usoudit: co jede po místě s omezením V, jede nejvýše V?"
+
+# ——— t12  ! „Ano."
+pravidlo p3: pro r v group(jezdit):
+    (omezeni · ceho:kudy(r) · mez:V) => rychlost(r) <= V.   @potvrzeno(t12)
+#   >>> „Nejvýše 130 km/h."     [důvod: auto⊆DP (t…), jezdí po dálnici,
+#                                r7, p3 — řetěz se renderuje, § 8]
+
+# ——— t20  konflikt k7: „Tučňák nelétá." × odvození z p1 („Ptáci létají.")
+odvolej p1.                                   @oprava(k7, volba:zuzit)
+pravidlo p1b: (letat · kdo:(group(ptak) NOT group{e_tucnak})).  @oprava(k7)
+#   staré p1 zůstává v historii s odvoláním — nic se nemaže, jen neplatí
+```
+
+Za povšimnutí: jediné operace učení jsou `pripoj` (nový řádek) a
+`odvolej` (zneplatnění s důvodem); otázky nepíší nic; každý řádek nese
+`@provenienci` s tahem; a celý stav systému v kterémkoli okamžiku je
+tenhle soubor — nic víc.
+
 ---
 
 ## 4 · Graf — nosný substrát
@@ -969,6 +1086,10 @@ Nové pro conBond4:
 - I‑15 Pevné jádro je malé a uzavřené (algebra, role, komparátory,
   modální dotazy); všechno významové nad ním — vztahy, pravidla, můstky,
   mapování jazyka, výjimky — vzniká dialogem jako data s proveniencí.
+- I‑16 Učením se mění program, nikdy jazyk: gramatika meta‑kódu a
+  interpret jsou verzované pevné jádro; učení jen přidává a odvolává
+  řádky. Meta‑kód je jediný zdroj pravdy; běhový graf je jeho
+  deterministické vyhodnocení.
 
 ## 10 · Měření úspěchu
 
@@ -990,6 +1111,9 @@ Nové pro conBond4:
   ale „kolik tahů dialogu potřebuje, aby se naučil odpovídat správně" —
   na NEVÍM navazuje otázka „a co ti chybí?", jejíž zodpovězení člověkem
   musí schopnost doplnit (dialogy § 6.12 jsou přesně tenhle test).
+- **Přehratelnost:** žurnál dialogu + pevný interpret ⇒ týž meta‑kód ⇒
+  tytéž odpovědi (§ 3.7). Akceptační dialogy se ukládají i s očekávaným
+  výsledným programem — diff kódu je diff naučeného.
 
 ## 11 · Vědomé hranice v1 (rekapitulace)
 
