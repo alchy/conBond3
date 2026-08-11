@@ -28,6 +28,15 @@ odvolatelně) a **graf** jako společný nosič znalosti, kontextu i statistick�
 blízkosti. Komunikačním cílem je **vysvětlování vztahů a datových vazeb**
 člověku — odpověď není skóre, ale důvod.
 
+**Cílem NENÍ umět odpovědět na všechno.** Cílem je, aby nic významového
+nebylo zadrátované: pevné zůstává jen malé uzavřené jádro operací
+(algebra groups, role vztahů, `⊆`, komparátory, modální dotazy) — a
+**vztahy I logické operace nad nimi vznikají dialogem**: fakta, pravidla,
+můstky mezi vztahy (dialog A v § 6.12), mapování slov na operace
+z menu, výjimky přes `NOT`. Systém, který řekne NEVÍM, ale dá se
+dvěma větami doučit chybějící článek, je cennější než systém, který
+odpoví na vše mělce.
+
 **Proč.** Zkušenost conBond3 ukázala, že výroková vrstva s plochými
 relacemi narazí vždy na stejných pět zdí:
 
@@ -320,6 +329,30 @@ stroje (determinismus, I‑4).
 „Jel Petr do Prahy před návštěvou Brna?"
   kdy(R7) před kdy(R9)?  — porovnání intervalů; bez ukotvení → NEVÍM
   + „chybí vědět: kdy byl v Brně"
+```
+
+**Obecné veličiny a komparátory.** Vzor „uspořádaná osa" z času platí pro
+každou měřitelnou veličinu (rychlost, délka, hmotnost…): hodnota
+s jednotkou je bod na ose dané veličiny. Číselné literály jsou
+**počítatelné primitivy** (rozpoznání „130" a porovnání dvou čísel je
+mechanické a deterministické); jednotka je jméno osy — porovnávat lze jen
+na téže ose. Nad osou existuje **uzavřené menu komparátorů**
+`≤ < = > ≥ ≠` — a jazyk se na ně **mapuje učením v dialogu**, přesně
+podle vzoru, který se osvědčil u modality v conBond3: dialog učí, KTERÉ
+slovo spouští KTERÝ existující komparátor („nejvýše/omezení/nesmí
+překročit" → `≤`, „aspoň/minimálně" → `≥`), nikdy nevyrábí nový. Omezení
+(„nejvýše 130 km/h") je pak interval povolených hodnot — constraint, nad
+kterým fungují modální dotazy (§ 6.7). Aritmetika (převody jednotek,
+počítání s hodnotami) zůstává za hranicí v1 — v mezích je jen porovnání
+a příslušnost do intervalu.
+
+```
+! Rychlost se měří v km/h.            → veličina „rychlost", osa s jednotkou
+! „Omezená rychlost" znamená, že se nesmí jet rychleji.
+   → mapování [hypotéza, dialog]: omezení(V) ⇒ rychlost děje ≤ V
+   → systém ověří čtení: „Tedy: omezení 130 km/h dovoluje 90, ale ne 150?"
+! Ano.                                → mapování potvrzeno
+   — sémantika ≤ je pevná (menu); naučené je jen SLOVO → KOMPARÁTOR
 ```
 
 **Hranice v1:** párování a dotazování ano (role, obsažení, pořadí,
@@ -677,6 +710,136 @@ Q1: vztah(obsahovat · kdo:e_c · co:group(vitamín))     → ANO
 „A pomeranč?"  → kopie s kdo:e_p                        → ANO (přes ovoce)
 ```
 
+### 6.12 Průvodní dialogy: učení a dedukce z neúplných poskládaných dat
+
+Pět dialogů od začátku do konce — každý skládá odpověď z tvrzení, která
+jednotlivě odpověď nenesou, a každý dokládá jiný princip. Jsou to zároveň
+kandidáti akceptační sady (§ 10). Zápis: `!` tvrzení člověka, `?` otázka,
+`→` odpověď systému, odsazené bloky jsou meta‑stopa.
+
+**Dialog A — řetěz s chybějícím můstkem (a veličinou).**
+
+```
+! Auto je dopravní prostředek.
+      group(auto) ⊆ group_DP,  group_DP = group[x | x∈prostředek AND dopravní(x)]
+! Dopravní prostředek slouží k přesunu nákladů nebo osob.
+      vztah(sloužit · kdo:group_DP
+            · k:vztah(přesun · čeho:(group(náklad) OR group(osoba))))
+      — „nebo" je OR-group; z disjunkce neplyne žádný konkrétní člen!
+! Dopravní prostředek jezdí po dálnici.
+      vztah(jezdit · kdo:group_DP · kudy:group(dálnice))
+! Dálnice má omezenou rychlost na 130 km/h.
+      vztah(omezení · čeho:group(dálnice) · veličina:rychlost · nejvýše:130 km/h)
+      — zatím fakt O DÁLNICI; o jízdách neříká nic
+
+? Jak rychle může jezdit auto po dálnici?
+→ (doptání reference: „auta obecně" — třída)
+      dedukce, co jde: auto ⊆ DP (řekls) ; DP jezdí po dálnici (řekls)
+        ⇒ auta jezdí po dálnici        [dědičnost přes ⊆]
+      MEZERA: omezení mluví o dálnici, ne o jízdách — můstek v datech není
+→ „Nevím přímo. Vím: auto je dopravní prostředek, ty jezdí po dálnici
+   a dálnice má omezenou rychlost 130 km/h. Mám z toho usoudit obecné
+   pravidlo: co jede po místě s omezenou rychlostí, nesmí jet rychleji
+   než to omezení?"
+! Ano.
+      constraint [potvrzeno, dialog]: ∀ r ∈ group(jezdit):
+        omezení(kudy(r)) = V  ⇒  rychlost(r) ≤ V
+      — komparátor ≤ je z uzavřeného menu (§ 3.6); dialog naučil jen
+        mapování „omezení" → ≤, ne jeho sémantiku
+→ „Nejvýše 130 km/h. Rychleji ne — auto je dopravní prostředek, ty jezdí
+   po dálnici, dálnice má omezení 130 km/h a potvrdil jsi, že omezení
+   místa omezuje jízdu. Pomaleji nic nezakazuje."
+      — modální otázka NAD VELIČINOU: odpověď je mez (supremum povolených
+        hodnot z constraintu), ne ANO/NE; srov. § 6.7 a § 3.6
+
+? Slouží auto k přesunu osob?
+→ „Nevím jistě — slouží k přesunu nákladů NEBO osob; kterému z toho
+   konkrétně, z řečeného neplyne."
+      — z disjunkce se nesmí tiše vybrat člen
+```
+
+Dokládá: dědičnost vztahů přes `⊆`; **chybějící můstek se nehádá — stane
+se hypotézou k potvrzení** (doptání = učení, § 6.6); modální otázka nad
+veličinou vrací mez; disjunkce v datech nedává konjunktivní odpovědi.
+
+**Dialog B — co z poskládaných dat NEPLYNE.**
+
+```
+! Citron je ovoce.
+! Ovoce obsahuje vitamíny.
+! Vitamín C je vitamín.
+? Obsahuje citron vitamín C?
+      lákavý (chybný) řetěz: citron⊆ovoce, ovoce obsahuje vitamíny,
+      C∈vitamín ⇒ „citron obsahuje C"? NEPLATÍ: vztah ke group(vitamín)
+      není vztah ke KAŽDÉMU členu („nějaké vitamíny", ne „každý vitamín")
+→ „Nevím. Vím, že citron obsahuje vitamíny (nějaké — je ovoce); zda
+   právě vitamín C, z toho neplyne. Rozhodlo by: ‚citron obsahuje
+   vitamín C', nebo ‚ovoce obsahuje každý vitamín'."
+? Obsahuje citron nějaký vitamín?
+→ „Ano — je ovoce a ovoce obsahuje vitamíny."
+```
+
+Dokládá: dedukce z neúplných dat znamená i **vědět, co neplyne** —
+distributivita vztahu na členy cíle je tvrzení (Tot), ne default.
+
+**Dialog C — sylogistický řetěz a svědek.**
+
+```
+! Každý spisovatel je člověk.          group(spisovatel) ⊆ group(člověk)
+! Žádný stroj není člověk.             group(stroj) AND group(člověk) = ∅
+! Hrabal je spisovatel.
+! Hrabal napsal Postřižiny.
+? Je Hrabal stroj?
+→ „Ne — je spisovatel, každý spisovatel je člověk a žádný stroj člověk
+   není."                               [⊆ zřetězené s disjunktností]
+? Napsal Postřižiny spisovatel?
+→ „Ano — Hrabal."                       [existence se dokládá svědkem]
+? Napsal Postřižiny i nějaký stroj?
+→ „Nevím. Znám jednoho autora — Hrabala, a ten stroj není; že ji nenapsal
+   i nějaký stroj, vyloučit neumím."    [otevřený svět: absence ≠ neexistence]
+```
+
+**Dialog D — prostor a čas složené na fakta.**
+
+```
+! Petr jel v pondělí do Prahy.     R7(jet · kdo:e_p · kam:e_praha · kdy:pondělí)
+! V úterý jel Petr do Brna.        R8(… · kam:e_brno · kdy:úterý)
+! Praha je v Česku.  ! Brno je v Česku.
+? Byl Petr v pondělí v Česku?
+→ „Ano — jel do Prahy a Praha je v Česku."      [kam ⊆ přes obsažení míst]
+? Kam jel Petr dřív — do Prahy, nebo do Brna?
+→ „Do Prahy — pondělí je před úterým."          [alternativa nad osou času]
+? Byl Petr ve středu v Česku?
+→ „Nevím — o středě žádný děj neznám. (Že by tam zůstal, nepředpokládám —
+   trvání stavů neumím.)"                        [hranice v1 řečená nahlas]
+```
+
+**Dialog E — rozpor a výjimka bez default logiky.**
+
+```
+! Ptáci létají.                    vztah(létat · kdo:group(pták))
+! Tučňák je pták.
+? Létá tučňák?
+→ „Ano — je pták a ptáci létají."               [zatím: plyne z pravidla]
+! Tučňák nelétá.
+→ „To si odporuje s tím, co plyne z ‚Ptáci létají' + ‚Tučňák je pták'.
+   Mám obecné pravidlo odvolat, nebo zúžit (létají ptáci kromě tučňáka)?"
+      — konflikt se HLÁSÍ, nepřepisuje (I-3); obě opravy jsou legální termy
+! Zúžit.
+      pravidlo převázáno: vztah(létat · kdo:(group(pták) NOT group(tučňák)))
+      [staré odvoláno s proveniencí; výjimka = algebra NOT, žádná default logika]
+! Vrabec je pták.
+? Létá vrabec?
+→ „Ano — je pták a ptáci kromě tučňáka létají."
+? Létá tučňák?
+→ „Ne — řekls to; a z pravidla už pro něj nic neplyne."
+```
+
+Dokládá: konflikt jako stav s nabídkou oprav; **výjimky unese samotná
+algebra groups** (`NOT`), bez nemonotónní logiky — a po opravě systém
+odpovídá konzistentně včetně vysvětlení, PROČ se pravidlo na tučňáka
+nevztahuje.
+
 ---
 
 ## 7 · Učení z dialogu (U)
@@ -742,6 +905,9 @@ Nové pro conBond4:
 - I‑13 Výrazová mez (rozhodnutelnost) je narýsovaná předem a strojově
   hlídaná; rozšíření jen vědomým rozhodnutím.
 - I‑14 Vysvětlení se renderuje výhradně ze skutečně použité struktury.
+- I‑15 Pevné jádro je malé a uzavřené (algebra, role, komparátory,
+  modální dotazy); všechno významové nad ním — vztahy, pravidla, můstky,
+  mapování jazyka, výjimky — vzniká dialogem jako data s proveniencí.
 
 ## 10 · Měření úspěchu
 
@@ -759,6 +925,10 @@ Nové pro conBond4:
   orákul).
 - **Poctivost propadů:** měřit podíl tichých chyb (nesmí existovat) vs.
   odmítnutí s důvodem vs. doptání; a podíl doptání, která vedla k naučení.
+- **Učitelnost (hlavní metrika):** ne „na kolik otázek umí odpovědět",
+  ale „kolik tahů dialogu potřebuje, aby se naučil odpovídat správně" —
+  na NEVÍM navazuje otázka „a co ti chybí?", jejíž zodpovězení člověkem
+  musí schopnost doplnit (dialogy § 6.12 jsou přesně tenhle test).
 
 ## 11 · Vědomé hranice v1 (rekapitulace)
 
