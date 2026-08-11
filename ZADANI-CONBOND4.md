@@ -434,6 +434,41 @@ Meta‑kód NENÍ obecný programovací jazyk: žádné smyčky ani rekurze
 v uživatelském prostoru, jen deklarace — terminace je zaručená konstrukcí
 (mez rozhodnutelnosti, I‑13).
 
+**Rozhraní kód ↔ graf.** Meta‑kód nevolá graf přes API — **každý řádek JE
+delta grafu**: `entity` zakládá uzel, `member`/`name` tvrdou hranu,
+`relation` reifikovaný uzel s hranami rolí, `rule`/`constraint` pravidlový
+uzel. Z toho plynou čtyři vlastnosti rozhraní:
+
+1. **Adresovatelnost hran:** každý řádek má id výroku (`s41`, `p3`, `r1`)
+   — „sáhnout na hranu" = odkázat se na výrok, který ji postavil
+   (`revoke(s44)`), a vysvětlení odpovědi je seznam id výroků, které se
+   použily (§ 8: render skutečně použité struktury).
+2. **Identifikace uzlů:** v uloženém kódu VŽDY neprůhledným id (`a1`).
+   Popisem (`restrict(group("auto") · owned_by:e_filip)`) se uzel smí
+   určit jen v OKAMŽIKU zápisu — rozřešení proběhne při `attach` a do
+   faktu se uloží výsledné id (`@resolved:a1`). Popis se do faktu
+   neukládá, jinak by význam driftoval: kdyby si Filip zítra koupil
+   druhé auto, včerejší „Filipovo auto je modré" nesmí změnit referent.
+3. **Celé rozhraní jsou čtyři operace:** `attach(výrok) → id` (jediný
+   zápis; rozřeší popisy), `revoke(id, důvod)` (jediné mazání — hrana
+   zůstává v historii), `eval(term) → uzly/verdikt` (čtení; otázky
+   nepíší nic), `inspect(id) → okolí + provenience` (pro vysvětlení
+   a UI — klik na uzel v okně grafu vypíše řádky kódu, které ho
+   postavily; kruh kód ↔ graf ↔ člověk se uzavírá).
+4. **Měkká vrstva do kódu nepatří:** spoluvýskyty a aktivace se počítají
+   za běhu z žurnálu a korpusu — jsou to odvozené statistiky, ne výroky;
+   smí se kešovat, ale `attach`/`revoke` na ně nesáhne (I‑8).
+
+```
+s40: entity a1.                                @instantiate(t1)
+s41: member a1 group("auto").                  @presuppose(t1)
+s44: member a1 group("modrý").                 @stated(t2, resolved:a1)
+s45: name a1 +{"Ford"}.                        @assign(t4, confirmed)
+
+inspect(a1) → { s40, s41, s44, s45, r1 }       # proč uzel existuje a co nese
+revoke(s44, "oprava: bylo červené")            # sáhnutí na konkrétní hranu
+```
+
 **Rizika řečená předem:** bujení gramatiky (každá feature „jen jeden nový
 konstruktor") — proto změny gramatiky jen rozhodnutím a s verzí v hlavičce
 každého souboru; a dvojí pravda (graf v paměti × kód na disku) — proto
