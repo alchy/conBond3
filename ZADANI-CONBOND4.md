@@ -266,7 +266,8 @@ dálnici, které nebyly rychlé" je běžný term.
 Pozor na hranici: skládání vztahů je výrazově silné a obecná algebra relací
 je nerozhodnutelná. Zadání proto žádá **předem narýsovanou a strojově
 hlídanou mez** (jako kap. 41 v conBond3): role jsou konečné, vnořování
-vztahů povolené, ale kvantifikace zůstává na úrovni groups (§ 6.3).
+vztahů povolené do hloubky 1 (postoje o faktech; mez je modifikovatelný
+parametr — § 12/3), kvantifikace zůstává na úrovni groups (§ 6.3).
 
 ### 3.5 Jména a scelení
 
@@ -354,6 +355,12 @@ a příslušnost do intervalu.
 ! Ano.                                → mapování potvrzeno
    — sémantika ≤ je pevná (menu); naučené je jen SLOVO → KOMPARÁTOR
 ```
+
+Každou veličinovou doménu obsluhuje **specialista** za jednotnou smlouvou
+(rozpoznat hodnotu, normalizovat, uspořádat, porovnat, pojmenované
+intervaly, render): „Chronos" pro čas, „Topos" pro prostor, další pro
+míry — dodávají jen primitivní predikáty své osy, algebra zůstává jedna
+(rozhodnutí § 12/6).
 
 **Hranice v1:** párování a dotazování ano (role, obsažení, pořadí,
 intervaly); plná temporální LOGIKA ne — žádná perzistence stavů („když
@@ -871,6 +878,14 @@ nevztahuje.
       výčet vztahů mít(kdo:(e_filip)) → (a1); odpověď = SYNTÉZA
       nashromážděného popisu uzlu (členství + vlastnost + jméno),
       ne echo jedné věty (§ 6.5, § 8)
+? Co je Ford?
+      zmínka„Ford" se rozřeší přes jmenuje_se na (a1)
+      → definiční otázka (§ 6.5): ČÍM je = členství, pak vlastnosti a vztahy
+→ „Ford je auto — modré, a má ho Filip."
+      — jméno naučené jedním doptáním hned funguje OBĚMA směry:
+        v syntéze odpovědi („modré auto Ford") i v rozřešení otázky
+        („Co je Ford?"); věta „Ford je auto" nebyla nikdy vyřčena,
+        plyne z jmenuje_se(a1) + (a1) ∈ group(auto)
 
 Alternativní větev:  ! „Ford je jiné auto."
       → nový uzel (a2) ∈ group(auto), jmenuje_se „Ford"
@@ -916,7 +931,9 @@ doptání), **důvod** (cesta/podgraf/protipříklad/chybějící premisy) a
 nevím"). Renderování z podgrafu do češtiny je samostatná úloha se
 šablonami odděleně od logiky (jazyk v profilech, ne v kódu) — a je to
 JEDINÝ výstupní kanál: co nejde vyrenderovat z reálné struktury, nesmí
-se říct.
+se říct. Složené termy se renderují vždy strukturovaně (odsazený výpis
+se zjevným uzávorkováním + podgraf v okně grafu — § 12/7); věta je jen
+pro jednoduché verdikty.
 
 **Proč.** Cíl konceptu je vysvětlování vazeb; vysvětlení vyrobené jinak
 než z použité struktury by bylo lhaní o vlastním myšlení. Zkušenost:
@@ -984,23 +1001,42 @@ dokumentů (dialog je jednotka), koreference jen aktivací, generování
 češtiny šablonami (ne volný jazyk). Každá hranice je zapsaná a strojově
 hlídaná — je to čára, ne mezera.
 
-## 12 · Otevřené otázky k rozhodnutí
+## 12 · Rozhodnutí k dříve otevřeným otázkám (J., 11. 8. 2026)
 
-1. Sada rolí vztahu: uzavřené menu (kdo/co/komu/kde/kudy/kdy/jak/k čemu…)
-   vs. otevřená množina pojmenovaná předložkou/pádem — a pravidla
-   ekvivalence rolí („kudy" × „po čem").
-2. Neslučitelnosti vlastností (rychle × pomalu) — deklarovat constrainty
-   ručně, učit doptáním, nebo obojí?
-3. Jak hluboko smí vnoření vztah(vztah) ve v1 (postoje ano; postoje
-   o postojích?).
-4. Kdy je učený ranker čtení (§ 5.2) vůbec potřeba — kritérium: počet
-   doptání, která vzory nepokryly.
-5. Míra iniciativy systému: smí sám nabízet hypotézy pravidel (§ 6.6)
-   proaktivně, nebo jen když se ptá člověk?
-6. Granularita časové osy: stačí relativní pořadí tahů + pojmenované
-   intervaly, nebo od začátku kalendářní datové typy? A mapování
-   slovesného času na `kdy` (minulý → před(teď)) — vždy, nebo jen
-   u dějových sloves?
-7. Renderování složených termů: jak hluboko zanořený výraz
-   (group NOT group AND …) ještě číst větou, a kdy přejít na
-   odrážky/závorky, aby uzávorkování bylo vidět?
+1. **Role vztahu — hybrid.** Strukturální jádro uzavřené (kdo/co
+   z podmětu a předmětu — bez něj nejde psát algebra restrikcí),
+   okolnosti povrchově podle předložky/pádu (nehádá se sémantika,
+   INV‑11), ekvivalence rolí („kudy" × „po čem") se učí dialogem jako
+   odvolatelná data.
+2. **Neslučitelnosti — škály.** Antonyma jsou intervaly na ose veličiny
+   (rychle/pomalu na ose rychlosti); neslučitelnost i vyplývání počítá
+   osa. Doptání zůstává mechanismem pro vlastnosti, které na žádné ose
+   neleží.
+3. **Vnoření vztah(vztah) — hloubka 1, modifikovatelná.** Mez je
+   parametr hlídaný na gramatice termů (§ 3.0); zvyšuje se vědomým
+   rozhodnutím, nikdy implicitně rozšířením kódu.
+4. **Ranker čtení — až na důkaz.** Kaskáda od prvního dne loguje, které
+   patro rozhodlo; ranker se přidá, až podíl doptání nepokrytých vzory
+   přestane klesat (vzory saturovaly).
+5. **Iniciativa — plná proaktivita.** Systém smí sám nabízet hypotézy
+   (můstková pravidla při NEVÍM, scelení identity, členství neznámých
+   jmen), kdykoli má evidenci. Pojistky: nabídka je vždy označená
+   HYPOTÉZA s evidencí, nikdy tiché tvrzení; každá jde odmítnout a
+   odmítnutí se pamatuje (nenabízet znovu totéž); člověk může iniciativu
+   ztlumit pokynem v dialogu.
+6. **Čas — hybrid + specializované domény veličin.** Interní osa je
+   abstraktní uspořádání; kalendář je profil („pondělí < úterý"), plné
+   datum se ukotví, jen když ho věta nese; „teď" = tah dialogu.
+   Slovesný čas navrhne `kdy` jen u epizodických dějů, jako hypotéza
+   čtení. Nově: každou veličinovou doménu obsluhuje **specialista**
+   („Chronos" pro čas, „Topos" pro prostor, další pro rychlost/míry) za
+   JEDNOTNOU smlouvou: rozpoznat hodnotu v textu, normalizovat,
+   uspořádat, porovnat, pojmenované intervaly, render. Specialista
+   dodává jen primitivní predikáty své osy — termová algebra zůstává
+   jedna (§ 3.0, I‑15); žádný specialista nesmí přidat zvláštní případ
+   do vyhodnocení. (Vnitřní stavba specialistů je architektura — mimo
+   tento dokument.)
+7. **Renderování — složené termy vždy strukturovaně.** Jednoduchý
+   verdikt větou; složený term (algebra, restrikce) vždy odsazeným
+   výpisem se zjevným uzávorkováním a v okně grafu jako rozklikatelný
+   podgraf — uzávorkování se ukazuje, neschovává.
